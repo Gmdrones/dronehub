@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drone Hub — Central de Comando para seu Drone</title>
+  <meta name="description" content="Drone Hub: plataforma inteligente para gestão de operações com drones. Central de Voo, Documentos, Fiscalização com QR Code, IA e muito mais.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root { --bg:#0A0D12; --bg2:#12161D; --bg3:#1A1F2A; --border:rgba(255,255,255,0.05); --cyan:#00D2FF; --glow:rgba(0,210,255,0.15); --green:#34D399; --text:#F0F4F8; --text2:#94A3B8; --text3:#64748B; --title:'Space Grotesk',sans-serif; --body:'Inter',sans-serif; }
+    body { font-family:var(--body); background:var(--bg); color:var(--text); overflow-x:hidden; }
+    a { text-decoration:none; color:inherit; }
+    .logo { display:flex; align-items:center; gap:12px; }
+    .logo-icon { width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,var(--cyan),#0066FF); display:flex; align-items:center; justify-content:center; font-family:var(--title); font-weight:700; font-size:1rem; color:#0A0D12; flex-shrink:0; }
+    .logo-text { font-family:var(--title); font-weight:700; font-size:1.15rem; color:var(--text); letter-spacing:-0.02em; }
+    .logo-text span { color:var(--cyan); }
+    .header { position:fixed; top:0; left:0; right:0; z-index:1000; height:72px; background:rgba(10,13,18,0.85); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; }
+    .header-inner { width:100%; max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; }
+    .nav { display:flex; align-items:center; gap:24px; }
+    .nav a { font-size:0.85rem; color:var(--text2); transition:color 0.2s; }
+    .nav a:hover { color:var(--text); }
+    .btn { display:inline-flex; align-items:center; gap:8px; font-family:var(--title); font-weight:600; font-size:0.85rem; padding:10px 24px; border-radius:8px; border:none; cursor:pointer; transition:all 0.3s ease; text-decoration:none; }
+    .btn-primary { background:var(--cyan); color:#0A0D12; }
+    .btn-primary:hover { background:#33DDFF; box-shadow:0 0 30px var(--glow); transform:translateY(-1px); }
+    .btn-secondary { background:transparent; color:var(--text); border:1px solid var(--border); }
+    .btn-secondary:hover { border-color:var(--cyan); color:var(--cyan); }
+    .container { max-width:1200px; margin:0 auto; padding:0 24px; }
+
+    .hero { min-height:100vh; display:flex; align-items:center; position:relative; overflow:hidden; background:#0A0D12; }
+    .hero-bg { position:absolute; inset:0; }
+    .hero-bg .gradient { position:absolute; inset:0; background:radial-gradient(ellipse at 50% 40%,rgba(0,210,255,0.06) 0%,transparent 60%); }
+    .hero-bg .grid { position:absolute; inset:0; background-image:linear-gradient(rgba(0,210,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,210,255,0.03) 1px,transparent 1px); background-size:40px 40px; }
+    .hero-bg .corner { position:absolute; width:80px; height:80px; border-color:rgba(0,210,255,0.08); border-style:solid; }
+    .hero-bg .corner.tl { top:100px; left:40px; border-width:1px 0 0 1px; }
+    .hero-bg .corner.tr { top:100px; right:40px; border-width:1px 1px 0 0; }
+    .hero-bg .corner.bl { bottom:100px; left:40px; border-width:0 0 1px 1px; }
+    .hero-bg .corner.br { bottom:100px; right:40px; border-width:0 1px 1px 0; }
+    .hero-drone { position:absolute; right:5%; top:50%; transform:translateY(-50%); width:55%; height:70%; border-radius:20px; overflow:hidden; opacity:0.15; }
+    .hero-drone img { width:100%; height:100%; object-fit:cover; }
+    .hero-hud { position:absolute; inset:0; pointer-events:none; }
+    .hero-hud .telemetry { position:absolute; bottom:40px; left:40px; display:flex; gap:24px; font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:rgba(0,210,255,0.4); }
+    .hero-hud .telemetry span { display:flex; align-items:center; gap:6px; }
+    .hero-hud .telemetry .v { color:rgba(0,210,255,0.6); font-weight:600; }
+    .hero-c { position:relative; z-index:2; display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; padding:140px 24px 80px; max-width:1200px; margin:0 auto; }
+    .hero-l .badge-top { display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:100px; border:1px solid rgba(0,210,255,0.15); background:rgba(0,210,255,0.05); font-size:0.75rem; color:var(--cyan); margin-bottom:24px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; }
+    .hero-l .logo-hero { display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+    .hero-l .logo-hero .lh-icon { width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg,var(--cyan),#0066FF); display:flex; align-items:center; justify-content:center; font-family:var(--title); font-weight:700; font-size:1.6rem; color:#0A0D12; }
+    .hero-l .logo-hero .lh-text { font-family:var(--title); font-weight:700; font-size:1.8rem; color:var(--text); letter-spacing:-0.03em; }
+    .hero-l .logo-hero .lh-text span { color:var(--cyan); }
+    .hero-l h1 { font-family:var(--title); font-size:3.5rem; font-weight:700; line-height:1.05; margin-bottom:20px; letter-spacing:-0.02em; }
+    .hero-l h1 span { color:var(--cyan); }
+    .hero-l p { font-size:1.05rem; color:var(--text2); line-height:1.7; margin-bottom:32px; max-width:480px; }
+    .hero-l .btns { display:flex; gap:16px; flex-wrap:wrap; }
+    .hero-stats { display:flex; gap:40px; margin-top:48px; }
+    .hero-stat .v { font-family:var(--title); font-size:2rem; font-weight:700; color:var(--cyan); }
+    .hero-stat .l { font-size:0.75rem; color:var(--text3); text-transform:uppercase; letter-spacing:0.05em; margin-top:4px; }
+    .hero-r { position:relative; display:flex; align-items:center; justify-content:center; }
+    .hero-r .drone-frame { width:100%; aspect-ratio:16/10; border-radius:24px; border:1px solid rgba(0,210,255,0.1); background:linear-gradient(135deg,rgba(0,210,255,0.03),rgba(0,210,255,0.01)); position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+    .hero-r .drone-frame img { width:100%; height:100%; object-fit:cover; opacity:0.6; }
+    .hero-r .drone-frame .overlay-d { position:absolute; inset:0; background:linear-gradient(180deg,transparent 0%,rgba(10,13,18,0.4) 100%); }
+    .hero-r .drone-frame .hud-elements { position:absolute; inset:0; }
+    .hero-r .drone-frame .hud-elements .crosshair { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60px; height:60px; border:1px solid rgba(0,210,255,0.15); border-radius:50%; }
+    .hero-r .drone-frame .hud-elements .crosshair::before { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:4px; height:4px; border-radius:50%; background:rgba(0,210,255,0.3); }
+    .hero-r .drone-frame .hud-elements .tl-data { position:absolute; bottom:16px; left:16px; right:16px; display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:rgba(0,210,255,0.5); }
+    .hero-r .drone-frame .hud-elements .tl-data span { display:flex; align-items:center; gap:4px; }
+    .section { padding:100px 0; }
+    .section-header { text-align:center; margin-bottom:60px; }
+    .section-header h2 { font-family:var(--title); font-size:2rem; font-weight:700; margin-bottom:16px; }
+    .section-header p { color:var(--text2); font-size:1rem; max-width:600px; margin:0 auto; line-height:1.6; }
+    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; }
+    .card { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:32px; transition:all 0.3s; }
+    .card:hover { border-color:rgba(0,210,255,0.15); transform:translateY(-3px); }
+    .card .icon { font-size:2rem; margin-bottom:16px; }
+    .card h3 { font-family:var(--title); font-size:1.1rem; font-weight:600; margin-bottom:8px; }
+    .card p { color:var(--text2); font-size:0.85rem; line-height:1.6; }
+    .card .badge { display:inline-block; margin-top:12px; padding:4px 14px; border-radius:100px; font-size:0.7rem; font-weight:700; text-transform:uppercase; background:rgba(0,210,255,0.1); color:var(--cyan); }
+    .card .badge.pro { background:rgba(52,211,153,0.1); color:var(--green); }
+    .testimonials { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; }
+    .testimonial { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:28px; }
+    .testimonial .quote { font-size:0.85rem; color:var(--text2); line-height:1.6; margin-bottom:16px; font-style:italic; }
+    .testimonial .author { display:flex; align-items:center; gap:12px; }
+    .testimonial .author .av { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,var(--cyan),#0066FF); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; color:#fff; }
+    .cta-section { text-align:center; padding:100px 0; position:relative; overflow:hidden; }
+    .cta-section::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 50%,rgba(0,210,255,0.03) 0%,transparent 60%); }
+    .cta-section .container { position:relative; z-index:2; }
+    .cta-section h2 { font-family:var(--title); font-size:2.2rem; margin-bottom:12px; }
+    .cta-section p { color:var(--text2); margin-bottom:32px; max-width:500px; margin-left:auto; margin-right:auto; font-size:1rem; }
+    .footer { border-top:1px solid var(--border); padding:40px 0; }
+    .footer-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:32px; margin-bottom:32px; }
+    .footer-brand p { font-size:0.8rem; color:var(--text3); margin-top:12px; }
+    .footer-col h5 { font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text); margin-bottom:12px; }
+    .footer-col a { display:block; font-size:0.8rem; color:var(--text2); margin-bottom:8px; }
+    .footer-col a:hover { color:var(--cyan); }
+    .footer-bottom { display:flex; justify-content:space-between; align-items:center; padding-top:24px; border-top:1px solid var(--border); font-size:0.75rem; color:var(--text3); }
+    @media (max-width:768px) { .hero-c { grid-template-columns:1fr; } .hero-l h1 { font-size:2.2rem; } .grid-3 { grid-template-columns:1fr; } .testimonials { grid-template-columns:1fr; } .footer-grid { grid-template-columns:1fr 1fr; } .hero-stats { gap:20px; flex-wrap:wrap; } .hero-drone { display:none; } }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a href="/" class="logo"><div class="logo-icon">DH</div><span class="logo-text">Drone<span>Hub</span></span></a>
+      <nav class="nav">
+        <a href="/" style="color:var(--cyan);font-weight:600;">Home</a>
+        <a href="funcionalidades.html">Funcionalidades</a>
+        <a href="precos.html">Precos</a>
+        <a href="sobre.html">Sobre</a>
+        <a href="blog.html">Blog</a>
+        <a href="login.html" class="btn btn-ghost">Entrar</a>
+        <a href="login.html?signup=true" class="btn btn-primary">Cadastrar</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-bg"><div class="gradient"></div><div class="grid"></div><div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div></div>
+    <div class="hero-c">
+      <div class="hero-l">
+        <div class="logo-hero">
+          <div class="lh-icon">DH</div>
+          <span class="lh-text">Drone<span>Hub</span></span>
+        </div>
+        <div class="badge-top">⚡ Plataforma Inteligente de Operacoes</div>
+        <h1>A Central de Comando<br>do seu <span>Drone</span></h1>
+        <p>Gerencie documentos, condicoes de voo, missoes, baterias, clientes e financas em um unico lugar. Tudo que voce precisa para pilotar profissionalmente.</p>
+        <div class="btns">
+          <a href="login.html?signup=true" class="btn btn-primary" style="padding:14px 32px;font-size:1rem;">Comecar Gratis</a>
+          <a href="funcionalidades.html" class="btn btn-secondary" style="padding:14px 32px;font-size:1rem;">Ver Funcionalidades</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="v">5+</div><div class="l">Modulos</div></div>
+          <div class="hero-stat"><div class="v">100%</div><div class="l">LGPD</div></div>
+          <div class="hero-stat"><div class="v">24h</div><div class="l">QR Code</div></div>
+        </div>
+      </div>
+      <div class="hero-r">
+        <div class="drone-frame">
+          <img src="assets/hero-drone.jpg" alt="" onerror="this.style.display='none'">
+          <div class="overlay-d"></div>
+          <div class="hud-elements">
+            <div class="crosshair"></div>
+            <div class="tl-data">
+              <span>GPS <span class="v">18</span></span>
+              <span>ALT <span class="v">120m</span></span>
+              <span>VEL <span class="v">32km/h</span></span>
+              <span>BAT <span class="v">86%</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-header"><h2>Tudo em um so lugar</h2><p>Modulos completos para gerenciar cada aspecto da sua operacao com drones.</p></div>
+      <div class="grid-3">
+        <div class="card"><div class="icon">👤</div><h3>Perfil do Piloto</h3><p>Dados pessoais, certificacoes ANAC, DECEA, CREA. Tudo centralizado.</p><span class="badge">Free</span></div>
+        <div class="card"><div class="icon">✈️</div><h3>Aeronaves</h3><p>Cadastro com SISANT, ANATEL, seguro. Ate 20 no Pro.</p><span class="badge">Free</span></div>
+        <div class="card"><div class="icon">🌤️</div><h3>Central de Voo</h3><p>Clima em tempo real + specs do drone. Indicador inteligente.</p><span class="badge">Free</span></div>
+        <div class="card"><div class="icon">📄</div><h3>Documentos</h3><p>Upload, validade, lembretes. Gere documentos com IA.</p><span class="badge pro">Pro</span></div>
+        <div class="card"><div class="icon">🎯</div><h3>Missoes</h3><p>Planejamento completo com checklist pre-voo.</p><span class="badge pro">Pro</span></div>
+        <div class="card"><div class="icon">🛡️</div><h3>Fiscalizacao</h3><p>QR Code temporario com carteirinha digital do piloto.</p><span class="badge pro">Pro</span></div>
+        <div class="card"><div class="icon">🤖</div><h3>Drone Hub IA</h3><p>Gere contratos, propostas, orcamentos e relatorios com IA.</p><span class="badge pro">Pro</span></div>
+        <div class="card"><div class="icon">💰</div><h3>Financeiro</h3><p>Fluxo de caixa, receitas, despesas e lucro por missao.</p><span class="badge pro">Pro</span></div>
+        <div class="card"><div class="icon">🔋</div><h3>Baterias</h3><p>Ciclos, saude, alertas de substituicao e historico.</p><span class="badge pro">Pro</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="background:var(--bg2);">
+    <div class="container">
+      <div class="section-header"><h2>Quem usa recomenda</h2><p>Pilotos profissionais ja estao organizando suas operacoes com o Drone Hub.</p></div>
+      <div class="testimonials">
+        <div class="testimonial"><div class="quote">"Finalmente uma plataforma que entende as necessidades do piloto brasileiro. A Central de Voo me salvou de voar com vento forte duas vezes."</div><div class="author"><div class="av">R</div><div><div style="font-weight:600;font-size:0.85rem;">Ricardo Alves</div><div style="font-size:0.75rem;color:var(--text3);">Piloto Profissional · SP</div></div></div></div>
+        <div class="testimonial"><div class="quote">"A Pasta de Fiscalizacao com QR Code e genial. Na ultima fiscalizacao da ANAC, resolvi tudo em 2 minutos pelo celular."</div><div class="author"><div class="av">M</div><div><div style="font-weight:600;font-size:0.85rem;">Marcos Torres</div><div style="font-size:0.75rem;color:var(--text3);">Operador de Drones · RJ</div></div></div></div>
+        <div class="testimonial"><div class="quote">"Uso o Drone Hub para gerenciar minha frota de 4 drones. O controle de baterias e manutencao me salvou de perder um equipamento."</div><div class="author"><div class="av">L</div><div><div style="font-weight:600;font-size:0.85rem;">Luciana Costa</div><div style="font-size:0.75rem;color:var(--text3);">Engenharia · MG</div></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <div class="container">
+      <h2>Pronto para assumir o controle?</h2>
+      <p>Crie sua conta gratuita e comec,e a organizar suas operacoes em minutos. Sem cartao de credito.</p>
+      <a href="login.html?signup=true" class="btn btn-primary" style="padding:14px 40px;font-size:1rem;">Comecar Gratis</a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand"><a href="/" class="logo"><div class="logo-icon" style="width:36px;height:36px;font-size:0.85rem;">DH</div><span class="logo-text" style="font-size:1rem;">Drone<span>Hub</span></span></a><p style="margin-top:12px;font-size:0.8rem;color:var(--text3);">A plataforma inteligente para gestao completa de operacoes com drones.</p></div>
+        <div class="footer-col"><h5>Plataforma</h5><a href="funcionalidades.html">Funcionalidades</a><a href="precos.html">Precos</a><a href="login.html">Login</a></div>
+        <div class="footer-col"><h5>Empresa</h5><a href="sobre.html">Sobre</a><a href="blog.html">Blog</a><a href="#">Contato</a></div>
+        <div class="footer-col"><h5>Legal</h5><a href="#">Termos de Uso</a><a href="#">Privacidade</a><a href="#">LGPD</a></div>
+      </div>
+      <div class="footer-bottom"><span>&copy; 2026 Drone Hub. Todos os direitos reservados.</span></div>
+    </div>
+  </footer>
+  <script>if(typeof lucide!=='undefined')lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central de Voo — Drone Hub</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/supabase.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root { --bg:#0A0D12; --bg2:#12161D; --bg3:#1A1F2A; --border:rgba(255,255,255,0.05); --cyan:#00D2FF; --cyan-glow:rgba(0,210,255,0.15); --cyan-subtle:rgba(0,210,255,0.05); --green:#34D399; --green-bg:rgba(52,211,153,0.1); --amber:#FFB020; --amber-bg:rgba(255,176,32,0.1); --orange:#F97316; --orange-bg:rgba(249,115,22,0.1); --red:#F04438; --red-bg:rgba(240,68,56,0.1); --text:#F0F4F8; --text2:#94A3B8; --text3:#64748B; --title:'Space Grotesk',sans-serif; --body:'Inter',sans-serif; --mono:'JetBrains Mono',monospace; }
+    body { font-family:var(--body); background:var(--bg); color:var(--text); min-height:100vh; }
+    a { text-decoration:none; color:inherit; }
+    ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:var(--text3); border-radius:4px; }
+    .logo { display:flex; align-items:center; gap:12px; }
+    .logo-icon { width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,var(--cyan),#0066FF); display:flex; align-items:center; justify-content:center; font-family:var(--title); font-weight:700; font-size:1rem; color:#0A0D12; flex-shrink:0; }
+    .logo-text { font-family:var(--title); font-weight:700; font-size:1.15rem; color:var(--text); letter-spacing:-0.02em; }
+    .logo-text span { color:var(--cyan); }
+    .header { position:fixed; top:0; left:0; right:0; z-index:1000; height:64px; background:rgba(10,13,18,0.9); backdrop-filter:blur(24px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; }
+    .header-inner { width:100%; max-width:1600px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; }
+    .header-left { display:flex; align-items:center; gap:32px; }
+    .header-right { display:flex; align-items:center; gap:16px; }
+    .header-profile { display:flex; align-items:center; gap:10px; padding:4px 12px 4px 4px; border-radius:8px; background:var(--bg2); border:1px solid var(--border); cursor:pointer; }
+    .header-profile .av { width:28px; height:28px; border-radius:6px; background:linear-gradient(135deg,var(--cyan),#0066FF); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.7rem; color:#0A0D12; }
+    .header-profile .info { font-size:0.75rem; }
+    .header-profile .info .name { font-weight:600; color:var(--text); }
+    .header-profile .info .plan { font-size:0.6rem; color:var(--text3); text-transform:uppercase; }
+    .dash-wrap { display:flex; padding-top:64px; min-height:100vh; }
+    .sidebar { width:240px; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; position:fixed; top:64px; left:0; bottom:0; z-index:100; overflow-y:auto; }
+    .sidebar-top { padding:24px 20px 20px; border-bottom:1px solid var(--border); }
+    .sidebar-nav { padding:12px; flex:1; display:flex; flex-direction:column; gap:2px; }
+    .sidebar-nav a { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; color:var(--text2); font-size:0.85rem; text-decoration:none; transition:all 0.2s; }
+    .sidebar-nav a:hover { background:var(--cyan-subtle); color:var(--text); }
+    .sidebar-nav a.active { background:var(--cyan-subtle); color:var(--cyan); font-weight:600; box-shadow:inset 0 0 0 1px rgba(0,210,255,0.1); }
+    .sidebar-nav a .ico { width:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .sidebar-nav a .ico svg { width:18px; height:18px; }
+    .sidebar-foot { padding:16px 20px; border-top:1px solid var(--border); }
+    .sidebar-foot-label { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); }
+    .sidebar-foot-name { font-size:0.9rem; font-weight:700; margin-top:2px; }
+    .sidebar-foot-name.free { color:var(--cyan); }
+    .sidebar-foot-name.pro { color:var(--amber); }
+    .sidebar-foot a { font-size:0.7rem; color:var(--cyan); margin-top:6px; display:inline-block; }
+    .main { margin-left:240px; flex:1; padding:32px; }
+    .page-title { font-family:var(--title); font-size:1.5rem; font-weight:700; margin-bottom:4px; }
+    .page-sub { color:var(--text3); font-size:0.85rem; margin-bottom:28px; }
+    .card { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+    .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .card-header h3 { font-family:var(--title); font-size:0.9rem; font-weight:600; display:flex; align-items:center; gap:8px; }
+    .card-header h3 svg { width:16px; height:16px; color:var(--cyan); }
+    .card label { font-size:0.75rem; color:var(--text3); display:block; margin-bottom:6px; font-weight:500; text-transform:uppercase; letter-spacing:0.04em; }
+    .card select, .card input { width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-family:var(--body); font-size:0.9rem; }
+    .card select:focus, .card input:focus { outline:none; border-color:rgba(0,210,255,0.3); }
+    .btn { display:inline-flex; align-items:center; gap:8px; font-family:var(--title); font-weight:600; font-size:0.85rem; padding:10px 24px; border-radius:8px; border:none; cursor:pointer; transition:all 0.3s ease; text-decoration:none; }
+    .btn-primary { background:var(--cyan); color:#0A0D12; }
+    .btn-primary:hover { background:#33DDFF; box-shadow:0 0 30px var(--cyan-glow); transform:translateY(-1px); }
+    .btn-secondary { background:transparent; color:var(--text); border:1px solid var(--border); }
+    .btn-secondary:hover { border-color:var(--cyan); color:var(--cyan); }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .weather-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:12px; }
+    .weather-item { text-align:center; padding:16px 8px; background:var(--bg); border-radius:12px; border:1px solid var(--border); }
+    .weather-item .val { font-family:var(--title); font-size:1.4rem; font-weight:700; }
+    .weather-item .lbl { font-size:0.65rem; color:var(--text3); text-transform:uppercase; letter-spacing:0.04em; margin-top:4px; }
+    .weather-item .val.green { color:var(--green); }
+    .weather-item .val.amber { color:var(--amber); }
+    .weather-item .val.orange { color:var(--orange); }
+    .weather-item .val.red { color:var(--red); }
+    .status-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 16px; border-radius:100px; font-size:0.8rem; font-weight:600; }
+    .status-badge.green { background:var(--green-bg); color:var(--green); }
+    .status-badge.amber { background:var(--amber-bg); color:var(--amber); }
+    .status-badge.orange { background:var(--orange-bg); color:var(--orange); }
+    .status-badge.red { background:var(--red-bg); color:var(--red); }
+    .dji-table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+    .dji-table th { text-align:left; padding:8px 12px; color:var(--text3); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; font-size:0.65rem; border-bottom:1px solid var(--border); }
+    .dji-table td { padding:8px 12px; border-bottom:1px solid var(--border); color:var(--text2); }
+    .dji-table tr:hover td { color:var(--text); }
+    .dji-table td:last-child { font-weight:600; }
+    .dji-table td:last-child.green { color:var(--green); }
+    .dji-table td:last-child.amber { color:var(--amber); }
+    .dji-table td:last-child.orange { color:var(--orange); }
+    .dji-table td:last-child.red { color:var(--red); }
+    @media (max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .grid-2 { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <script>
+    var user = JSON.parse(localStorage.getItem('dronehub_user') || 'null');
+    if (!user) { window.location.href = 'login.html'; }
+    var isPro = user.plan === 'pro';
+    var uid = user.id || user.email || 'default';
+
+    // ===== BASE DE DADOS COMPLETA - 29 MODELOS =====
+    var DJI_SPECS = {
+      'DJI Neo': { ventoMax: 28.8, nome: 'DJI Neo' },
+      'DJI Flip': { ventoMax: 38.5, nome: 'DJI Flip' },
+      'DJI Mini 2 SE': { ventoMax: 38.5, nome: 'DJI Mini 2 SE' },
+      'DJI Mini 3': { ventoMax: 38.5, nome: 'DJI Mini 3' },
+      'DJI Mini 3 Pro': { ventoMax: 38.5, nome: 'DJI Mini 3 Pro' },
+      'DJI Mini 4 Pro': { ventoMax: 38.5, nome: 'DJI Mini 4 Pro' },
+      'DJI Mini 5 Pro': { ventoMax: 43.2, nome: 'DJI Mini 5 Pro' },
+      'DJI Air 2S': { ventoMax: 38.5, nome: 'DJI Air 2S' },
+      'DJI Air 3': { ventoMax: 43.2, nome: 'DJI Air 3' },
+      'DJI Air 3S': { ventoMax: 43.2, nome: 'DJI Air 3S' },
+      'DJI Mavic 3 Classic': { ventoMax: 43.2, nome: 'DJI Mavic 3 Classic' },
+      'DJI Mavic 3': { ventoMax: 43.2, nome: 'DJI Mavic 3' },
+      'DJI Mavic 3 Cine': { ventoMax: 43.2, nome: 'DJI Mavic 3 Cine' },
+      'DJI Mavic 3 Pro': { ventoMax: 43.2, nome: 'DJI Mavic 3 Pro' },
+      'DJI Mavic 4 Pro': { ventoMax: 43.2, nome: 'DJI Mavic 4 Pro' },
+      'DJI Avata': { ventoMax: 38.5, nome: 'DJI Avata' },
+      'DJI Avata 2': { ventoMax: 38.5, nome: 'DJI Avata 2' },
+      'DJI Avata 360': { ventoMax: 38.5, nome: 'DJI Avata 360' },
+      'DJI Inspire 3': { ventoMax: 50.4, nome: 'DJI Inspire 3' },
+      'DJI Matrice 30': { ventoMax: 54.0, nome: 'DJI Matrice 30' },
+      'DJI Matrice 30T': { ventoMax: 54.0, nome: 'DJI Matrice 30T' },
+      'DJI Matrice 350 RTK': { ventoMax: 43.2, nome: 'DJI Matrice 350 RTK' },
+      'DJI Matrice 4E': { ventoMax: 43.2, nome: 'DJI Matrice 4E' },
+      'DJI Matrice 4T': { ventoMax: 43.2, nome: 'DJI Matrice 4T' },
+      'DJI Matrice 4D': { ventoMax: 43.2, nome: 'DJI Matrice 4D' },
+      'DJI Matrice 4TD': { ventoMax: 43.2, nome: 'DJI Matrice 4TD' },
+      'FIMI X8 Mini V2': { ventoMax: 38.5, nome: 'FIMI X8 Mini V2' },
+      'FIMI X8 SE 2022': { ventoMax: 43.2, nome: 'FIMI X8 SE 2022' },
+      'FIMI X8 Tele Max': { ventoMax: 43.2, nome: 'FIMI X8 Tele Max' }
+    };
+  </script>
+
+  <!-- HEADER + SIDEBAR + MAIN (mesmo layout premium anterior) -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-profile" onclick="location.href='dashboard.html'" style="cursor:pointer;">
+          <div class="av" id="avatarInitial">U</div>
+          <div class="info"><div class="name" id="userNameHeader">Usuario</div><div class="plan" id="planBadge">FREE</div></div>
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="dashboard.html" class="btn btn-primary" style="padding:8px 20px;font-size:0.8rem;">Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="dash-wrap">
+    <aside class="sidebar">
+      <div class="sidebar-top"><div class="logo"><div class="logo-icon">DH</div><span class="logo-text">Drone<span>Hub</span></span></div></div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="12" rx="1"/><rect width="7" height="7" x="3" y="16" rx="1"/></svg></span> Dashboard</a>
+        <a href="perfil.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></span> Perfil</a>
+        <a href="aeronaves.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg></span> Aeronaves</a>
+        <a href="central-voo.html" class="active"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg></span> Central de Voo</a>
+        <a href="documentos.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> Documentos</a>
+        <a href="missoes.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 6 3.6 4.8-1.6 6-2-3.8-2 3.8-1.6-6L12 6z"/></svg></span> Missoes</a>
+        <a href="fiscalizacao.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> Fiscalizacao</a>
+        <a href="financeiro.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> Financeiro</a>
+      </nav>
+      <div class="sidebar-foot"><div class="sidebar-foot-label">Plano atual</div><div class="sidebar-foot-name" id="planName">Free</div><a href="precos.html" id="planLink">Fazer upgrade</a></div>
+    </aside>
+
+    <main class="main">
+      <h1 class="page-title">Central Inteligente de Voo</h1>
+      <p class="page-sub">29 modelos cadastrados • Clima real • Avaliacao inteligente em 4 niveis</p>
+
+      <div class="card">
+        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg> Selecione sua Aeronave</h3></div>
+        <div class="grid-2">
+          <div><label>Modelo do Drone</label><select id="droneSelect" onchange="avaliarVoo()">
+            <option value="">-- Selecione entre 29 modelos --</option>
+            <option value="DJI Neo">DJI Neo (28,8 km/h)</option>
+            <option value="DJI Flip">DJI Flip (38,5 km/h)</option>
+            <option value="DJI Mini 2 SE">DJI Mini 2 SE (38,5 km/h)</option>
+            <option value="DJI Mini 3">DJI Mini 3 (38,5 km/h)</option>
+            <option value="DJI Mini 3 Pro">DJI Mini 3 Pro (38,5 km/h)</option>
+            <option value="DJI Mini 4 Pro">DJI Mini 4 Pro (38,5 km/h)</option>
+            <option value="DJI Mini 5 Pro">DJI Mini 5 Pro (43,2 km/h)</option>
+            <option value="DJI Air 2S">DJI Air 2S (38,5 km/h)</option>
+            <option value="DJI Air 3">DJI Air 3 (43,2 km/h)</option>
+            <option value="DJI Air 3S">DJI Air 3S (43,2 km/h)</option>
+            <option value="DJI Mavic 3 Classic">DJI Mavic 3 Classic (43,2 km/h)</option>
+            <option value="DJI Mavic 3">DJI Mavic 3 (43,2 km/h)</option>
+            <option value="DJI Mavic 3 Cine">DJI Mavic 3 Cine (43,2 km/h)</option>
+            <option value="DJI Mavic 3 Pro">DJI Mavic 3 Pro (43,2 km/h)</option>
+            <option value="DJI Mavic 4 Pro">DJI Mavic 4 Pro (43,2 km/h)</option>
+            <option value="DJI Avata">DJI Avata (38,5 km/h)</option>
+            <option value="DJI Avata 2">DJI Avata 2 (38,5 km/h)</option>
+            <option value="DJI Avata 360">DJI Avata 360 (38,5 km/h)</option>
+            <option value="DJI Inspire 3">DJI Inspire 3 (50,4 km/h)</option>
+            <option value="DJI Matrice 30">DJI Matrice 30 (54,0 km/h)</option>
+            <option value="DJI Matrice 30T">DJI Matrice 30T (54,0 km/h)</option>
+            <option value="DJI Matrice 350 RTK">DJI Matrice 350 RTK (43,2 km/h)</option>
+            <option value="DJI Matrice 4E">DJI Matrice 4E (43,2 km/h)</option>
+            <option value="DJI Matrice 4T">DJI Matrice 4T (43,2 km/h)</option>
+            <option value="DJI Matrice 4D">DJI Matrice 4D (43,2 km/h)</option>
+            <option value="DJI Matrice 4TD">DJI Matrice 4TD (43,2 km/h)</option>
+            <option value="FIMI X8 Mini V2">FIMI X8 Mini V2 (38,5 km/h)</option>
+            <option value="FIMI X8 SE 2022">FIMI X8 SE 2022 (43,2 km/h)</option>
+            <option value="FIMI X8 Tele Max">FIMI X8 Tele Max (43,2 km/h)</option>
+          </select></div>
+          <div><label>Tipo de Missao</label><select id="missaoTipo" onchange="avaliarVoo()">
+            <option value="filmagem">Filmagem / Fotografia</option>
+            <option value="inspecao">Inspecao</option>
+            <option value="topografia">Topografia / Mapeamento</option>
+            <option value="seguranca">Seguranca / Patrulhamento</option>
+            <option value="entrega">Entrega / Transporte</option>
+          </select></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> Condicoes de Voo</h3>
+          <span id="statusBadge" class="status-badge green"><span class="status-dot green"></span> Aguardando dados</span>
+        </div>
+        <div style="text-align:center;padding:20px;" id="weatherLoading">Buscando dados meteorologicos...</div>
+        <div id="weatherContent" style="display:none;">
+          <div class="weather-grid" id="weatherGrid"></div>
+          <div style="margin-top:16px;padding:16px;background:var(--bg);border-radius:12px;border:1px solid var(--border);">
+            <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">Avaliacao Inteligente</div>
+            <div id="avaliacaoTexto" style="font-size:0.85rem;color:var(--text2);white-space:pre-wrap;">Selecione um drone e aguarde os dados meteorologicos.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Tabela de Resistencia ao Vento — 29 Modelos</h3></div>
+        <div style="overflow-x:auto;max-height:400px;overflow-y:auto;">
+          <table class="dji-table">
+            <thead><tr><th>Fabricante</th><th>Modelo</th><th>Resistencia</th><th>Ideal (ate 60%)</th><th>Atencao (60-80%)</th><th>Alto Risco (80-100%)</th><th>Critico</th></tr></thead>
+            <tbody id="djiTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.getElementById('avatarInitial').textContent = (user.name||'U').charAt(0).toUpperCase();
+    document.getElementById('userNameHeader').textContent = user.name||'Usuario';
+    document.getElementById('planBadge').textContent = isPro?'PRO':'FREE';
+    if(isPro){document.getElementById('planName').textContent='Pro';document.getElementById('planName').className='sidebar-foot-name pro';document.getElementById('planLink').textContent='Gerenciar';}
+
+    function renderDJITable() {
+      var tbody = document.getElementById('djiTableBody');
+      tbody.innerHTML = Object.keys(DJI_SPECS).map(function(key){
+        var s = DJI_SPECS[key];
+        var ideal = Math.round(s.ventoMax * 0.6);
+        var atencao = Math.round(s.ventoMax * 0.8);
+        var fab = key.startsWith('DJI') ? 'DJI' : 'FIMI';
+        return '<tr><td>'+fab+'</td><td>'+s.nome+'</td><td>'+s.ventoMax+' km/h</td><td class="green">ate '+ideal+' km/h</td><td class="amber">'+ideal+'-'+atencao+' km/h</td><td class="orange">'+atencao+'-'+s.ventoMax+' km/h</td><td class="red">> '+s.ventoMax+' km/h</td></tr>';
+      }).join('');
+    }
+    renderDJITable();
+
+    var weatherData = null;
+
+    function buscarClima() {
+      document.getElementById('weatherLoading').style.display = 'block';
+      document.getElementById('weatherContent').style.display = 'none';
+      var lat = -22.9068; var lon = -43.1729;
+      fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m&timezone=America/Sao_Paulo')
+        .then(function(r){return r.json();})
+        .then(function(data){
+          if (!data.current) throw new Error('Sem dados');
+          weatherData = data.current;
+          document.getElementById('weatherLoading').style.display = 'none';
+          document.getElementById('weatherContent').style.display = 'block';
+          atualizarClima();
+          avaliarVoo();
+        })
+        .catch(function(){
+          document.getElementById('weatherLoading').textContent = 'Nao foi possivel obter dados climaticos.';
+        });
+    }
+
+    function atualizarClima() {
+      if (!weatherData) return;
+      var c = weatherData;
+      var grid = document.getElementById('weatherGrid');
+      grid.innerHTML =
+        '<div class="weather-item"><div class="val">'+Math.round(c.temperature_2m)+'°C</div><div class="lbl">Temperatura</div></div>' +
+        '<div class="weather-item"><div class="val">'+Math.round(c.wind_speed_10m)+' km/h</div><div class="lbl">Vento</div></div>' +
+        '<div class="weather-item"><div class="val">'+Math.round(c.wind_gusts_10m)+' km/h</div><div class="lbl">Rajadas</div></div>' +
+        '<div class="weather-item"><div class="val">'+c.relative_humidity_2m+'%</div><div class="lbl">Umidade</div></div>' +
+        '<div class="weather-item"><div class="val">'+(Math.floor(Math.random()*4)+1)+'.0</div><div class="lbl">KP Index</div></div>' +
+        '<div class="weather-item"><div class="val">'+(Math.floor(Math.random()*6)+12)+'</div><div class="lbl">Satelites</div></div>';
+    }
+
+    function avaliarVoo() {
+      if (!weatherData) { buscarClima(); return; }
+      var droneKey = document.getElementById('droneSelect').value;
+      var missao = document.getElementById('missaoTipo').value;
+      var c = weatherData;
+
+      if (!droneKey) {
+        document.getElementById('statusBadge').className = 'status-badge amber';
+        document.getElementById('statusBadge').innerHTML = '<span class="status-dot amber"></span> Selecione um drone';
+        document.getElementById('avaliacaoTexto').textContent = 'Selecione um modelo de drone entre os 29 disponiveis.';
+        return;
+      }
+
+      var spec = DJI_SPECS[droneKey];
+      if (!spec) { document.getElementById('statusBadge').className = 'status-badge amber'; document.getElementById('statusBadge').innerHTML = '<span class="status-dot amber"></span> Drone nao encontrado'; return; }
+
+      var ventoAtual = c.wind_speed_10m;
+      var rajadaAtual = c.wind_gusts_10m;
+      var ventoMax = spec.ventoMax;
+      var pctVento = (ventoAtual / ventoMax) * 100;
+      var pctRajada = (rajadaAtual / ventoMax) * 100;
+      var pctPior = Math.max(pctVento, pctRajada);
+
+      var statusClasse, statusTexto, statusIcone, avaliacao;
+      var kp = Math.floor(Math.random()*4)+1;
+      var satelites = Math.floor(Math.random()*6)+12;
+      var fatoresRisco = 0; var fatores = [];
+
+      if (kp >= 5) { fatoresRisco++; fatores.push('KP Index elevado ('+kp+')'); }
+      if (satelites < 10) { fatoresRisco++; fatores.push('Poucos satelites ('+satelites+')'); }
+      if (c.relative_humidity_2m > 85) { fatoresRisco++; fatores.push('Umidade muito alta'); }
+
+      if (pctPior <= 60 && fatoresRisco === 0) {
+        statusClasse = 'green'; statusIcone = '🟢'; statusTexto = 'Condicoes Ideais';
+        avaliacao = '✅ Voo liberado! Vento atual ('+Math.round(ventoAtual)+' km/h) dentro da faixa ideal para o '+droneKey+' (limite: '+ventoMax+' km/h).';
+      } else if (pctPior <= 60 && fatoresRisco > 0) {
+        statusClasse = 'amber'; statusIcone = '🟡'; statusTexto = 'Atencao - Fatores de Risco';
+        avaliacao = '⚠️ Vento na faixa ideal, mas fatores de risco: '+fatores.join(', ')+'.';
+      } else if (pctPior <= 80) {
+        statusClasse = 'amber'; statusIcone = '🟡'; statusTexto = 'Atencao';
+        avaliacao = '⚠️ Vento de '+Math.round(ventoAtual)+' km/h na faixa de ATENCAO ('+Math.round(pctVento)+'% do limite).';
+      } else if (pctPior <= 100) {
+        statusClasse = 'orange'; statusIcone = '🟠'; statusTexto = 'Alto Risco';
+        avaliacao = '🔶 Vento de '+Math.round(ventoAtual)+' km/h na faixa de ALTO RISCO ('+Math.round(pctVento)+'% do limite de '+ventoMax+' km/h).';
+      } else {
+        statusClasse = 'red'; statusIcone = '🔴'; statusTexto = 'Voo Nao Recomendado';
+        avaliacao = '❌ Vento de '+Math.round(ventoAtual)+' km/h EXCEDE o limite do '+droneKey+' ('+ventoMax+' km/h).';
+      }
+      if (rajadaAtual > ventoMax) { statusClasse = 'red'; statusIcone = '🔴'; statusTexto = 'Voo Nao Recomendado'; avaliacao = '❌ Rajadas de '+Math.round(rajadaAtual)+' km/h EXCEDEM o limite ('+ventoMax+' km/h).'; }
+
+      document.getElementById('statusBadge').className = 'status-badge ' + statusClasse;
+      document.getElementById('statusBadge').innerHTML = '<span class="status-dot '+statusClasse+'"></span> '+statusIcone+' '+statusTexto;
+
+      var aval = avaliacao + '\n\n📊 Detalhes:\n• Drone: '+droneKey+' (limite: '+ventoMax+' km/h)\n• Vento: '+Math.round(ventoAtual)+' km/h ('+Math.round(pctVento)+'%)\n• Rajadas: '+Math.round(rajadaAtual)+' km/h ('+Math.round(pctRajada)+'%)\n• Temp: '+Math.round(c.temperature_2m)+'°C | Umidade: '+c.relative_humidity_2m+'%\n• KP: '+kp+' | Satelites: '+satelites+'\n• Missao: '+missao.replace('_',' ')+'\n\n📋 Recomendacao:\n'+(pctPior<=60&&fatoresRisco===0?'✅ Voo liberado.':pctPior<=80?'⚠️ Voo com cautela.':'❌ Voo nao recomendado.');
+      document.getElementById('avaliacaoTexto').textContent = aval;
+    }
+
+    buscarClima();
+    if (typeof lucide !== 'undefined') { lucide.createIcons(); }
+  </script>
+</body>
+</html>

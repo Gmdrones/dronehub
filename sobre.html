@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sobre — Drone Hub</title>
+  <meta name="description" content="Conheça a história do Drone Hub, nossa missão e o time por trás da plataforma.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root { --bg:#0A0D12; --bg2:#12161D; --bg3:#1A1F2A; --border:rgba(255,255,255,0.05); --cyan:#00D2FF; --glow:rgba(0,210,255,0.15); --green:#34D399; --text:#F0F4F8; --text2:#94A3B8; --text3:#64748B; --title:'Space Grotesk',sans-serif; --body:'Inter',sans-serif; }
+    body { font-family:var(--body); background:var(--bg); color:var(--text); overflow-x:hidden; }
+    a { text-decoration:none; color:inherit; }
+    .logo { display:flex; align-items:center; gap:12px; }
+    .logo-icon { width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,var(--cyan),#0066FF); display:flex; align-items:center; justify-content:center; font-family:var(--title); font-weight:700; font-size:1rem; color:#0A0D12; flex-shrink:0; }
+    .logo-text { font-family:var(--title); font-weight:700; font-size:1.15rem; color:var(--text); letter-spacing:-0.02em; }
+    .logo-text span { color:var(--cyan); }
+    .header { position:fixed; top:0; left:0; right:0; z-index:1000; height:72px; background:rgba(10,13,18,0.85); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; }
+    .header-inner { width:100%; max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; }
+    .nav { display:flex; align-items:center; gap:24px; }
+    .nav a { font-size:0.85rem; color:var(--text2); }
+    .nav a:hover { color:var(--text); }
+    .nav a.active { color:var(--cyan); font-weight:600; }
+    .btn { display:inline-flex; align-items:center; gap:8px; font-family:var(--title); font-weight:600; font-size:0.85rem; padding:10px 24px; border-radius:8px; border:none; cursor:pointer; transition:all 0.3s ease; text-decoration:none; }
+    .btn-primary { background:var(--cyan); color:#0A0D12; }
+    .btn-primary:hover { background:#33DDFF; box-shadow:0 0 30px var(--glow); }
+    .container { max-width:1200px; margin:0 auto; padding:0 24px; }
+    .hero-sobre { min-height:70vh; display:flex; align-items:center; position:relative; overflow:hidden; background:linear-gradient(135deg,#0A0D12 0%,#0D1A2A 50%,#0A0D12 100%); }
+    .hero-sobre::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 40%,rgba(0,210,255,0.06) 0%,transparent 60%); }
+    .hero-sobre .grid-bg { position:absolute; inset:0; background-image:linear-gradient(rgba(0,210,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,210,255,0.03) 1px,transparent 1px); background-size:40px 40px; }
+    .hero-sobre .corner { position:absolute; width:60px; height:60px; border-color:rgba(0,210,255,0.08); border-style:solid; }
+    .hero-sobre .corner.tl { top:60px; left:40px; border-width:1px 0 0 1px; }
+    .hero-sobre .corner.tr { top:60px; right:40px; border-width:1px 1px 0 0; }
+    .hero-sobre .corner.bl { bottom:60px; left:40px; border-width:0 0 1px 1px; }
+    .hero-sobre .corner.br { bottom:60px; right:40px; border-width:0 1px 1px 0; }
+    .hero-sobre .hc { position:relative; z-index:2; padding:120px 24px 60px; max-width:1200px; margin:0 auto; }
+    .hero-sobre h1 { font-family:var(--title); font-size:3rem; font-weight:700; margin-bottom:16px; letter-spacing:-0.02em; }
+    .hero-sobre h1 span { color:var(--cyan); }
+    .hero-sobre p { color:var(--text2); font-size:1.1rem; max-width:600px; line-height:1.7; }
+    .section { padding:80px 0; }
+    .section-header { text-align:center; margin-bottom:48px; }
+    .section-header h2 { font-family:var(--title); font-size:2rem; font-weight:700; margin-bottom:12px; }
+    .historia { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:48px; max-width:800px; margin:0 auto; }
+    .historia p { font-size:1rem; line-height:1.8; color:var(--text2); margin-bottom:16px; }
+    .historia p:last-child { margin-bottom:0; }
+    .historia strong { color:var(--text); }
+    .valores { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-top:40px; }
+    .valor { text-align:center; padding:24px; background:var(--bg2); border:1px solid var(--border); border-radius:16px; }
+    .valor .vi { font-size:2rem; margin-bottom:12px; }
+    .valor .vn { font-family:var(--title); font-size:0.9rem; font-weight:700; margin-bottom:6px; }
+    .valor .vd { font-size:0.8rem; color:var(--text2); }
+    .timeline { max-width:700px; margin:0 auto; position:relative; padding-left:40px; }
+    .timeline::before { content:''; position:absolute; left:15px; top:0; bottom:0; width:2px; background:linear-gradient(to bottom,var(--cyan),transparent); }
+    .tl-item { position:relative; margin-bottom:40px; }
+    .tl-item::before { content:''; position:absolute; left:-32px; top:4px; width:12px; height:12px; border-radius:50%; background:var(--cyan); border:3px solid var(--bg); }
+    .tl-item .tl-date { font-size:0.75rem; color:var(--cyan); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
+    .tl-item h3 { font-family:var(--title); font-size:1.1rem; font-weight:600; margin-bottom:6px; }
+    .tl-item p { font-size:0.85rem; color:var(--text2); line-height:1.6; }
+    .cta-section { text-align:center; padding:80px 0; position:relative; overflow:hidden; }
+    .cta-section::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 50%,rgba(0,210,255,0.03) 0%,transparent 60%); }
+    .cta-section h2 { font-family:var(--title); font-size:2rem; margin-bottom:12px; }
+    .cta-section p { color:var(--text2); margin-bottom:24px; }
+    .footer { border-top:1px solid var(--border); padding:40px 0; }
+    .footer-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:32px; }
+    .footer-brand p { font-size:0.8rem; color:var(--text3); margin-top:12px; }
+    .footer-col h5 { font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text); margin-bottom:12px; }
+    .footer-col a { display:block; font-size:0.8rem; color:var(--text2); margin-bottom:8px; }
+    .footer-col a:hover { color:var(--cyan); }
+    .footer-bottom { display:flex; justify-content:space-between; align-items:center; padding-top:24px; border-top:1px solid var(--border); margin-top:32px; font-size:0.75rem; color:var(--text3); }
+    @media (max-width:768px) { .hero-sobre h1 { font-size:2rem; } .valores { grid-template-columns:1fr 1fr; } .footer-grid { grid-template-columns:1fr 1fr; } .nav { gap:12px; } .nav a { font-size:0.8rem; } }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a href="/" class="logo"><div class="logo-icon">DH</div><span class="logo-text">Drone<span>Hub</span></span></a>
+      <nav class="nav">
+        <a href="/">Home</a>
+        <a href="funcionalidades.html">Funcionalidades</a>
+        <a href="precos.html">Precos</a>
+        <a href="sobre.html" class="active">Sobre</a>
+        <a href="blog.html">Blog</a>
+        <a href="login.html" class="btn btn-ghost">Entrar</a>
+        <a href="login.html?signup=true" class="btn btn-primary">Cadastrar</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero-sobre">
+    <div class="grid-bg"></div>
+    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+    <div class="hc">
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:100px;border:1px solid rgba(0,210,255,0.15);background:rgba(0,210,255,0.05);font-size:0.75rem;color:var(--cyan);margin-bottom:20px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">✈️ Feito por quem voa, para quem voa</div>
+      <h1>Nossa historia comeca<br>onde os <span>drones decolam</span></h1>
+      <p>O Drone Hub nasceu dentro da GM Drones RJ, empresa especializada em captacao de imagens aereas e inspecoes com drones. Criamos o que sempre quisemos ter.</p>
+    </div>
+  </section>
+
+  <section class="section"><div class="container"><div class="historia"><p>O <strong>Drone Hub</strong> nasceu dentro da <strong>GM Drones RJ</strong>, empresa especializada em captacao de imagens aereas, producao audiovisual e inspecoes com drones. Durante anos operando no mercado, sentimos na pele a falta de uma ferramenta que centralizasse todas as necessidades do piloto profissional.</p><p>Eram dezenas de aplicativos diferentes para documentos, clima, missoes, clientes e financas. O piloto perdia tempo organizando informacoes em planilhas, papeis e sistemas desconectados.</p><p>Foi assim que decidimos construir o que sempre quisemos ter: <strong>uma plataforma unica, inteligente e feita para o piloto brasileiro.</strong></p></div></div></section>
+
+  <section class="section" style="background:var(--bg2);"><div class="container"><div class="section-header"><h2>Nossa Jornada</h2></div><div class="timeline"><div class="tl-item"><div class="tl-date">2019</div><h3>Fundacao da GM Drones RJ</h3><p>Iniciamos as operacoes com captacao de imagens aereas e producao audiovisual no Rio de Janeiro.</p></div><div class="tl-item"><div class="tl-date">2021</div><h3>Primeira versao interna</h3><p>Desenvolvemos um sistema interno para organizar documentos, missoes e clientes. A semente do Drone Hub.</p></div><div class="tl-item"><div class="tl-date">2024</div><h3>Nasce o Drone Hub</h3><p>Decidimos transformar o sistema interno em uma plataforma completa para todo o mercado de drones.</p></div><div class="tl-item"><div class="tl-date">2025</div><h3>Lancamento oficial</h3><p>Plataforma no ar com modulos de Perfil, Aeronaves, Central de Voo, Documentos e Missoes.</p></div><div class="tl-item"><div class="tl-date">2026</div><h3>Fiscalizacao com QR Code e IA</h3><p>Lancamento da Pasta Digital de Fiscalizacao, Gerador IA de Documentos e modulo Financeiro completo.</p></div></div></div></section>
+
+  <section class="section"><div class="container"><div class="section-header"><h2>Nossos Valores</h2></div><div class="valores"><div class="valor"><div class="vi">🎯</div><div class="vn">Excelencia</div><div class="vd">Compromisso com a qualidade em cada funcionalidade lancada.</div></div><div class="valor"><div class="vi">🔒</div><div class="vn">Seguranca</div><div class="vd">Dados protegidos, QR Codes revogaveis, conformidade com a LGPD.</div></div><div class="valor"><div class="vi">💡</div><div class="vn">Inovacao</div><div class="vd">Tecnologia de ponta para simplificar o dia a dia do piloto.</div></div><div class="valor"><div class="vi">🤝</div><div class="vn">Comunidade</div><div class="vd">Feito por pilotos, para pilotos. Ouvimos quem voa.</div></div></div></div></section>
+
+  <section class="cta-section"><div class="container"><h2>Pronto para fazer parte dessa historia?</h2><p>Crie sua conta gratuita e comece a organizar suas operacoes em minutos.</p><a href="login.html?signup=true" class="btn btn-primary" style="padding:14px 40px;font-size:1rem;">Criar Conta Gratuita</a></div></section>
+
+  <footer class="footer"><div class="container"><div class="footer-grid"><div class="footer-brand"><a href="/" class="logo"><div class="logo-icon" style="width:36px;height:36px;font-size:0.85rem;">DH</div><span class="logo-text" style="font-size:1rem;">Drone<span>Hub</span></span></a><p style="margin-top:12px;">A plataforma inteligente para gestao completa de operacoes com drones.</p></div><div class="footer-col"><h5>Plataforma</h5><a href="funcionalidades.html">Funcionalidades</a><a href="precos.html">Precos</a><a href="login.html">Login</a></div><div class="footer-col"><h5>Empresa</h5><a href="sobre.html">Sobre</a><a href="blog.html">Blog</a><a href="#">Contato</a></div><div class="footer-col"><h5>Legal</h5><a href="#">Termos de Uso</a><a href="#">Privacidade</a><a href="#">LGPD</a></div></div><div class="footer-bottom"><span>&copy; 2026 Drone Hub. Todos os direitos reservados.</span></div></div></footer>
+  <script>if(typeof lucide!=='undefined')lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Missoes — Drone Hub</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/supabase.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root { --bg:#0A0D12; --bg2:#12161D; --bg3:#1A1F2A; --border:rgba(255,255,255,0.05); --cyan:#00D2FF; --cyan-glow:rgba(0,210,255,0.15); --cyan-subtle:rgba(0,210,255,0.05); --green:#34D399; --green-bg:rgba(52,211,153,0.1); --amber:#FFB020; --amber-bg:rgba(255,176,32,0.1); --red:#F04438; --red-bg:rgba(240,68,56,0.1); --text:#F0F4F8; --text2:#94A3B8; --text3:#64748B; --title:'Space Grotesk',sans-serif; --body:'Inter',sans-serif; }
+    body { font-family:var(--body); background:var(--bg); color:var(--text); min-height:100vh; }
+    a { text-decoration:none; color:inherit; }
+    .logo { display:flex; align-items:center; gap:12px; }
+    .logo-icon { width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,var(--cyan),#0066FF); display:flex; align-items:center; justify-content:center; font-family:var(--title); font-weight:700; font-size:1rem; color:#0A0D12; flex-shrink:0; }
+    .logo-text { font-family:var(--title); font-weight:700; font-size:1.15rem; color:var(--text); letter-spacing:-0.02em; }
+    .logo-text span { color:var(--cyan); }
+    .header { position:fixed; top:0; left:0; right:0; z-index:1000; height:64px; background:rgba(10,13,18,0.9); backdrop-filter:blur(24px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; }
+    .header-inner { width:100%; max-width:1600px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; }
+    .header-left { display:flex; align-items:center; gap:32px; }
+    .header-right { display:flex; align-items:center; gap:16px; }
+    .header-profile { display:flex; align-items:center; gap:10px; padding:4px 12px 4px 4px; border-radius:8px; background:var(--bg2); border:1px solid var(--border); cursor:pointer; }
+    .header-profile .av { width:28px; height:28px; border-radius:6px; background:linear-gradient(135deg,var(--cyan),#0066FF); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.7rem; color:#0A0D12; }
+    .header-profile .info { font-size:0.75rem; }
+    .header-profile .info .name { font-weight:600; color:var(--text); }
+    .header-profile .info .plan { font-size:0.6rem; color:var(--text3); text-transform:uppercase; }
+    .dash-wrap { display:flex; padding-top:64px; min-height:100vh; }
+    .sidebar { width:240px; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; position:fixed; top:64px; left:0; bottom:0; z-index:100; overflow-y:auto; }
+    .sidebar-top { padding:24px 20px 20px; border-bottom:1px solid var(--border); }
+    .sidebar-nav { padding:12px; flex:1; display:flex; flex-direction:column; gap:2px; }
+    .sidebar-nav a { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; color:var(--text2); font-size:0.85rem; text-decoration:none; transition:all 0.2s; }
+    .sidebar-nav a:hover { background:var(--cyan-subtle); color:var(--text); }
+    .sidebar-nav a.active { background:var(--cyan-subtle); color:var(--cyan); font-weight:600; box-shadow:inset 0 0 0 1px rgba(0,210,255,0.1); }
+    .sidebar-nav a .ico { width:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .sidebar-nav a .ico svg { width:18px; height:18px; }
+    .sidebar-foot { padding:16px 20px; border-top:1px solid var(--border); }
+    .sidebar-foot-label { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); }
+    .sidebar-foot-name { font-size:0.9rem; font-weight:700; margin-top:2px; }
+    .sidebar-foot-name.free { color:var(--cyan); }
+    .sidebar-foot-name.pro { color:var(--amber); }
+    .sidebar-foot a { font-size:0.7rem; color:var(--cyan); margin-top:6px; display:inline-block; }
+    .main { margin-left:240px; flex:1; padding:32px; }
+    .page-title { font-family:var(--title); font-size:1.5rem; font-weight:700; margin-bottom:4px; }
+    .page-sub { color:var(--text3); font-size:0.85rem; margin-bottom:28px; }
+    .card { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:24px; }
+    .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .card-header h3 { font-family:var(--title); font-size:0.9rem; font-weight:600; display:flex; align-items:center; gap:8px; }
+    .card-header h3 svg { width:16px; height:16px; color:var(--cyan); }
+    .card label { font-size:0.75rem; color:var(--text3); display:block; margin-bottom:6px; font-weight:500; text-transform:uppercase; letter-spacing:0.04em; }
+    .card input, .card select, .card textarea { width:100%; padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-family:var(--body); font-size:0.9rem; }
+    .card input:focus, .card select:focus, .card textarea:focus { outline:none; border-color:rgba(0,210,255,0.3); }
+    .card textarea { resize:vertical; min-height:60px; }
+    .btn { display:inline-flex; align-items:center; gap:8px; font-family:var(--title); font-weight:600; font-size:0.85rem; padding:10px 24px; border-radius:8px; border:none; cursor:pointer; transition:all 0.3s ease; text-decoration:none; }
+    .btn-primary { background:var(--cyan); color:#0A0D12; }
+    .btn-primary:hover { background:#33DDFF; box-shadow:0 0 30px var(--cyan-glow); transform:translateY(-1px); }
+    .btn-secondary { background:transparent; color:var(--text); border:1px solid var(--border); }
+    .btn-secondary:hover { border-color:var(--cyan); color:var(--cyan); }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .row { display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); font-size:0.85rem; }
+    .row:last-child { border-bottom:none; }
+    .row-info { flex:1; }
+    .row-info strong { color:var(--text); display:block; margin-bottom:2px; }
+    .row-info span { color:var(--text3); font-size:0.8rem; }
+    .row-actions { display:flex; gap:8px; flex-shrink:0; }
+    .action-btn { padding:6px 14px; border-radius:6px; font-size:0.75rem; font-weight:600; border:none; cursor:pointer; transition:all 0.2s; }
+    .action-btn.edit { background:var(--cyan-subtle); color:var(--cyan); border:1px solid rgba(0,210,255,0.15); }
+    .action-btn.edit:hover { background:rgba(0,210,255,0.15); }
+    .action-btn.delete { background:var(--red-bg); color:var(--red); border:1px solid rgba(240,68,56,0.15); }
+    .action-btn.delete:hover { background:rgba(240,68,56,0.15); }
+    .badge { display:inline-block; padding:2px 10px; border-radius:100px; font-size:0.65rem; font-weight:700; text-transform:uppercase; }
+    .badge-green { background:var(--green-bg); color:var(--green); }
+    .badge-amber { background:var(--amber-bg); color:var(--amber); }
+    .badge-cyan { background:var(--cyan-subtle); color:var(--cyan); }
+    .tabs { display:flex; gap:4px; margin-bottom:24px; background:var(--bg); border-radius:10px; padding:4px; border:1px solid var(--border); }
+    .tab { flex:1; padding:10px; text-align:center; border-radius:8px; font-size:0.8rem; font-weight:600; color:var(--text3); cursor:pointer; transition:all 0.2s; border:none; background:transparent; font-family:var(--title); }
+    .tab:hover { color:var(--text); }
+    .tab.active { background:var(--bg2); color:var(--cyan); box-shadow:0 0 0 1px rgba(0,210,255,0.1); }
+    @media (max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .grid-2 { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <script>
+    var user = JSON.parse(localStorage.getItem('dronehub_user') || 'null');
+    if (!user) { window.location.href = 'login.html'; }
+    var isPro = user.plan === 'pro';
+    var uid = user.id || user.email || 'default';
+    var filtroAtual = 'todas';
+  </script>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-profile" onclick="location.href='dashboard.html'" style="cursor:pointer;">
+          <div class="av" id="avatarInitial">U</div>
+          <div class="info"><div class="name" id="userNameHeader">Usuario</div><div class="plan" id="planBadge">FREE</div></div>
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="dashboard.html" class="btn btn-primary" style="padding:8px 20px;font-size:0.8rem;">Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="dash-wrap">
+    <aside class="sidebar">
+      <div class="sidebar-top"><div class="logo"><div class="logo-icon">DH</div><span class="logo-text">Drone<span>Hub</span></span></div></div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="12" rx="1"/><rect width="7" height="7" x="3" y="16" rx="1"/></svg></span> Dashboard</a>
+        <a href="perfil.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></span> Perfil</a>
+        <a href="aeronaves.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg></span> Aeronaves</a>
+        <a href="central-voo.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg></span> Central de Voo</a>
+        <a href="documentos.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> Documentos</a>
+        <a href="missoes.html" class="active"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 6 3.6 4.8-1.6 6-2-3.8-2 3.8-1.6-6L12 6z"/></svg></span> Missoes</a>
+        <a href="fiscalizacao.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> Fiscalizacao</a>
+        <a href="financeiro.html"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> Financeiro</a>
+      </nav>
+      <div class="sidebar-foot"><div class="sidebar-foot-label">Plano atual</div><div class="sidebar-foot-name" id="planName">Free</div><a href="precos.html" id="planLink">Fazer upgrade</a></div>
+    </aside>
+
+    <main class="main">
+      <h1 class="page-title">Missoes</h1>
+      <p class="page-sub">Planeje, execute e acompanhe suas missoes com drones</p>
+
+      <div class="card">
+        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6"/><path d="M12 9v6"/><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/></svg> Nova Missao</h3></div>
+        <div class="grid-2">
+          <div><label>Titulo</label><input type="text" id="mTitulo" placeholder="Ex: Inspecao Torre"></div>
+          <div><label>Cliente / Projeto</label><input type="text" id="mCliente" placeholder="Ex: Construtora ABC"></div>
+          <div><label>Data</label><input type="date" id="mData"></div>
+          <div><label>Horario</label><input type="time" id="mHorario"></div>
+          <div><label>Local</label><input type="text" id="mLocal" placeholder="Ex: Av. Rio Branco, 100"></div>
+          <div><label>Status</label><select id="mStatus"><option value="agendada">Agendada</option><option value="em_andamento">Em Andamento</option><option value="concluida">Concluida</option></select></div>
+          <div style="grid-column:1/-1;"><label>Descricao / Objetivo</label><textarea id="mDesc" rows="2" placeholder="Descreva o objetivo da missao..."></textarea></div>
+        </div>
+        <button class="btn btn-primary" onclick="criarMissao()" style="margin-top:16px;">Criar Missao</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-filter="todas" onclick="filtrar('todas',this)">Todas</button>
+        <button class="tab" data-filter="agendada" onclick="filtrar('agendada',this)">Agendadas</button>
+        <button class="tab" data-filter="em_andamento" onclick="filtrar('em_andamento',this)">Em Andamento</button>
+        <button class="tab" data-filter="concluida" onclick="filtrar('concluida',this)">Concluidas</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Lista de Missoes</h3></div>
+        <div id="missionList"><p style="color:var(--text3);font-size:0.85rem;">Nenhuma missao cadastrada.</p></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.getElementById('avatarInitial').textContent = (user.name||'U').charAt(0).toUpperCase();
+    document.getElementById('userNameHeader').textContent = user.name||'Usuario';
+    document.getElementById('planBadge').textContent = isPro?'PRO':'FREE';
+    if(isPro){document.getElementById('planName').textContent='Pro';document.getElementById('planName').className='sidebar-foot-name pro';document.getElementById('planLink').textContent='Gerenciar';}
+
+    function getMissoes(){return JSON.parse(localStorage.getItem('dronehub_missoes')||'[]').filter(function(m){return m.userId===uid;});}
+    function saveMissoes(list){var all=JSON.parse(localStorage.getItem('dronehub_missoes')||'[]');var others=all.filter(function(m){return m.userId!==uid;});localStorage.setItem('dronehub_missoes',JSON.stringify(others.concat(list)));}
+
+    function criarMissao(){
+      var titulo=document.getElementById('mTitulo').value.trim();
+      if(!titulo)return alert('Digite o titulo da missao');
+      var list=getMissoes();
+      list.push({id:Date.now().toString(),userId:uid,createdAt:new Date().toISOString(),titulo:titulo,cliente:document.getElementById('mCliente').value.trim(),data:document.getElementById('mData').value,horario:document.getElementById('mHorario').value,local:document.getElementById('mLocal').value.trim(),status:document.getElementById('mStatus').value,descricao:document.getElementById('mDesc').value.trim()});
+      saveMissoes(list);
+      document.getElementById('mTitulo').value='';document.getElementById('mCliente').value='';document.getElementById('mData').value='';document.getElementById('mHorario').value='';document.getElementById('mLocal').value='';document.getElementById('mDesc').value='';
+      render();
+    }
+
+    function filtrar(f,btn){filtroAtual=f;document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});if(btn)btn.classList.add('active');render();}
+
+    function render(){
+      var list=getMissoes();
+      if(filtroAtual!=='todas')list=list.filter(function(m){return m.status===filtroAtual;});
+      var container=document.getElementById('missionList');
+      if(list.length===0){container.innerHTML='<p style="color:var(--text3);font-size:0.85rem;">Nenhuma missao encontrada.</p>';return;}
+      container.innerHTML=list.map(function(m){
+        var badgeClass=m.status==='concluida'?'badge-green':m.status==='em_andamento'?'badge-cyan':'badge-amber';
+        return '<div class="row"><div class="row-info"><strong>'+(m.titulo||m.cliente||'Missao')+'</strong><span>'+(m.cliente?'Cliente: '+m.cliente+' | ':'')+(m.data?new Date(m.data).toLocaleDateString('pt-BR'):'')+(m.horario?' '+m.horario:'')+(m.local?' | '+m.local:'')+'</span></div><span class="badge '+badgeClass+'">'+m.status.replace('_',' ')+'</span><div class="row-actions"><button class="action-btn edit" onclick="editar(\''+m.id+'\')">Editar</button><button class="action-btn delete" onclick="excluir(\''+m.id+'\')">Excluir</button></div></div>';
+      }).join('');
+    }
+
+    function editar(id){
+      var list=getMissoes();var m=list.find(function(x){return x.id===id;});if(!m){alert('Missao nao encontrada');return;}
+      var t=prompt('Titulo:',m.titulo);if(t===null)return;
+      m.titulo=t||m.titulo;m.cliente=prompt('Cliente:',m.cliente)||m.cliente;m.data=prompt('Data (AAAA-MM-DD):',m.data)||m.data;m.horario=prompt('Horario:',m.horario)||m.horario;m.local=prompt('Local:',m.local)||m.local;m.status=prompt('Status (agendada/em_andamento/concluida):',m.status)||m.status;m.descricao=prompt('Descricao:',m.descricao)||m.descricao;
+      saveMissoes(list);render();
+    }
+
+    function excluir(id){
+      var list=getMissoes();var m=list.find(function(x){return x.id===id;});
+      if(!m){alert('Missao nao encontrada');return;}
+      if(!confirm('Excluir missao "'+(m.titulo||'')+'"?'))return;
+      saveMissoes(list.filter(function(x){return x.id!==id;}));render();
+    }
+    render();
+    if(typeof lucide!=='undefined'){lucide.createIcons();}
+  </script>
+</body>
+</html>
