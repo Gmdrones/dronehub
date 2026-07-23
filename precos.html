@@ -190,85 +190,124 @@
     }
 
     var MP_PUBLIC_KEY = 'APP_USR-88b1965e-3b35-439f-a28f-e200c64fdfe3';
-    var mp = null;
-    try { mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' }); } catch(e) {}
+var mp = null;
 
-    document.getElementById('checkoutBtn').addEventListener('click', function() {
-      msg.style.display = 'none';
-      document.getElementById('wallet_container').innerHTML = '';
+try {
+    mp = new MercadoPago(MP_PUBLIC_KEY, {
+        locale: 'pt-BR'
+    });
+} catch (e) {
+    console.error('Erro ao iniciar Mercado Pago:', e);
+}
 
-      var user = JSON.parse(localStorage.getItem('dronehub_user') || 'null');
-      if (!user) { msg.className='mp-msg err'; msg.textContent='Faça login ou crie sua conta gratuita antes de assinar.'; msg.style.display='block'; return; }
-      if (user.plan === 'pro') { msg.className='mp-msg info'; msg.textContent='Você já é assinante Pro!'; msg.style.display='block'; return; }
+document.getElementById('checkoutBtn').addEventListener('click', function () {
 
-      this.classList.add('loading');
-      var planName = currentPlan === 'annual' ? 'Anual' : 'Mensal';
-      var totalAmount = PLANOS[currentPlan].total;
+    var btn = this;
 
-      fetch('https://dronehub-worker.primesecureconsultoria.workers.dev/api/payment/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-  items: [{
-    title: 'Drone Hub Pro - '+planName,
-    quantity: 1,
-    currency_id: 'BRL',
-    unit_price: totalAmount
-  }],
-  payer: {
-    name: user.name || 'Usuário',
-    email: user.email
-  },
-  external_reference: user.email+'|'+currentPlan+'|'+Date.now()
-})
-      })
-.then(function(r) {
-    return r.json();
-})
-.then(function(data) {
+    msg.style.display = 'none';
+    document.getElementById('wallet_container').innerHTML = '';
 
-    if (data.init_point) {
+    var user = JSON.parse(localStorage.getItem('dronehub_user') || 'null');
 
-        msg.className = 'mp-msg info';
-        msg.textContent = 'Redirecionando para o Mercado Pago...';
-        msg.style.display = 'block';
-
-        window.location.href = data.init_point;
-
-    } else if (data.id && mp) {
-
-        msg.className = 'mp-msg info';
-        msg.textContent = 'Redirecionando para o Mercado Pago...';
-        msg.style.display = 'block';
-
-        mp.checkout({
-            preference: {
-                id: data.id
-            },
-            autoOpen: true
-        });
-
-    } else {
-
+    if (!user) {
         msg.className = 'mp-msg err';
-        msg.textContent = 'Não foi possível criar o pagamento.';
+        msg.textContent = 'Faça login ou crie sua conta gratuita antes de assinar.';
         msg.style.display = 'block';
-
+        return;
     }
 
-    this.classList.remove('loading');
+    if (user.plan === 'pro') {
+        msg.className = 'mp-msg info';
+        msg.textContent = 'Você já é assinante Pro!';
+        msg.style.display = 'block';
+        return;
+    }
 
-}.bind(this))
-.catch(function(err) {
+    btn.classList.add('loading');
 
-    console.error(err);
+    var planName = currentPlan === 'annual' ? 'Anual' : 'Mensal';
+    var totalAmount = PLANOS[currentPlan].total;
 
-    msg.className = 'mp-msg err';
-    msg.textContent = 'Erro ao iniciar o pagamento. Tente novamente em alguns instantes.';
-    msg.style.display = 'block';
+    fetch('https://dronehub-worker.primesecureconsultoria.workers.dev/api/payment/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            items: [
+                {
+                    title: 'Drone Hub Pro - ' + planName,
+                    quantity: 1,
+                    currency_id: 'BRL',
+                    unit_price: totalAmount
+                }
+            ],
+            payer: {
+                name: user.name || 'Usuário',
+                email: user.email
+            },
+            external_reference: user.email + '|' + currentPlan + '|' + Date.now()
+        })
+    })
+    .then(function (response) {
 
-    this.classList.remove('loading');
+        if (!response.ok) {
+            throw new Error('Erro HTTP: ' + response.status);
+        }
 
-}.bind(this));
+        return response.json();
 
-if(typeof lucide!=='undefined') lucide.createIcons();
+    })
+    .then(function (data) {
+
+        console.log('Resposta do Worker:', data);
+
+        if (data.init_point) {
+
+            msg.className = 'mp-msg info';
+            msg.textContent = 'Redirecionando para o Mercado Pago...';
+            msg.style.display = 'block';
+
+            window.location.href = data.init_point;
+            return;
+        }
+
+        if (data.id && mp) {
+
+            msg.className = 'mp-msg info';
+            msg.textContent = 'Redirecionando para o Mercado Pago...';
+            msg.style.display = 'block';
+
+            mp.checkout({
+                preference: {
+                    id: data.id
+                },
+                autoOpen: true
+            });
+
+            return;
+        }
+
+        throw new Error('Resposta inválida do servidor.');
+
+    })
+    .catch(function (error) {
+
+        console.error(error);
+
+        msg.className = 'mp-msg err';
+        msg.textContent = error.message || 'Erro ao iniciar o pagamento.';
+        msg.style.display = 'block';
+
+    })
+    .finally(function () {
+
+        btn.classList.remove('loading');
+
+    });
+
+});
+
+if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+}
