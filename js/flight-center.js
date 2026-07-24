@@ -6,11 +6,19 @@
 
   function addContext() {
     const main=document.querySelector('.main'); if(!main || $('flightContext')) return;
+    main.classList.add('flight-deck');
+    const cards=main.querySelectorAll(':scope > .card:not(:has(.dji-table))');
+    if(cards[0]) cards[0].classList.add('aircraft-card');
+    if(cards[1]) {
+      cards[1].classList.add('conditions-card');
+      const header=cards[1].querySelector('.card-header');
+      if(header && !cards[1].querySelector('.conditions-intro')) header.insertAdjacentHTML('afterend','<div class="conditions-intro"><span>DECISÃO DE VOO</span><strong>Leitura local em tempo real</strong><small>Clima, aeronave e data selecionada reunidos em uma única avaliação.</small></div>');
+    }
     const max=new Date(today); max.setDate(max.getDate()+3);
     const el=document.createElement('section'); el.id='flightContext'; el.className='flight-context';
     el.innerHTML='<div class="flight-context__panel"><div class="flight-context__eyebrow">Local da operação</div><div class="flight-context__title">Consulte qualquer cidade do Brasil</div><p class="flight-context__copy">Digite a cidade da missão e escolha hoje ou até três dias à frente. A previsão é do local; a aeronave é usada apenas na avaliação de voo.</p><div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:14px"><input id="flightLocation" value="'+place.name+'" aria-label="Cidade da operação" placeholder="Cidade, UF"><button id="searchLocation" class="btn btn-primary" type="button">Consultar</button></div></div><div class="flight-context__panel"><div class="flight-context__eyebrow">Data da operação</div><div class="flight-context__title" id="weatherStamp">Consultando clima</div><label style="margin-top:14px">Previsão para</label><input id="flightDate" type="date" min="'+dateText(today)+'" max="'+dateText(max)+'" value="'+dateText(today)+'"><p class="flight-context__copy" style="margin-top:10px">Dados online atualizados automaticamente enquanto a Central estiver aberta.</p></div>';
     main.insertBefore(el, main.querySelector('.card'));
-    const forecast=document.createElement('section'); forecast.className='flight-forecast'; forecast.innerHTML='<div class="flight-context__eyebrow">Previsão climática</div><div class="flight-context__title">Hoje e próximos 3 dias</div><div id="forecastGrid" class="forecast-grid" aria-live="polite"></div>';
+    const forecast=document.createElement('section'); forecast.className='flight-forecast'; forecast.innerHTML='<div class="flight-context__eyebrow">JANELA OPERACIONAL · 96H</div><div class="flight-forecast__heading"><div class="flight-context__title">Hoje e próximos 3 dias</div><span>Escolha a data da missão para ver o risco</span></div><div id="forecastGrid" class="forecast-grid" aria-live="polite"></div>';
     main.insertBefore(forecast, el.nextSibling);
     $('searchLocation').addEventListener('click', geocode);
     $('flightLocation').addEventListener('keydown', e => {if(e.key==='Enter') geocode();});
@@ -28,7 +36,7 @@
   function windLimit(){const key=$('droneSelect').value; return key==='custom'?Number($('manualWindLimit').value):specs[key];}
   function state(pct){return pct<=.6?['green','Condições favoráveis']:pct<=.8?['amber','Atenção: opere com cautela']:pct<=1?['orange','Alto risco operacional']:['red','Voo não recomendado'];}
   function selectedForecast(){const idx=weather.daily.time.indexOf($('flightDate').value); return {index:idx<0?0:idx, date:weather.daily.time[idx<0?0:idx]};}
-  function renderForecast(){const grid=$('forecastGrid'); if(!grid||!weather)return; grid.innerHTML=weather.daily.time.map((day,i)=>'<div class="weather-item forecast-card"><strong>'+new Date(day+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})+'</strong><span>Vento máx.: '+Math.round(weather.daily.wind_speed_10m_max[i])+' km/h</span><span>Rajadas: '+Math.round(weather.daily.wind_gusts_10m_max[i])+' km/h</span><span>Chuva: '+Math.round(weather.daily.precipitation_probability_max[i]||0)+'%</span></div>').join('');}
+  function renderForecast(){const grid=$('forecastGrid'); if(!grid||!weather)return; grid.innerHTML=weather.daily.time.map((day,i)=>{const gust=Math.round(weather.daily.wind_gusts_10m_max[i]),rain=Math.round(weather.daily.precipitation_probability_max[i]||0),risk=rain>=70||gust>=40?'risk-high':rain>=40||gust>=28?'risk-medium':'risk-low';return '<button type="button" class="weather-item forecast-card '+risk+'" data-day="'+day+'"><strong>'+new Date(day+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})+'</strong><span>Vento <b>'+Math.round(weather.daily.wind_speed_10m_max[i])+'</b> km/h</span><span>Rajadas <b>'+gust+'</b> km/h</span><span>Chuva <b>'+rain+'%</b></span></button>';}).join('');Array.from(grid.querySelectorAll('[data-day]')).forEach(btn=>btn.addEventListener('click',()=>{$('flightDate').value=btn.dataset.day;render();}));}
   function render(){
     if(!weather)return; const f=selectedForecast(), lim=windLimit(), forecastWind=weather.daily.wind_speed_10m_max[f.index], forecastGust=weather.daily.wind_gusts_10m_max[f.index], worst=Math.max(forecastWind,forecastGust), pct=lim?worst/lim:0, result=lim?state(pct):['amber','Selecione uma aeronave'];
     $('weatherLoading').style.display='none'; $('weatherContent').style.display='block';
