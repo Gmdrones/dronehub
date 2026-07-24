@@ -26,10 +26,12 @@
 .flight-deck > .conditions-card { grid-column:2; grid-row:5 / span 2; margin:0!important; min-height:460px; background:radial-gradient(circle at 84% 12%,rgba(22,198,255,.17),transparent 30%),linear-gradient(145deg,#101d2b,#0b121c)!important; border-color:rgba(22,198,255,.25)!important; box-shadow:0 26px 70px rgba(0,0,0,.28); overflow:hidden; }
 .flight-deck .card-header { border-color:rgba(148,163,184,.13)!important; }
 .flight-deck .conditions-card .card-header { padding:23px 24px 14px!important; }
-.conditions-intro { padding:0 24px 19px; display:grid; gap:5px; border-bottom:1px solid rgba(148,163,184,.13); }
+.conditions-intro { padding:0 24px 19px; display:flex; align-items:end; justify-content:space-between; gap:18px; border-bottom:1px solid rgba(148,163,184,.13); }
+.conditions-intro > div:first-child { display:grid; gap:5px; }
 .conditions-intro span { color:#16c6ff; letter-spacing:.12em; font-size:.69rem; font-weight:800; }
 .conditions-intro strong { font:600 1.35rem 'Space Grotesk',sans-serif; }
 .conditions-intro small { color:#8fa1b6; font-size:.82rem; }
+.risk-meter { min-width:126px; padding:10px 12px; border:1px solid rgba(22,198,255,.22); border-radius:12px; background:rgba(4,12,19,.42); text-align:right; }.risk-meter span { color:#7891a9!important; font-size:.62rem!important; }.risk-meter b { display:block; margin:3px 0; color:#68ddff; font:600 1.1rem 'Space Grotesk',sans-serif; }.risk-meter small { display:block; font-size:.68rem!important; }
 .conditions-card #weatherContent { padding:0 24px 24px; }
 .conditions-card .weather-grid { display:grid!important; grid-template-columns:1.28fr 1fr 1fr 1fr; gap:10px; margin:22px 0 16px; }
 .conditions-card .weather-item { min-height:118px; padding:17px 14px!important; border-radius:14px!important; background:rgba(4,10,17,.52)!important; border:1px solid rgba(148,163,184,.11)!important; }
@@ -54,4 +56,4 @@
 .aircraft-card .card-header { padding:22px!important; }.aircraft-card .grid-2 { grid-template-columns:1fr!important; gap:16px!important; }.aircraft-card select { min-height:48px; }.aircraft-card label { color:#8193aa!important; letter-spacing:.07em; font-size:.71rem!important; text-transform:uppercase; }
 .manual-limit { margin-top:14px!important; }
 @media (max-width:960px){.flight-deck{grid-template-columns:1fr;}.flight-deck > .aircraft-card,.flight-deck > .conditions-card{grid-column:1;grid-row:auto;}.conditions-card .weather-grid{grid-template-columns:repeat(2,1fr);}}
-@media (max-width:560px){.flight-deck{gap:14px;padding:20px!important}.flight-deck > .page-sub{margin-top:-12px!important}.flight-forecast__heading{align-items:start;flex-direction:column;gap:4px}.conditions-card .weather-grid{grid-template-columns:1fr 1fr}.conditions-card #weatherContent{padding:0 16px 16px}.conditions-intro{padding:0 16px 16px}.flight-deck .conditions-card .card-header{padding:18px 16px 12px!important}.forecast-card{min-height:116px!important}.flight-forecast{padding:17px!important}}
+@media (max-width:560px){.flight-deck{gap:14px;padding:20px!important}.flight-deck > .page-sub{margin-top:-12px!important}.flight-forecast__heading{align-items:start;flex-direction:column;gap:4px}.conditions-card .weather-grid{grid-template-columns:1fr 1fr}.conditions-card #weatherContent{padding:0 16px 16px}.conditions-intro{padding:0 16px 16px;align-items:start;flex-direction:column}.flight-deck .conditions-card .card-header{padding:18px 16px 12px!important}.forecast-card{min-height:116px!important}.flight-forecast{padding:17px!important}.risk-meter{text-align:left;width:100%;}}
