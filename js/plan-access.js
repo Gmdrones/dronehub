@@ -44,6 +44,23 @@
     if (!isPro() && PRO_PAGES.indexOf(currentFile) !== -1) showLockedScreen();
   }
 
+  function addLogoutButton() {
+    if (document.querySelector('.plan-logout')) return;
+    var target = document.querySelector('.header-right');
+    if (!target) return;
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'plan-logout';
+    button.setAttribute('aria-label', 'Sair da conta');
+    button.title = 'Sair da conta';
+    button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path><path d="M21 19V5a2 2 0 0 0-2-2h-6"></path></svg><span>Sair</span>';
+    button.addEventListener('click', function () {
+      if (typeof logoutUser === 'function') logoutUser();
+      else { localStorage.removeItem('dronehub_user'); location.href = 'login.html'; }
+    });
+    target.appendChild(button);
+  }
+
   var planBeforeSync = isPro();
   if (typeof syncCurrentEntitlement === 'function') {
     syncCurrentEntitlement().then(function (user) {
@@ -57,6 +74,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     addAdminLink();
+    addLogoutButton();
     if (isPro()) return;
     document.querySelectorAll('.sidebar-nav a').forEach(function (link) {
       var href = (link.getAttribute('href') || '').toLowerCase();
