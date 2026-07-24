@@ -12,7 +12,7 @@
     if(cards[1]) {
       cards[1].classList.add('conditions-card');
       const header=cards[1].querySelector('.card-header');
-      if(header && !cards[1].querySelector('.conditions-intro')) header.insertAdjacentHTML('afterend','<div class="conditions-intro"><span>DECISÃO DE VOO</span><strong>Leitura local em tempo real</strong><small>Clima, aeronave e data selecionada reunidos em uma única avaliação.</small></div>');
+      if(header && !cards[1].querySelector('.conditions-intro')) header.insertAdjacentHTML('afterend','<div class="conditions-intro"><div><span>DECISÃO DE VOO</span><strong>Leitura local em tempo real</strong><small>Clima, aeronave e data selecionada reunidos em uma única avaliação.</small></div><div class="risk-meter"><span>ÍNDICE DE RISCO</span><b id="flightRiskScore">--</b><small id="flightRiskLabel">Selecione uma aeronave</small></div></div>');
     }
     const max=new Date(today); max.setDate(max.getDate()+3);
     const el=document.createElement('section'); el.id='flightContext'; el.className='flight-context';
@@ -42,6 +42,7 @@
     $('weatherLoading').style.display='none'; $('weatherContent').style.display='block';
     $('weatherGrid').innerHTML='<div class="weather-item"><div class="val">'+Math.round(weather.current.temperature_2m)+'°C</div><div class="lbl">Agora em '+place.name+'</div></div><div class="weather-item"><div class="val">'+Math.round(weather.current.wind_speed_10m)+' km/h</div><div class="lbl">Vento atual</div></div><div class="weather-item"><div class="val">'+Math.round(weather.current.wind_gusts_10m)+' km/h</div><div class="lbl">Rajada atual</div></div><div class="weather-item"><div class="val">'+weather.current.relative_humidity_2m+'%</div><div class="lbl">Umidade atual</div></div>';
     const badge=$('statusBadge'); badge.className='status-badge '+result[0]; badge.textContent=result[1];
+    const score=$('flightRiskScore'), label=$('flightRiskLabel'); if(score&&label){const value=lim?Math.min(100,Math.round(pct*100)):0;score.textContent=lim?value+'/100':'--';label.textContent=lim?(value<=60?'Janela favorável':value<=80?'Atenção operacional':'Condição crítica'):'Selecione uma aeronave';}
     $('avaliacaoTexto').textContent=lim?'Previsão para '+new Date(f.date+'T12:00:00').toLocaleDateString('pt-BR')+' em '+place.name+': vento máximo de '+Math.round(forecastWind)+' km/h e rajadas de '+Math.round(forecastGust)+' km/h. Para '+$('droneSelect').value+', o limite cadastrado é '+lim+' km/h; a pior leitura prevista representa '+Math.round(pct*100)+'% desse limite.':'Escolha uma aeronave cadastrada ou informe o limite de vento do fabricante para receber a avaliação da data selecionada.';
     $('weatherStamp').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); renderForecast();
   }
