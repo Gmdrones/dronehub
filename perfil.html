@@ -147,7 +147,7 @@
         <div class="grid-3">
           <div><label>ANAC</label><input type="text" id="pAnac"></div>
           <div><label>DECEA</label><input type="text" id="pDecea"></div>
-          <div><label>Registro profissional (opcional) — CREA ou CAU</label><input type="text" id="pCrea" placeholder="Preencha somente se possuir registro"></div>
+          <div><label>Homologação (opcional)</label><input type="text" id="pHomologacao" placeholder="Número ou identificação da homologação"></div>
         </div>
         <button class="btn btn-primary" onclick="salvarPerfil()" style="margin-top:16px;">Salvar Certificacoes</button>
       </div>
@@ -192,10 +192,10 @@
     if(saved.cidade)document.getElementById('pCidade').value=saved.cidade;
     if(saved.anac)document.getElementById('pAnac').value=saved.anac;
     if(saved.decea)document.getElementById('pDecea').value=saved.decea;
-    if(saved.crea)document.getElementById('pCrea').value=saved.crea;
+    if(saved.homologacao || saved.crea)document.getElementById('pHomologacao').value=saved.homologacao || saved.crea;
 
     function salvarPerfil(){
-      saveProfile(uid,{nome:document.getElementById('pNome').value,cpf:document.getElementById('pCpf').value,telefone:document.getElementById('pTel').value,cidade:document.getElementById('pCidade').value,anac:document.getElementById('pAnac').value,decea:document.getElementById('pDecea').value,crea:document.getElementById('pCrea').value});
+      saveProfile(uid,{nome:document.getElementById('pNome').value,cpf:document.getElementById('pCpf').value,telefone:document.getElementById('pTel').value,cidade:document.getElementById('pCidade').value,anac:document.getElementById('pAnac').value,decea:document.getElementById('pDecea').value,homologacao:document.getElementById('pHomologacao').value});
       alert('Perfil salvo!');
     }
 
