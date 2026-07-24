@@ -1,0 +1,17 @@
+/* Camada operacional da Central de Voo: o catálogo técnico não é exposto. */
+.main { max-width: 1400px; margin-right: auto; }
+.main > .card:has(.dji-table) { display: none; }
+.flight-context { display:grid; grid-template-columns:1.3fr .7fr; gap:16px; margin:0 0 24px; }
+.flight-context__panel { background:linear-gradient(145deg,#111c2a,#0f1724); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px; }
+.flight-context__eyebrow { color:#16c6ff; font-size:.72rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
+.flight-context__title { margin:8px 0 6px; font:600 1.25rem 'Space Grotesk',sans-serif; }
+.flight-context__copy { color:#a4b2c4; font-size:.86rem; line-height:1.6; }
+.manual-limit { display:none; margin-top:16px; padding:16px; border:1px dashed rgba(22,198,255,.4); border-radius:12px; background:rgba(22,198,255,.045); }
+.manual-limit.is-visible { display:block; }
+.manual-limit small { display:block; margin-top:8px; color:#6b7b91; }
+.forecast-card { text-align:left; padding:16px; min-height:118px; }
+.forecast-card strong { display:block; color:#f4f8fb; margin-bottom:8px; }
+.forecast-card span { display:block; color:#a4b2c4; font-size:.78rem; line-height:1.55; }
+.weather-item { background:#0b121c; border-color:rgba(255,255,255,.08); }
+.status-badge { border:1px solid currentColor; }
+@media (max-width:760px){.flight-context{grid-template-columns:1fr}.main{padding:20px!important}}
