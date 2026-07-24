@@ -83,8 +83,11 @@
     .dji-table td:last-child.red { color:var(--red); }
     @media (max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .grid-2 { grid-template-columns:1fr; } }
   </style>
+  <link rel="stylesheet" href="css/saas.css">
+  <link rel="stylesheet" href="css/flight-center.css">
 </head>
 <body>
+  <script src="js/flight-center.js" defer></script>
   <script>
     var user = JSON.parse(localStorage.getItem('dronehub_user') || 'null');
     if (!user) { window.location.href = 'login.html'; }
