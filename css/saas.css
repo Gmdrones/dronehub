@@ -66,6 +66,7 @@ input:focus,select:focus,textarea:focus { border-color:rgba(24,200,255,.62)!impo
 .pd { padding:18px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }.pd .pd-val { color:var(--text-primary); }.pd .pd-sub { color:var(--text-secondary)!important; }.pd .pd-save { color:var(--success)!important; }
 .pay-opt { border-color:var(--border)!important; background:rgba(7,11,18,.34)!important; border-radius:11px!important; }.pay-opt.selected { border-color:var(--primary)!important; background:rgba(24,200,255,.09)!important; }.pay-opt .po-icon { font-size:0!important; color:var(--primary); }.pay-opt .po-icon::after { content:'◈'; font-size:1.25rem; }.pay-opt:nth-child(2) .po-icon::after { content:'↯'; }.pay-opt:nth-child(3) .po-icon::after { content:'▤'; }
 .pricing-features li { color:var(--text-secondary)!important; }.pricing-features li .check { color:var(--success)!important; }
+.operation-feature { position:relative; overflow:hidden; min-height:188px; }.operation-feature:hover { transform:translateY(-3px); border-color:rgba(24,200,255,.28)!important; }.feature-mark { width:38px; height:38px; display:grid; place-items:center; margin-bottom:16px; color:var(--primary); border:1px solid rgba(24,200,255,.25); background:rgba(24,200,255,.08); border-radius:10px; font:600 .72rem var(--mono); letter-spacing:.05em; }.operation-feature h3 { margin-bottom:9px; }.operation-feature p { min-height:58px; }
 
 /* Console operacional */
 .dash-wrap .main { background:transparent!important; }.dash-wrap .hero { min-height:250px!important; margin:0!important; border-bottom:1px solid var(--border); background:linear-gradient(100deg,rgba(7,11,18,.96),rgba(8,28,42,.72)),url('../assets/generated/dronehub-hero.jpg') center 56%/cover!important; }
@@ -76,6 +77,9 @@ input:focus,select:focus,textarea:focus { border-color:rgba(24,200,255,.62)!impo
 
 @media (max-width:760px) {
   .header { padding:0 16px!important; }.header-inner { gap:10px; }.nav { gap:2px!important; }
-  .nav a:not(.btn) { display:none; }.nav .btn { padding:8px 12px; min-height:36px; font-size:.75rem; }
+  .mobile-menu-toggle { display:flex; flex-direction:column; gap:4px; width:38px; height:38px; padding:10px; border:1px solid var(--border); border-radius:9px; background:rgba(17,25,37,.7); cursor:pointer; }
+  .mobile-menu-toggle span { height:1.5px; width:100%; background:var(--text-primary); transition:transform .2s,opacity .2s; }.mobile-menu-toggle.is-open span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}.mobile-menu-toggle.is-open span:nth-child(2){opacity:0}.mobile-menu-toggle.is-open span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
+  .nav { display:none!important; position:absolute; top:64px; left:12px; right:12px; padding:12px; flex-direction:column; align-items:stretch!important; background:rgba(13,19,29,.98); border:1px solid var(--border); border-radius:14px; box-shadow:0 18px 42px rgba(0,0,0,.4); }.nav.mobile-open { display:flex!important; }.nav a:not(.btn),.nav .btn { display:flex!important; width:100%; justify-content:center; padding:10px 12px; min-height:38px; font-size:.82rem; }
   .main { padding:20px!important; }.pricing-grid { padding:0 16px!important; }
 }
+@media (min-width:761px) { .mobile-menu-toggle { display:none; } }
