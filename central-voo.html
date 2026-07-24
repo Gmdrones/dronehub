@@ -166,7 +166,7 @@
       <div class="card">
         <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg> Selecione sua Aeronave</h3></div>
         <div class="grid-2">
-          <div><label>Modelo do Drone</label><select id="droneSelect" onchange="avaliarVoo()">
+          <div><label>Modelo do Drone</label><select id="droneSelect">
             <option value="">-- Selecione entre 29 modelos --</option>
             <option value="DJI Neo">DJI Neo (28,8 km/h)</option>
             <option value="DJI Flip">DJI Flip (38,5 km/h)</option>
@@ -197,13 +197,6 @@
             <option value="FIMI X8 Mini V2">FIMI X8 Mini V2 (38,5 km/h)</option>
             <option value="FIMI X8 SE 2022">FIMI X8 SE 2022 (43,2 km/h)</option>
             <option value="FIMI X8 Tele Max">FIMI X8 Tele Max (43,2 km/h)</option>
-          </select></div>
-          <div><label>Tipo de Missao</label><select id="missaoTipo" onchange="avaliarVoo()">
-            <option value="filmagem">Filmagem / Fotografia</option>
-            <option value="inspecao">Inspecao</option>
-            <option value="topografia">Topografia / Mapeamento</option>
-            <option value="seguranca">Seguranca / Patrulhamento</option>
-            <option value="entrega">Entrega / Transporte</option>
           </select></div>
         </div>
       </div>
@@ -289,7 +282,6 @@
     function avaliarVoo() {
       if (!weatherData) { buscarClima(); return; }
       var droneKey = document.getElementById('droneSelect').value;
-      var missao = document.getElementById('missaoTipo').value;
       var c = weatherData;
 
       if (!droneKey) {
@@ -343,7 +335,9 @@
       document.getElementById('avaliacaoTexto').textContent = aval;
     }
 
-    buscarClima();
+        // A Central atualiza o clima pela integração em js/flight-center.js.
+        // Mantemos esta página sem a rotina antiga para não misturar dados simulados
+        // aos dados meteorológicos consultados para o local escolhido.
     if (typeof lucide !== 'undefined') { lucide.createIcons(); }
   </script>
 </body>
