@@ -88,6 +88,8 @@
 </head>
 <body>
   <script src="js/flight-center.js" defer></script>
+  <link rel="stylesheet" href="css/altitude-weather.css">
+  <script src="js/altitude-weather.js" defer></script>
   <script>
     var user = JSON.parse(localStorage.getItem('dronehub_user') || 'null');
     if (!user) { window.location.href = 'login.html'; }
