@@ -1,6 +1,12 @@
 .mobile-nav-trigger,.mobile-nav-drawer,.mobile-nav-backdrop{display:none}
 
-@media(max-width:768px){
+/* Telefones que solicitam a versão para computador ainda reportam uma largura
+   de viewport próxima de 980px. O limite também cobre esse caso sem reduzir
+   a navegação em notebooks. */
+@media(max-width:1024px){
+  .sidebar{display:none!important}
+  .main{margin-left:0!important;width:100%!important}
+  .dash-wrap{padding-top:64px!important}
   .module-hero__signal{display:none!important}
   .mobile-nav-trigger{position:fixed;top:12px;left:12px;z-index:3002;display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid rgba(93,222,255,.33);border-radius:11px;background:rgba(10,20,31,.88);box-shadow:0 10px 26px rgba(0,0,0,.28);color:#eafaff;backdrop-filter:blur(14px)}
   .mobile-nav-trigger svg{width:19px;height:19px}
