@@ -150,7 +150,8 @@
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
           <button class="btn btn-primary" onclick="gerarDocumento()">Gerar Documento com IA</button>
           <button class="btn btn-secondary" onclick="copiarDocumento()">Copiar Documento</button>
-          <button class="btn btn-secondary" onclick="baixarDocumento()">Baixar como TXT</button>
+          <button class="btn btn-secondary" onclick="baixarWord()">Baixar Word (.doc)</button>
+          <button class="btn btn-secondary" onclick="baixarPdf()">Baixar PDF</button>
           <button class="btn btn-secondary" onclick="salvarDocumento()">Salvar nos Documentos</button>
         </div>
 
@@ -457,6 +458,73 @@
 
     renderDocs();
     if (typeof lucide !== 'undefined') { lucide.createIcons(); }
+  </script>
+  <script>
+    /* Gerador profissional: cada documento pertence ao piloto que o criou. */
+    var ultimoDocumentoHtml = '';
+
+    function textoSeguro(valor, padrao) { return (valor || '').trim() || padrao; }
+    function htmlSeguro(valor) { var box = document.createElement('div'); box.textContent = valor || ''; return box.innerHTML; }
+    function dadosEmissor() {
+      var perfil = getProfile(uid) || {};
+      return {
+        responsavel: textoSeguro(perfil.nome, textoSeguro(user.name, 'Piloto responsável')),
+        empresa: textoSeguro(perfil.empresa || perfil.nomeFantasia || perfil.nome, textoSeguro(user.name, 'Profissional de operações aéreas')),
+        telefone: textoSeguro(perfil.telefone, 'Contato não informado'),
+        cidade: textoSeguro(perfil.cidade, 'Localidade não informada'),
+        anac: perfil.anac || ''
+      };
+    }
+    function tipoDocumento() { return ({proposta:'PROPOSTA COMERCIAL',contrato:'CONTRATO DE PRESTAÇÃO DE SERVIÇOS',orcamento:'ORÇAMENTO',recibo:'RECIBO',relatorio:'RELATÓRIO TÉCNICO',autorizacao:'AUTORIZAÇÃO DE OPERAÇÃO'})[iaTipoAtual] || 'DOCUMENTO'; }
+    function valoresDocumento() {
+      return {
+        cliente: textoSeguro(document.getElementById('iaCliente').value, 'Cliente a definir'),
+        cnpj: textoSeguro(document.getElementById('iaCnpj').value, 'CPF/CNPJ a definir'),
+        valor: textoSeguro(document.getElementById('iaValor').value, 'Sob consulta'),
+        prazo: textoSeguro(document.getElementById('iaPrazo').value, 'A combinar'),
+        escopo: textoSeguro(document.getElementById('iaDetalhes').value, 'Escopo a ser definido em briefing.'),
+        observacoes: document.getElementById('iaObs').value.trim()
+      };
+    }
+    function propostaTexto(d, emissor, numero, data) {
+      var titulo = tipoDocumento();
+      var abertura = iaTipoAtual === 'proposta'
+        ? 'Apresentamos esta proposta para a execução do serviço descrito abaixo, com planejamento operacional, segurança e entregáveis alinhados ao briefing do cliente.'
+        : 'Este documento formaliza as informações comerciais e operacionais do serviço descrito abaixo.';
+      return titulo+'\n'+emissor.empresa+'\n\n'
+        +'DOCUMENTO Nº '+numero+'\nEMISSÃO: '+data+'\nVALIDADE: 15 dias\n\n'
+        +'CLIENTE\n'+d.cliente+'\nCPF/CNPJ: '+d.cnpj+'\n\n'
+        +'APRESENTAÇÃO\n'+abertura+'\n\n'
+        +'ESCOPO DO SERVIÇO\n'+d.escopo+'\n\n'
+        +'INVESTIMENTO E PRAZO\nValor total: R$ '+d.valor+'\nPrazo / data: '+d.prazo+'\n\n'
+        +'CONDIÇÕES OPERACIONAIS\n• A operação será realizada conforme as condições meteorológicas e de segurança aplicáveis.\n• O cliente deverá fornecer acesso e informações necessárias ao local.\n• Os entregáveis e a forma de pagamento seguem o briefing e as condições acordadas.\n'
+        +(d.observacoes ? '\nOBSERVAÇÕES\n'+d.observacoes+'\n' : '')
+        +'\nEMISSOR\n'+emissor.empresa+'\nResponsável: '+emissor.responsavel+'\nContato: '+emissor.telefone+'\nLocalidade: '+emissor.cidade+(emissor.anac?'\nRegistro ANAC: '+emissor.anac:'')+'\n';
+    }
+    function propostaHtml(d, emissor, numero, data) {
+      var obs = d.observacoes ? '<section><h2>Observações</h2><p>'+htmlSeguro(d.observacoes).replace(/\n/g,'<br>')+'</p></section>' : '';
+      return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>'+htmlSeguro(tipoDocumento())+'</title><style>body{margin:0;background:#f2f5f8;color:#152235;font:15px Arial,sans-serif}.page{max-width:820px;margin:0 auto;padding:54px 58px;background:#fff;min-height:100vh}.brand{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:28px;border-bottom:3px solid #16c6ff}.eyebrow{margin:0 0 8px;color:#168ab5;font-size:11px;font-weight:700;letter-spacing:1.5px}.brand h1{margin:0;font-size:30px;letter-spacing:-.7px}.brand .company{margin:8px 0 0;color:#506278;font-size:15px}.number{text-align:right;color:#506278;font-size:12px;line-height:1.7}.intro{margin:30px 0;padding:20px 22px;border-left:4px solid #16c6ff;background:#f3fbfe;line-height:1.65}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0}.detail{padding:16px;border:1px solid #dce5eb;border-radius:8px}.detail small{display:block;margin-bottom:6px;color:#688096;font-size:10px;font-weight:700;letter-spacing:1.1px}.detail strong{font-size:15px}section{margin-top:28px}section h2{margin:0 0 10px;color:#153a50;font-size:13px;letter-spacing:.7px;text-transform:uppercase}section p{margin:0;line-height:1.7;white-space:normal}.terms{padding:20px;border-radius:8px;background:#f5f7f9;line-height:1.8}.signature{margin-top:48px;padding-top:20px;border-top:1px solid #dce5eb;color:#506278;line-height:1.7}.signature strong{display:block;color:#152235;font-size:16px}@media print{body{background:#fff}.page{max-width:none;margin:0;box-shadow:none}}</style></head><body><main class="page"><header class="brand"><div><p class="eyebrow">DRONE HUB · DOCUMENTO OPERACIONAL</p><h1>'+htmlSeguro(tipoDocumento())+'</h1><p class="company">'+htmlSeguro(emissor.empresa)+'</p></div><div class="number">DOCUMENTO Nº '+numero+'<br>EMISSÃO '+data+'<br>VALIDADE 15 DIAS</div></header><p class="intro">Apresentamos este documento com escopo, investimento e condições operacionais organizados para uma decisão clara e segura.</p><div class="grid"><div class="detail"><small>CLIENTE / EMPRESA</small><strong>'+htmlSeguro(d.cliente)+'</strong></div><div class="detail"><small>CPF / CNPJ</small><strong>'+htmlSeguro(d.cnpj)+'</strong></div><div class="detail"><small>INVESTIMENTO</small><strong>R$ '+htmlSeguro(d.valor)+'</strong></div><div class="detail"><small>PRAZO / DATA</small><strong>'+htmlSeguro(d.prazo)+'</strong></div></div><section><h2>Escopo do serviço</h2><p>'+htmlSeguro(d.escopo).replace(/\n/g,'<br>')+'</p></section><section><h2>Condições operacionais</h2><div class="terms">A execução considera condições meteorológicas adequadas, segurança operacional e acesso ao local. Os entregáveis, forma de pagamento e ajustes de escopo serão confirmados no briefing com o cliente.</div></section>'+obs+'<footer class="signature"><strong>'+htmlSeguro(emissor.empresa)+'</strong>Responsável: '+htmlSeguro(emissor.responsavel)+'<br>Contato: '+htmlSeguro(emissor.telefone)+'<br>'+htmlSeguro(emissor.cidade)+'</footer></main></body></html>';
+    }
+    function gerarDocumento() {
+      if (!canGenerateAiDocument(iaTipoAtual)) { alert('Você atingiu o limite diário de 2 documentos deste tipo. Tente novamente amanhã.'); return; }
+      var d = valoresDocumento(), emissor = dadosEmissor(), numero = String(Date.now()).slice(-6), data = new Date().toLocaleDateString('pt-BR');
+      ultimoDocumentoGerado = propostaTexto(d, emissor, numero, data);
+      ultimoDocumentoHtml = propostaHtml(d, emissor, numero, data);
+      recordAiUsage(iaTipoAtual);
+      var resultado = document.getElementById('iaResultado');
+      resultado.innerHTML = '<div class="document-preview" style="margin-top:18px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 12px 34px rgba(0,0,0,.2)"><iframe title="Prévia do documento" style="border:0;width:100%;height:720px;background:#fff" srcdoc="'+htmlSeguro(ultimoDocumentoHtml).replace(/&quot;/g,'&#34;')+'"></iframe></div>';
+      resultado.style.display = 'block';
+    }
+    function baixarWord() {
+      if (!ultimoDocumentoHtml) { alert('Gere um documento primeiro.'); return; }
+      var blob = new Blob([ultimoDocumentoHtml], {type:'application/msword;charset=utf-8'}), a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = (iaTipoAtual || 'documento')+'_'+Date.now().toString().slice(-6)+'.doc'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+    }
+    function baixarPdf() {
+      if (!ultimoDocumentoHtml) { alert('Gere um documento primeiro.'); return; }
+      var janela = window.open('', '_blank'); if (!janela) { alert('Permita pop-ups para salvar o documento em PDF.'); return; }
+      janela.document.open(); janela.document.write(ultimoDocumentoHtml); janela.document.close(); janela.focus(); janela.setTimeout(function(){janela.print();},400);
+    }
   </script>
 </body>
 </html>
