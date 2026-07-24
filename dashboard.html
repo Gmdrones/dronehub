@@ -8,6 +8,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="js/supabase.js"></script>
+  <link rel="stylesheet" href="css/plan-access.css">
+  <script src="js/plan-access.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -164,6 +166,11 @@
     if (!user) { window.location.href = 'login.html'; }
     var isPro = user.plan === 'pro';
     var uid = user.id || user.email || 'default';
+    if (typeof syncCurrentEntitlement === 'function') {
+      syncCurrentEntitlement().then(function(freshUser) {
+        if (freshUser && freshUser.plan !== user.plan) window.location.reload();
+      });
+    }
     if (window.location.search.includes('upgrade=true')) {
       user.plan = 'pro'; localStorage.setItem('dronehub_user', JSON.stringify(user));
       var users = JSON.parse(localStorage.getItem('dronehub_users') || '[]');
