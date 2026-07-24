@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Central Administrativa — Drone Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/supabase.js"></script>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <main class="admin-shell" id="adminApp" aria-live="polite">
+    <header class="admin-topbar">
+      <a class="admin-brand" href="dashboard.html" aria-label="Voltar ao Dashboard Drone Hub"><span>DH</span>Drone<span>Hub</span></a>
+      <div class="admin-topbar-actions"><a href="dashboard.html" class="admin-ghost">Painel operacional</a><button id="signOutBtn" class="admin-ghost" type="button">Sair</button></div>
+    </header>
+    <section class="admin-hero">
+      <div><p class="eyebrow">ADMINISTRAÇÃO</p><h1>Controle de acessos <em>Pro.</em></h1><p class="hero-copy">Conceda cortesias a pilotos parceiros e mantenha sua operação comercial sob controle.</p></div>
+      <div class="admin-seal"><i data-lucide="shield-check"></i><span>Ambiente protegido</span></div>
+    </section>
+    <section class="admin-metrics" aria-label="Indicadores de administração">
+      <article><i data-lucide="gift"></i><span>Cortesia padrão</span><strong>12 meses</strong><small>Renovável quando desejar</small></article>
+      <article><i data-lucide="badge-check"></i><span>Perfil concedido</span><strong>Pro completo</strong><small>Todos os módulos liberados</small></article>
+      <article><i data-lucide="shield"></i><span>Permissões</span><strong>Revogáveis</strong><small>Gerenciadas por você</small></article>
+    </section>
+    <section class="admin-grid">
+      <article class="admin-card grant-card">
+        <div class="card-heading"><div><p class="eyebrow">NOVA CORTESIA</p><h2>Conceder acesso Pro</h2></div><i data-lucide="sparkles"></i></div>
+        <p class="card-copy">O piloto precisa criar a conta antes. Depois, use o mesmo e-mail cadastrado para conceder o acesso.</p>
+        <form id="grantForm" novalidate>
+          <label>E-mail do piloto<input id="pilotEmail" type="email" autocomplete="email" placeholder="piloto@exemplo.com" required></label>
+          <div class="form-row"><label>Validade<select id="courtesyMonths"><option value="12" selected>12 meses — padrão</option><option value="1">1 mês</option><option value="3">3 meses</option><option value="6">6 meses</option><option value="24">24 meses</option><option value="36">36 meses</option></select></label><label>Identificação (opcional)<input id="courtesyNote" type="text" maxlength="140" placeholder="Parceiro de lançamento"></label></div>
+          <button class="admin-primary" id="grantButton" type="submit"><i data-lucide="gift"></i><span>Conceder Pro</span></button>
+          <p class="form-status" id="formStatus" role="status"></p>
+        </form>
+      </article>
+      <aside class="admin-card process-card">
+        <p class="eyebrow">COMO FUNCIONA</p><h2>Uma cortesia, três passos.</h2>
+        <ol><li><b>01</b><div><strong>O piloto cria a conta</strong><span>Cadastro gratuito no Drone Hub.</span></div></li><li><b>02</b><div><strong>Você libera o acesso</strong><span>Informe o e-mail e a validade.</span></div></li><li><b>03</b><div><strong>Pro é ativado no login</strong><span>O piloto entra novamente e acessa todos os recursos.</span></div></li></ol>
+        <div class="admin-tip"><i data-lucide="lightbulb"></i><span>Use “12 meses” para parceiros. A validade pode ser renovada antes de expirar.</span></div>
+      </aside>
+    </section>
+  </main>
+  <script src="js/admin.js"></script>
+</body>
+</html>
