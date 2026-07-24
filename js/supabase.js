@@ -7,6 +7,26 @@ if (USE_SUPABASE && SUPABASE_URL.includes('supabase.co')) {
   try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
 }
 
+async function syncCurrentEntitlement() {
+  var localUser = getCurrentUser();
+  if (!localUser || !supabaseClient || !localUser.id) return localUser;
+  try {
+    var result = await supabaseClient
+      .from('account_entitlements')
+      .select('plan, role, status, courtesy_expires_at')
+      .eq('user_id', localUser.id)
+      .maybeSingle();
+    if (result.error || !result.data) return localUser;
+    var access = result.data;
+    var isExpired = access.courtesy_expires_at && new Date(access.courtesy_expires_at).getTime() < Date.now();
+    localUser.plan = access.status === 'active' && !isExpired ? access.plan : 'free';
+    localUser.role = access.role || 'pilot';
+    localUser.courtesyExpiresAt = access.courtesy_expires_at || null;
+    localStorage.setItem('dronehub_user', JSON.stringify(localUser));
+    return localUser;
+  } catch (e) { return localUser; }
+}
+
 // ===== AUTH =====
 async function signUpWithSupabase(email, password, name) {
   if (supabaseClient) {
@@ -16,8 +36,9 @@ async function signUpWithSupabase(email, password, name) {
     });
     if (error) throw error;
     if (data?.user) {
-      const userData = { id: data.user.id, email: data.user.email, name: data.user.user_metadata?.full_name || name, plan: 'free', createdAt: data.user.created_at };
+      const userData = { id: data.user.id, email: data.user.email, name: data.user.user_metadata?.full_name || name, plan: 'free', role: 'pilot', createdAt: data.user.created_at };
       localStorage.setItem('dronehub_user', JSON.stringify(userData));
+      await syncCurrentEntitlement();
     }
     return data;
   }
@@ -35,8 +56,9 @@ async function signInWithSupabase(email, password) {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) throw error;
     if (data?.user) {
-      const userData = { id: data.user.id, email: data.user.email, name: data.user.user_metadata?.full_name || email.split('@')[0], plan: 'free', createdAt: data.user.created_at };
+      const userData = { id: data.user.id, email: data.user.email, name: data.user.user_metadata?.full_name || email.split('@')[0], plan: 'free', role: 'pilot', createdAt: data.user.created_at };
       localStorage.setItem('dronehub_user', JSON.stringify(userData));
+      await syncCurrentEntitlement();
     }
     return data;
   }
