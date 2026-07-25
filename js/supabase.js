@@ -9,12 +9,18 @@ if (USE_SUPABASE && SUPABASE_URL.includes('supabase.co')) {
 
 async function syncCurrentEntitlement() {
   var localUser = getCurrentUser();
-  if (!localUser || !supabaseClient || !localUser.id) return localUser;
+  if (!localUser || !supabaseClient) return localUser;
   try {
+    var authResult = await supabaseClient.auth.getUser();
+    var authUser = authResult && authResult.data && authResult.data.user;
+    if (!authUser) return localUser;
+    localUser.id = authUser.id;
+    localUser.email = authUser.email || localUser.email;
+    localUser.name = (authUser.user_metadata && authUser.user_metadata.full_name) || localUser.name || localUser.email;
     var result = await supabaseClient
       .from('account_entitlements')
       .select('plan, role, status, courtesy_expires_at')
-      .eq('user_id', localUser.id)
+      .eq('user_id', authUser.id)
       .maybeSingle();
     if (result.error || !result.data) return localUser;
     var access = result.data;
