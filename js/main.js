@@ -3,8 +3,42 @@
 // Utilitarios globais para todo o site
 // ============================================
 
+// Shared discoverability metadata for public pages. Internal pages are noindex.
+(function () {
+  var internal = /(?:dashboard|perfil|aeronaves|central-voo|documentos|missoes|financeiro|fiscalizacao|admin)\.html$/i.test(location.pathname);
+  var title = document.title || 'Drone Hub';
+  var description = 'Drone Hub: plataforma profissional para planejar, operar e organizar voos com drones.';
+  function meta(name, value, property) {
+    var selector = property ? 'meta[property="'+name+'"]' : 'meta[name="'+name+'"]';
+    var el = document.querySelector(selector) || document.createElement('meta');
+    if (!el.parentNode) { if (property) el.setAttribute('property', name); else el.setAttribute('name', name); document.head.appendChild(el); }
+    el.setAttribute('content', value);
+  }
+  meta('description', description);
+  meta('og:title', title, true); meta('og:description', description, true); meta('og:type', 'website', true);
+  meta('twitter:card', 'summary_large_image');
+  if (internal) meta('robots', 'noindex,nofollow');
+  else if (!document.querySelector('link[rel="canonical"]')) { var canonical=document.createElement('link'); canonical.rel='canonical'; canonical.href=location.origin+location.pathname; document.head.appendChild(canonical); }
+}());
+
 // ===== MOBILE HAMBURGER =====
 document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.header').forEach(function(header) {
+    var nav = header.querySelector('.nav');
+    if (!nav || header.querySelector('.mobile-menu-toggle')) return;
+    var toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'mobile-menu-toggle';
+    toggle.setAttribute('aria-label', 'Abrir menu');
+    toggle.innerHTML = '<span></span><span></span><span></span>';
+    header.querySelector('.header-inner').appendChild(toggle);
+    toggle.addEventListener('click', function() {
+      var open = nav.classList.toggle('mobile-open');
+      toggle.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+    });
+  });
   var hamburger = document.getElementById('hamburger');
   var nav = document.getElementById('nav');
   if (hamburger && nav) {
@@ -200,4 +234,14 @@ document.addEventListener('DOMContentLoaded', function() {
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
   }
+});
+
+// Mantém o vocabulário do menu público consistente em todas as páginas.
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('a[href*="funcionalidades"]').forEach(function(link) {
+    if (link.textContent.trim().toLowerCase() === 'plataforma') link.textContent = 'Funcionalidades';
+  });
+  document.querySelectorAll('a[href*="funcionalidades"]').forEach(function(link) {
+    if (link.textContent.trim().toLowerCase() === 'conhecer a plataforma') link.textContent = 'Conhecer funcionalidades';
+  });
 });
