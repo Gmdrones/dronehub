@@ -34,7 +34,7 @@ export default {
         const prompt = String(payload.prompt || '').trim().slice(0, 12000);
         if (!prompt) return reply({ error: 'Informe os dados do documento.' }, 400, 'no-store');
 
-        const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        const result = await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct', {
           messages: [
             {
               role: 'system',
