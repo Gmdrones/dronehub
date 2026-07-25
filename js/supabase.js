@@ -21,6 +21,7 @@ async function syncCurrentEntitlement() {
       email: authUser.email || savedUser.email || '',
       name: (authUser.user_metadata && (authUser.user_metadata.full_name || authUser.user_metadata.name)) || savedUser.name || authUser.email || 'Piloto'
     });
+    var founderAdmin = String(authUser.email || '').toLowerCase() === 'giorgiomendonca@gmail.com';
 
     var result = await supabaseClient
       .from('account_entitlements')
@@ -34,10 +35,11 @@ async function syncCurrentEntitlement() {
       localUser.plan = access.status === 'active' && !isExpired && access.plan === 'pro' ? 'pro' : 'free';
       localUser.role = access.role === 'admin' ? 'admin' : 'pilot';
       localUser.courtesyExpiresAt = access.courtesy_expires_at || null;
+      if (founderAdmin) { localUser.plan = 'pro'; localUser.role = 'admin'; localUser.courtesyExpiresAt = null; }
     } else {
-      // Sem cadastro de plano, a conta permanece no Free por segurança.
-      localUser.plan = 'free';
-      localUser.role = 'pilot';
+      // A conta fundadora mantém acesso administrativo mesmo durante uma falha de leitura da tabela de planos.
+      localUser.plan = founderAdmin ? 'pro' : 'free';
+      localUser.role = founderAdmin ? 'admin' : 'pilot';
       localUser.courtesyExpiresAt = null;
     }
 
