@@ -49,8 +49,8 @@ export default {
           provider: 'Cloudflare Workers AI',
           generatedAt: new Date().toISOString()
         }, 200, 'no-store');
-      } catch {
-        return reply({ error: 'Não foi possível gerar o documento agora.' }, 502, 'no-store');
+      } catch (error) {
+        return reply({ error: 'Não foi possível gerar o documento agora.', detail: String(error && error.message || error) }, 502, 'no-store');
       }
     }
 
