@@ -3,13 +3,23 @@
   var PRO_PAGES = ['documentos.html', 'missoes.html', 'fiscalizacao.html', 'financeiro.html', 'admin.html'];
   var currentFile = (location.pathname.split('/').pop() || '').toLowerCase();
 
+
   function user() {
     try { return JSON.parse(localStorage.getItem('dronehub_user') || 'null') || {}; }
     catch (e) { return {}; }
   }
-  function isPro() { return user().plan === 'pro'; }
-  function isAdmin() { return user().role === 'admin'; }
+  function isFounderAdmin() {
+    return String(user().email || '').toLowerCase() === 'giorgiomendonca@gmail.com';
+  }
+  function isPro() {
+    var current = user();
+    return current.plan === 'pro' || current.role === 'admin' || isFounderAdmin();
+  }
+  function isAdmin() {
+    return user().role === 'admin' || isFounderAdmin();
+  }
   function isPremiumPage() { return PRO_PAGES.indexOf(currentFile) !== -1; }
+
 
   function renderLockedScreen(title, copy) {
     var render = function () {
@@ -28,6 +38,7 @@
     else render();
   }
 
+
   function enforce() {
     if (currentFile === 'admin.html' && !isAdmin()) {
       renderLockedScreen('Área exclusiva<br><em>da administração.</em>', 'Somente administradores podem conceder cortesias e gerenciar acessos Pro.');
@@ -38,6 +49,7 @@
     }
   }
 
+
   function addAdminLink() {
     if (!isAdmin() || document.querySelector('.sidebar-nav a[href="admin.html"]')) return;
     document.querySelectorAll('.sidebar-nav').forEach(function (nav) {
@@ -47,6 +59,7 @@
       nav.appendChild(link);
     });
   }
+
 
   function addLogoutButton() {
     if (document.querySelector('.plan-logout')) return;
@@ -62,6 +75,7 @@
     });
     target.appendChild(button);
   }
+
 
   function lockNavigation() {
     if (isPro()) return;
@@ -81,7 +95,9 @@
     });
   }
 
+
   function initializeInterface() { addAdminLink(); addLogoutButton(); lockNavigation(); }
+
 
   // A verificação ocorre imediatamente e é repetida assim que o plano é lido do Supabase.
   enforce();
