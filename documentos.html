@@ -80,10 +80,10 @@
     @media (max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .grid-2 { grid-template-columns:1fr; } }
   </style>
   <link rel="stylesheet" href="css/saas.css">
-  <link rel="stylesheet" href="css/module-premium.css?v=20260724">
+<link rel="stylesheet" href="css/module-premium.css?v=20260724-mobilefix">
   <script src="js/module-premium.js?v=20260724" defer></script>
-  <link rel="stylesheet" href="css/mobile-nav.css?v=20260724">
-  <script src="js/mobile-nav.js?v=20260724" defer></script>
+<link rel="stylesheet" href="css/mobile-nav.css?v=20260724-responsive">
+<script src="js/mobile-nav.js?v=20260724-mobilefix" defer></script>
 </head>
 <body>
   <script>
@@ -125,7 +125,7 @@
 
     <main class="main">
       <h1 class="page-title">Documentos</h1>
-      <p class="page-sub">Gere propostas, contratos, orcamentos e relatorios automaticamente com IA. Assistente inteligente integrado.</p>
+      <p class="page-sub">Crie propostas, contratos, orçamentos e relatórios com padrão profissional. A IA do Cloudflare é usada quando o serviço estiver configurado.</p>
 
       <div class="card">
         <div class="card-header">
@@ -134,12 +134,12 @@
         <p id="aiDailyLimit" style="margin:-4px 0 18px;color:var(--text2);font-size:.85rem;">Plano Pro: até 2 propostas, 2 contratos, 2 recibos e 2 relatórios por dia.</p>
 
         <div class="ia-tabs">
-          <button class="ia-tab active" data-ia="proposta" onclick="selectIATab('proposta',this)">📋 Proposta Comercial</button>
-          <button class="ia-tab" data-ia="contrato" onclick="selectIATab('contrato',this)">📝 Contrato</button>
-          <button class="ia-tab" data-ia="orcamento" onclick="selectIATab('orcamento',this)">💰 Orcamento</button>
-          <button class="ia-tab" data-ia="recibo" onclick="selectIATab('recibo',this)">🧾 Recibo</button>
-          <button class="ia-tab" data-ia="relatorio" onclick="selectIATab('relatorio',this)">📊 Relatorio</button>
-          <button class="ia-tab" data-ia="autorizacao" onclick="selectIATab('autorizacao',this)">📜 Autorizacao</button>
+          <button class="ia-tab active" data-ia="proposta" onclick="selectIATab('proposta',this)">Proposta comercial</button>
+          <button class="ia-tab" data-ia="contrato" onclick="selectIATab('contrato',this)">Contrato</button>
+          <button class="ia-tab" data-ia="orcamento" onclick="selectIATab('orcamento',this)">Orçamento</button>
+          <button class="ia-tab" data-ia="recibo" onclick="selectIATab('recibo',this)">Recibo</button>
+          <button class="ia-tab" data-ia="relatorio" onclick="selectIATab('relatorio',this)">Relatório</button>
+          <button class="ia-tab" data-ia="autorizacao" onclick="selectIATab('autorizacao',this)">Autorização</button>
         </div>
 
         <div class="grid-2">
@@ -152,7 +152,7 @@
         </div>
 
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
-          <button class="btn btn-primary" onclick="gerarDocumento()">Gerar Documento com IA</button>
+          <button class="btn btn-primary" onclick="gerarDocumento()">Gerar documento profissional</button>
           <button class="btn btn-secondary" onclick="copiarDocumento()">Copiar Documento</button>
           <button class="btn btn-secondary" onclick="baixarWord()">Baixar Word (.doc)</button>
           <button class="btn btn-secondary" onclick="baixarPdf()">Baixar PDF</button>
@@ -233,7 +233,7 @@
       if (iaTipoAtual === 'proposta') {
         doc = linha + '\n';
         doc += '  PROPOSTA COMERCIAL\n';
-        doc += '  GM Drones RJ - Drone Hub\n';
+        doc += '  DOCUMENTO OPERACIONAL - DRONE HUB\n';
         doc += linha + '\n\n';
         doc += 'PROPOSTA N.: ' + Date.now().toString().slice(-6) + '\n';
         doc += 'DATA: ' + hoje + '\n';
@@ -243,7 +243,7 @@
         doc += 'Cliente: ' + cliente + '\n';
         doc += 'CNPJ/CPF: ' + cnpj + '\n\n';
         doc += '--- DADOS DO CONTRATADO ---\n\n';
-        doc += 'Empresa: GM Drones RJ\n';
+        doc += 'Empresa: ' + piloto + '\n';
         doc += 'Responsavel: ' + piloto + '\n';
         doc += 'Contato: ' + tel + '\n';
         doc += 'Local: ' + cidade + '\n\n';
@@ -265,18 +265,18 @@
         doc += 'Esta proposta e valida por 15 dias a partir de ' + hoje + '.\n\n';
         doc += linha + '\n';
         doc += piloto + '\n';
-        doc += 'GM Drones RJ\n';
+        doc += piloto + '\n';
         doc += tel + '\n';
         doc += linha + '\n';
       }
       else if (iaTipoAtual === 'contrato') {
         doc = linha + '\n';
         doc += '  CONTRATO DE PRESTACAO DE SERVICOS\n';
-        doc += '  GM Drones RJ\n';
+        doc += '  DOCUMENTO OPERACIONAL\n';
         doc += linha + '\n\n';
         doc += 'CONTRATANTE: ' + cliente + '\n';
         doc += 'CNPJ/CPF: ' + cnpj + '\n';
-        doc += 'CONTRATADO: GM Drones RJ - ' + piloto + '\n';
+        doc += 'CONTRATADO: ' + piloto + '\n';
         doc += 'DATA: ' + hoje + '\n\n';
         doc += '--- CLAUSULA 1 - OBJETO ---\n\n';
         doc += 'O presente contrato tem como objeto a prestacao de servicos de:\n';
@@ -299,14 +299,14 @@
         doc += 'Em caso de descumprimento das clausulas, o contrato podera ser rescindido, ';
         doc += 'com aplicacao de multa de 20% sobre o valor total.\n\n';
         doc += linha + '\n';
-        doc += piloto + ' | GM Drones RJ\n';
+        doc += piloto + '\n';
         doc += tel + '\n';
         doc += linha + '\n';
       }
       else if (iaTipoAtual === 'orcamento') {
         doc = linha + '\n';
         doc += '  ORCAMENTO\n';
-        doc += '  GM Drones RJ\n';
+        doc += '  DOCUMENTO OPERACIONAL\n';
         doc += linha + '\n\n';
         doc += 'ORCAMENTO N.: ' + Date.now().toString().slice(-6) + '\n';
         doc += 'DATA: ' + hoje + '\n';
@@ -323,7 +323,7 @@
         doc += 'Transferencia bancaria\n';
         doc += 'Cartao de credito (consultar taxas)\n\n';
         doc += linha + '\n';
-        doc += piloto + ' | GM Drones RJ\n';
+        doc += piloto + '\n';
         doc += tel + '\n';
         doc += linha + '\n';
       }
@@ -340,14 +340,14 @@
         if (obs) { doc += 'Obs: ' + obs + '\n\n'; }
         doc += '---\n\n';
         doc += piloto + '\n';
-        doc += 'GM Drones RJ\n';
+        doc += piloto + '\n';
         doc += tel + '\n';
         doc += linha + '\n';
       }
       else if (iaTipoAtual === 'relatorio') {
         doc = linha + '\n';
         doc += '  RELATORIO TECNICO\n';
-        doc += '  GM Drones RJ\n';
+        doc += '  DOCUMENTO OPERACIONAL\n';
         doc += linha + '\n\n';
         doc += 'RELATORIO N.: ' + Date.now().toString().slice(-6) + '\n';
         doc += 'DATA: ' + hoje + '\n';
@@ -365,19 +365,19 @@
         doc += '--- OBSERVACOES ---\n\n';
         doc += obs || 'Nenhuma observacao adicional.\n\n';
         doc += linha + '\n';
-        doc += piloto + ' | GM Drones RJ\n';
+        doc += piloto + '\n';
         doc += tel + '\n';
         doc += linha + '\n';
       }
       else if (iaTipoAtual === 'autorizacao') {
         doc = linha + '\n';
         doc += '  AUTORIZACAO DE VOO / OPERACAO\n';
-        doc += '  GM Drones RJ\n';
+        doc += '  DOCUMENTO OPERACIONAL\n';
         doc += linha + '\n\n';
         doc += 'DATA: ' + hoje + '\n';
         doc += 'CLIENTE: ' + cliente + '\n';
         doc += 'LOCAL: ' + (detalhes.split('\n')[0] || '[LOCAL]') + '\n\n';
-        doc += 'Autorizo a GM Drones RJ, representada por ' + piloto + ',\n';
+        doc += 'Autorizo o profissional responsável, ' + piloto + ',\n';
         doc += 'a realizar a operacao de captacao de imagens aereas conforme descrito:\n\n';
         doc += detalhes + '\n\n';
         doc += 'Valor: R$ ' + valor + '\n';
@@ -388,7 +388,7 @@
         doc += 'nao controlaveis (condicoes climaticas, interferencias, etc.).\n\n';
         doc += '---\n\n';
         doc += cliente + ' - Contratante\n\n';
-        doc += piloto + ' - GM Drones RJ\n';
+        doc += piloto + '\n';
         doc += linha + '\n';
       }
 
@@ -509,15 +509,32 @@
       var obs = d.observacoes ? '<section><h2>Observações</h2><p>'+htmlSeguro(d.observacoes).replace(/\n/g,'<br>')+'</p></section>' : '';
       return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>'+htmlSeguro(tipoDocumento())+'</title><style>body{margin:0;background:#f2f5f8;color:#152235;font:15px Arial,sans-serif}.page{max-width:820px;margin:0 auto;padding:54px 58px;background:#fff;min-height:100vh}.brand{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:28px;border-bottom:3px solid #16c6ff}.eyebrow{margin:0 0 8px;color:#168ab5;font-size:11px;font-weight:700;letter-spacing:1.5px}.brand h1{margin:0;font-size:30px;letter-spacing:-.7px}.brand .company{margin:8px 0 0;color:#506278;font-size:15px}.number{text-align:right;color:#506278;font-size:12px;line-height:1.7}.intro{margin:30px 0;padding:20px 22px;border-left:4px solid #16c6ff;background:#f3fbfe;line-height:1.65}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0}.detail{padding:16px;border:1px solid #dce5eb;border-radius:8px}.detail small{display:block;margin-bottom:6px;color:#688096;font-size:10px;font-weight:700;letter-spacing:1.1px}.detail strong{font-size:15px}section{margin-top:28px}section h2{margin:0 0 10px;color:#153a50;font-size:13px;letter-spacing:.7px;text-transform:uppercase}section p{margin:0;line-height:1.7;white-space:normal}.terms{padding:20px;border-radius:8px;background:#f5f7f9;line-height:1.8}.signature{margin-top:48px;padding-top:20px;border-top:1px solid #dce5eb;color:#506278;line-height:1.7}.signature strong{display:block;color:#152235;font-size:16px}@media print{body{background:#fff}.page{max-width:none;margin:0;box-shadow:none}}</style></head><body><main class="page"><header class="brand"><div><p class="eyebrow">DRONE HUB · DOCUMENTO OPERACIONAL</p><h1>'+htmlSeguro(tipoDocumento())+'</h1><p class="company">'+htmlSeguro(emissor.empresa)+'</p></div><div class="number">DOCUMENTO Nº '+numero+'<br>EMISSÃO '+data+'<br>VALIDADE 15 DIAS</div></header><p class="intro">Apresentamos este documento com escopo, investimento e condições operacionais organizados para uma decisão clara e segura.</p><div class="grid"><div class="detail"><small>CLIENTE / EMPRESA</small><strong>'+htmlSeguro(d.cliente)+'</strong></div><div class="detail"><small>CPF / CNPJ</small><strong>'+htmlSeguro(d.cnpj)+'</strong></div><div class="detail"><small>INVESTIMENTO</small><strong>R$ '+htmlSeguro(d.valor)+'</strong></div><div class="detail"><small>PRAZO / DATA</small><strong>'+htmlSeguro(d.prazo)+'</strong></div></div><section><h2>Escopo do serviço</h2><p>'+htmlSeguro(d.escopo).replace(/\n/g,'<br>')+'</p></section><section><h2>Condições operacionais</h2><div class="terms">A execução considera condições meteorológicas adequadas, segurança operacional e acesso ao local. Os entregáveis, forma de pagamento e ajustes de escopo serão confirmados no briefing com o cliente.</div></section>'+obs+'<footer class="signature"><strong>'+htmlSeguro(emissor.empresa)+'</strong>Responsável: '+htmlSeguro(emissor.responsavel)+'<br>Contato: '+htmlSeguro(emissor.telefone)+'<br>'+htmlSeguro(emissor.cidade)+'</footer></main></body></html>';
     }
-    function gerarDocumento() {
+    async function gerarDocumento() {
       if (!canGenerateAiDocument(iaTipoAtual)) { alert('Você atingiu o limite diário de 2 documentos deste tipo. Tente novamente amanhã.'); return; }
       var d = valoresDocumento(), emissor = dadosEmissor(), numero = String(Date.now()).slice(-6), data = new Date().toLocaleDateString('pt-BR');
       ultimoDocumentoGerado = propostaTexto(d, emissor, numero, data);
       ultimoDocumentoHtml = propostaHtml(d, emissor, numero, data);
-      recordAiUsage(iaTipoAtual);
       var resultado = document.getElementById('iaResultado');
+      var botao = document.querySelector('[onclick="gerarDocumento()"]');
+      if (botao) { botao.disabled = true; botao.textContent = 'Preparando documento…'; }
+      // If the Worker endpoint is configured, enrich the editorial text with
+      // Workers AI. The local professional template remains a safe fallback.
+      try {
+        var endpoint = window.DRONEHUB_OPERATIONS_API || 'https://dronehub-operations.giorgiocurzi.workers.dev';
+        if (endpoint) {
+          var prompt = 'Elabore o conteúdo editorial de um '+tipoDocumento()+' para operações profissionais com drones. Dados: cliente '+d.cliente+'; CPF/CNPJ '+d.cnpj+'; valor R$ '+d.valor+'; prazo '+d.prazo+'; escopo '+d.escopo+'; observações '+d.observacoes+'. Não crie dados ou autorizações oficiais. Retorne apenas texto profissional em português.';
+          var response = await fetch(endpoint.replace(/\/$/, '') + '/ai/document', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt}) });
+          var generated = await response.json();
+          if (response.ok && generated.text) {
+            ultimoDocumentoGerado = generated.text;
+            ultimoDocumentoHtml = propostaHtml(Object.assign({}, d, {escopo:generated.text}), emissor, numero, data);
+          }
+        }
+      } catch (error) { /* The professional template is intentionally retained. */ }
+      recordAiUsage(iaTipoAtual);
       resultado.innerHTML = '<div class="document-preview" style="margin-top:18px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 12px 34px rgba(0,0,0,.2)"><iframe title="Prévia do documento" style="border:0;width:100%;height:720px;background:#fff" srcdoc="'+htmlSeguro(ultimoDocumentoHtml).replace(/&quot;/g,'&#34;')+'"></iframe></div>';
       resultado.style.display = 'block';
+      if (botao) { botao.disabled = false; botao.textContent = 'Gerar documento profissional'; }
     }
     function baixarWord() {
       if (!ultimoDocumentoHtml) { alert('Gere um documento primeiro.'); return; }
