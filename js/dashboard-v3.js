@@ -7,7 +7,7 @@
     // do Pro a quem já possui uma assinatura ou cortesia ativa.
     if(typeof syncCurrentEntitlement==='function'){try{await syncCurrentEntitlement();}catch(e){}}
     var account=(typeof getCurrentUser==='function'&&getCurrentUser())||{};
-    var pro=account.plan==='pro',aircraft=count('dronehub_aircraft'),missions=count('dronehub_missoes');
+    var pro=account.plan==='pro'||account.role==='admin',aircraft=count('dronehub_aircraft'),missions=count('dronehub_missoes');
     if(!pro){
       var content=document.querySelector('.content');
       if(content){
