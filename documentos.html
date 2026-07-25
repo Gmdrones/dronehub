@@ -520,7 +520,7 @@
       // If the Worker endpoint is configured, enrich the editorial text with
       // Workers AI. The local professional template remains a safe fallback.
       try {
-        var endpoint = window.DRONEHUB_OPERATIONS_API || 'https://dronehub-operations.giorgiocurzi.workers.dev';
+        var endpoint = window.DRONEHUB_OPERATIONS_API || 'https://dronehub-operations.primesecureconsultoria.workers.dev';
         if (endpoint) {
           var prompt = 'Elabore o conteúdo editorial de um '+tipoDocumento()+' para operações profissionais com drones. Dados: cliente '+d.cliente+'; CPF/CNPJ '+d.cnpj+'; valor R$ '+d.valor+'; prazo '+d.prazo+'; escopo '+d.escopo+'; observações '+d.observacoes+'. Não crie dados ou autorizações oficiais. Retorne apenas texto profissional em português.';
           var response = await fetch(endpoint.replace(/\/$/, '') + '/ai/document', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt}) });
