@@ -1,6 +1,7 @@
 (function () {
   const specs = {'DJI Neo':28.8,'DJI Flip':38.5,'DJI Mini 2 SE':38.5,'DJI Mini 3':38.5,'DJI Mini 3 Pro':38.5,'DJI Mini 4 Pro':38.5,'DJI Mini 5 Pro':43.2,'DJI Air 2S':38.5,'DJI Air 3':43.2,'DJI Air 3S':43.2,'DJI Mavic 3 Classic':43.2,'DJI Mavic 3':43.2,'DJI Mavic 3 Cine':43.2,'DJI Mavic 3 Pro':43.2,'DJI Mavic 4 Pro':43.2,'DJI Avata':38.5,'DJI Avata 2':38.5,'DJI Avata 360':38.5,'DJI Inspire 3':50.4,'DJI Matrice 30':54,'DJI Matrice 30T':54,'DJI Matrice 350 RTK':43.2,'DJI Matrice 4E':43.2,'DJI Matrice 4T':43.2,'DJI Matrice 4D':43.2,'DJI Matrice 4TD':43.2,'FIMI X8 Mini V2':38.5,'FIMI X8 SE 2022':43.2,'FIMI X8 Tele Max':43.2};
   const $ = id => document.getElementById(id);
+  const operationsApi = 'https://dronehub-operations.giorgiocurzi.workers.dev';
   let weather, place = {lat:Number(localStorage.getItem('dronehub_lat')) || -22.9068, lon:Number(localStorage.getItem('dronehub_lon')) || -43.1729, name:localStorage.getItem('dronehub_location_name') || 'Rio de Janeiro, RJ'};
   const today = new Date(); const dateText = d => d.toISOString().slice(0,10);
 
@@ -48,7 +49,7 @@
   }
   function load(){
     $('weatherLoading').style.display='block';
-    fetch('https://api.open-meteo.com/v1/forecast?latitude='+place.lat+'&longitude='+place.lon+'&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m&daily=wind_speed_10m_max,wind_gusts_10m_max,precipitation_probability_max&forecast_days=4&timezone=auto').then(r=>r.json()).then(data=>{weather=data;render();}).catch(()=>{$('weatherLoading').textContent='Não foi possível atualizar o clima agora. Tente novamente em instantes.';});
+    fetch(operationsApi+'/weather?lat='+encodeURIComponent(place.lat)+'&lon='+encodeURIComponent(place.lon)).then(r=>r.json()).then(data=>{weather=data;render();}).catch(()=>{$('weatherLoading').textContent='Não foi possível atualizar o clima agora. Tente novamente em instantes.';});
   }
   function geocode(){
     const query=$('flightLocation').value.trim(); if(!query)return;
