@@ -8,29 +8,44 @@ if (USE_SUPABASE && SUPABASE_URL.includes('supabase.co')) {
 }
 
 async function syncCurrentEntitlement() {
-  var localUser = getCurrentUser();
-  if (!localUser || !supabaseClient) return localUser;
+  if (!supabaseClient) return getCurrentUser();
   try {
     var authResult = await supabaseClient.auth.getUser();
     var authUser = authResult && authResult.data && authResult.data.user;
-    if (!authUser) return localUser;
-    localUser.id = authUser.id;
-    localUser.email = authUser.email || localUser.email;
-    localUser.name = (authUser.user_metadata && authUser.user_metadata.full_name) || localUser.name || localUser.email;
+    if (!authUser) return getCurrentUser();
+
+    // Nunca reutilize o mesmo objeto da tela: ele pode ter plano antigo no navegador.
+    var savedUser = getCurrentUser() || {};
+    var localUser = Object.assign({}, savedUser, {
+      id: authUser.id,
+      email: authUser.email || savedUser.email || '',
+      name: (authUser.user_metadata && (authUser.user_metadata.full_name || authUser.user_metadata.name)) || savedUser.name || authUser.email || 'Piloto'
+    });
+
     var result = await supabaseClient
       .from('account_entitlements')
       .select('plan, role, status, courtesy_expires_at')
       .eq('user_id', authUser.id)
       .maybeSingle();
-    if (result.error || !result.data) return localUser;
-    var access = result.data;
-    var isExpired = access.courtesy_expires_at && new Date(access.courtesy_expires_at).getTime() < Date.now();
-    localUser.plan = access.status === 'active' && !isExpired ? access.plan : 'free';
-    localUser.role = access.role || 'pilot';
-    localUser.courtesyExpiresAt = access.courtesy_expires_at || null;
+
+    if (result && result.data) {
+      var access = result.data;
+      var isExpired = access.courtesy_expires_at && new Date(access.courtesy_expires_at).getTime() < Date.now();
+      localUser.plan = access.status === 'active' && !isExpired && access.plan === 'pro' ? 'pro' : 'free';
+      localUser.role = access.role === 'admin' ? 'admin' : 'pilot';
+      localUser.courtesyExpiresAt = access.courtesy_expires_at || null;
+    } else {
+      // Sem cadastro de plano, a conta permanece no Free por segurança.
+      localUser.plan = 'free';
+      localUser.role = 'pilot';
+      localUser.courtesyExpiresAt = null;
+    }
+
     localStorage.setItem('dronehub_user', JSON.stringify(localUser));
     return localUser;
-  } catch (e) { return localUser; }
+  } catch (e) {
+    return getCurrentUser();
+  }
 }
 
 // ===== AUTH =====
@@ -266,30 +281,14 @@ function deleteBattery(userId, id) {
 // depois de um novo login.
 async function refreshCurrentEntitlement() {
   const before = getCurrentUser();
-  if (!before || !supabaseClient) return before;
-  try {
-    const authResult = await supabaseClient.auth.getUser();
-    const authUser = authResult && authResult.data && authResult.data.user;
-    if (!authUser) {
-      // Uma sessão local antiga nunca pode simular um plano ou uma conta.
-      // O piloto deve entrar novamente pela autenticação segura.
-      localStorage.removeItem('dronehub_user');
-      if (document.querySelector('.sidebar, .dashboard-shell, .app-layout')) {
-        window.location.replace('login.html');
-      }
-      return null;
-    }
-    const beforePlan = before.plan;
-    const beforeRole = before.role;
-    migrateLocalDataToCloud(authUser.id);
-    const updated = await syncCurrentEntitlement();
-    await syncCloudData((updated && updated.id) || authUser.id);
-    if (updated && (updated.plan !== beforePlan || updated.role !== beforeRole)) {
-      window.location.reload();
-    }
-    return updated;
-  } catch (e) {
-    return before;
+  if (!before || !supabaseClient) return;
+  const beforePlan = before.plan;
+  const beforeRole = before.role;
+  migrateLocalDataToCloud(before.id);
+  const updated = await syncCurrentEntitlement();
+  await syncCloudData((updated && updated.id) || before.id);
+  if (updated && (updated.plan !== beforePlan || updated.role !== beforeRole)) {
+    window.location.reload();
   }
 }
 
@@ -297,4 +296,12 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', refreshCurrentEntitlement);
 } else {
   refreshCurrentEntitlement();
+}
+
+if (supabaseClient) {
+  supabaseClient.auth.onAuthStateChange(function (event) {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+      setTimeout(function () { refreshCurrentEntitlement(); }, 0);
+    }
+  });
 }
