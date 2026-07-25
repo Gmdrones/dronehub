@@ -62,11 +62,17 @@ async function signInWithSupabase(email, password) {
 
 async function resetPasswordWithSupabase(email) {
   if (supabaseClient) {
-    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/login.html' });
+    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/login.html?recovery=1' });
     if (error) throw error;
     return data;
   }
   throw new Error('A recuperação de senha está indisponível no momento.');
+}
+async function updatePasswordWithSupabase(password) {
+  if (!supabaseClient) throw new Error('A recuperação de senha está indisponível no momento.');
+  const { data, error } = await supabaseClient.auth.updateUser({ password: password });
+  if (error) throw error;
+  return data;
 }
 
 function getCurrentUser() { return JSON.parse(localStorage.getItem('dronehub_user') || 'null'); }
