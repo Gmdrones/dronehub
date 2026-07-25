@@ -1,5 +1,5 @@
-const SUPABASE_URL = 'https://tysvnppvgobztjllxsqw.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_1Oft25v5ZdG4U5_F77E7hg_QXgohL8b';
+const SUPABASE_URL = 'https://oibcspkfbrlsleupqijl.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_IFGuGtD7X2sR7FPdaQHzdQ_o7cgUaO1';
 const USE_SUPABASE = true;
 
 let supabaseClient = null;
@@ -42,13 +42,8 @@ async function signUpWithSupabase(email, password, name) {
     }
     return data;
   }
-  const users = JSON.parse(localStorage.getItem('dronehub_users') || '[]');
-  if (users.find(u => u.email === email)) throw new Error('Email ja cadastrado');
-  const user = { id: Date.now().toString(), name, email, password, createdAt: new Date().toISOString(), plan: 'free' };
-  users.push(user);
-  localStorage.setItem('dronehub_users', JSON.stringify(users));
-  localStorage.setItem('dronehub_user', JSON.stringify(user));
-  return user;
+  // Never keep passwords in browser storage. Production access requires Supabase Auth.
+  throw new Error('O cadastro seguro está indisponível no momento. Tente novamente em instantes.');
 }
 
 async function signInWithSupabase(email, password) {
@@ -62,11 +57,7 @@ async function signInWithSupabase(email, password) {
     }
     return data;
   }
-  const users = JSON.parse(localStorage.getItem('dronehub_users') || '[]');
-  const user = users.find(u => u.email === email && u.password === password);
-  if (!user) throw new Error('Email ou senha incorretos');
-  localStorage.setItem('dronehub_user', JSON.stringify(user));
-  return user;
+  throw new Error('O acesso seguro está indisponível no momento. Tente novamente em instantes.');
 }
 
 async function resetPasswordWithSupabase(email) {
@@ -75,7 +66,7 @@ async function resetPasswordWithSupabase(email) {
     if (error) throw error;
     return data;
   }
-  return { message: 'Instrucoes enviadas para ' + email };
+  throw new Error('A recuperação de senha está indisponível no momento.');
 }
 
 function getCurrentUser() { return JSON.parse(localStorage.getItem('dronehub_user') || 'null'); }
