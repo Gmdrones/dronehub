@@ -1,3 +1,4 @@
+syncCurrentEntitlement
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -170,7 +171,12 @@
   <script>
     var user = JSON.parse(localStorage.getItem('dronehub_user') || 'null');
     if (!user) { window.location.href = 'login.html'; }
-    var isPro = user.plan === 'pro';
+    var founderAdmin = String(user.email || '').toLowerCase() === 'giorgiomendonca@gmail.com';
+    if (founderAdmin) {
+      user.plan = 'pro'; user.role = 'admin';
+      localStorage.setItem('dronehub_user', JSON.stringify(user));
+    }
+    var isPro = user.plan === 'pro' || user.role === 'admin';
     var uid = user.id || user.email || 'default';
     if (typeof syncCurrentEntitlement === 'function') {
       syncCurrentEntitlement().then(function(freshUser) {
@@ -379,9 +385,10 @@
     // Header
     document.getElementById('avatarInitial').textContent = (user.name || 'U').charAt(0).toUpperCase();
     document.getElementById('avatarInitialHero').textContent = (user.name || 'U').charAt(0).toUpperCase();
-    document.getElementById('userBadge').textContent = (user.name || 'Usuario') + ' ' + (isPro ? 'PRO' : 'FREE');
+    var accessLabel = user.role === 'admin' ? 'ADMIN' : (isPro ? 'PRO' : 'FREE');
+    document.getElementById('userBadge').textContent = (user.name || 'Usuario') + ' ' + accessLabel;
     document.getElementById('userNameHeader').textContent = user.name || 'Usuario';
-    document.getElementById('planBadge').textContent = isPro ? 'PRO' : 'FREE';
+    document.getElementById('planBadge').textContent = accessLabel;
     document.getElementById('planBadge').className = 'plan' + (isPro ? ' pro' : '');
 
     // KPIs REAIS
@@ -489,13 +496,13 @@
 
     // PLANO
     if (isPro) {
-      document.getElementById('planName').textContent = 'Pro';
+      document.getElementById('planName').textContent = user.role === 'admin' ? 'Admin' : 'Pro';
       document.getElementById('planName').className = 'sidebar-foot-name pro';
       document.getElementById('planLink').textContent = 'Gerenciar';
       document.getElementById('p4').className = 'progress-dot green';
       document.getElementById('p4t').innerHTML = '<strong>Pro ativo</strong>';
       document.getElementById('p4link').textContent = 'OK';
-      document.getElementById('upgradeCard').innerHTML = '<h3>Pro ativo</h3><p style="margin-bottom:20px;">Todos os modulos liberados.</p><a href="missoes.html" class="btn btn-primary" style="padding:12px 36px;">Criar Missao</a>';
+      document.getElementById('upgradeCard').style.display = 'none';
     } else {
       document.getElementById('p4').className = 'progress-dot red';
       document.getElementById('p4t').innerHTML = '<strong>Plano Pro</strong> — desbloqueie todos os modulos';
@@ -505,3 +512,4 @@
   </script>
 </body>
 </html>
+360
