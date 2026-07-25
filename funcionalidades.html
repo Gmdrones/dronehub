@@ -1,136 +1,44 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Funcionalidades — Drone Hub</title>
-  <meta name="description" content="Conheça todos os módulos do Drone Hub: Central de Voo, Documentos, Fiscalização com QR Code, IA, Financeiro e muito mais.">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Conheça os recursos do Drone Hub para operações profissionais com drones.">
+  <title>Funcionalidades | Drone Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
-    * { margin:0; padding:0; box-sizing:border-box; }
-    :root { --bg:#0A0D12; --bg2:#12161D; --bg3:#1A1F2A; --border:rgba(255,255,255,0.05); --cyan:#00D2FF; --glow:rgba(0,210,255,0.15); --green:#34D399; --text:#F0F4F8; --text2:#94A3B8; --text3:#64748B; --title:'Space Grotesk',sans-serif; --body:'Inter',sans-serif; }
-    body { font-family:var(--body); background:var(--bg); color:var(--text); overflow-x:hidden; }
-    a { text-decoration:none; color:inherit; }
-    .logo { display:flex; align-items:center; gap:12px; }
-    .logo-icon { width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg,var(--cyan),#0066FF); display:flex; align-items:center; justify-content:center; font-family:var(--title); font-weight:700; font-size:1rem; color:#0A0D12; flex-shrink:0; }
-    .logo-text { font-family:var(--title); font-weight:700; font-size:1.15rem; color:var(--text); letter-spacing:-0.02em; }
-    .logo-text span { color:var(--cyan); }
-    .header { position:fixed; top:0; left:0; right:0; z-index:1000; height:72px; background:rgba(10,13,18,0.85); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; }
-    .header-inner { width:100%; max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; }
-    .nav { display:flex; align-items:center; gap:24px; }
-    .nav a { font-size:0.85rem; color:var(--text2); transition:color 0.2s; }
-    .nav a:hover { color:var(--text); }
-    .nav a.active { color:var(--cyan); font-weight:600; }
-    .btn { display:inline-flex; align-items:center; gap:8px; font-family:var(--title); font-weight:600; font-size:0.85rem; padding:10px 24px; border-radius:8px; border:none; cursor:pointer; transition:all 0.3s ease; text-decoration:none; }
-    .btn-primary { background:var(--cyan); color:#0A0D12; }
-    .btn-primary:hover { background:#33DDFF; box-shadow:0 0 30px var(--glow); transform:translateY(-1px); }
-    .btn-secondary { background:transparent; color:var(--text); border:1px solid var(--border); }
-    .btn-secondary:hover { border-color:var(--cyan); color:var(--cyan); }
-    .container { max-width:1200px; margin:0 auto; padding:0 24px; }
-    .hero-func { min-height:70vh; display:flex; align-items:center; position:relative; overflow:hidden; background:linear-gradient(135deg,#0A0D12 0%,#0D1A2A 50%,#0A0D12 100%); }
-    .hero-func::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 30% 50%,rgba(0,210,255,0.06) 0%,transparent 60%); }
-    .hero-func .grid-bg { position:absolute; inset:0; background-image:linear-gradient(rgba(0,210,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,210,255,0.03) 1px,transparent 1px); background-size:40px 40px; }
-    .hero-func .corner { position:absolute; width:60px; height:60px; border-color:rgba(0,210,255,0.08); border-style:solid; }
-    .hero-func .corner.tl { top:60px; left:40px; border-width:1px 0 0 1px; }
-    .hero-func .corner.tr { top:60px; right:40px; border-width:1px 1px 0 0; }
-    .hero-func .corner.bl { bottom:60px; left:40px; border-width:0 0 1px 1px; }
-    .hero-func .corner.br { bottom:60px; right:40px; border-width:0 1px 1px 0; }
-    .hero-func .hc { position:relative; z-index:2; padding:120px 24px 60px; max-width:1200px; margin:0 auto; }
-    .hero-func h1 { font-family:var(--title); font-size:3rem; font-weight:700; margin-bottom:16px; letter-spacing:-0.02em; }
-    .hero-func h1 span { color:var(--cyan); }
-    .hero-func p { color:var(--text2); font-size:1.1rem; max-width:550px; line-height:1.7; }
-    .section { padding:80px 0; }
-    .section-header { text-align:center; margin-bottom:60px; }
-    .section-header h2 { font-family:var(--title); font-size:2rem; font-weight:700; margin-bottom:16px; }
-    .section-header p { color:var(--text2); font-size:1rem; max-width:600px; margin:0 auto; }
-    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; }
-    .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; }
-    .card { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:32px; transition:all 0.3s; position:relative; overflow:hidden; }
-    .card:hover { border-color:rgba(0,210,255,0.15); transform:translateY(-3px); box-shadow:0 12px 40px rgba(0,0,0,0.3); }
-    .card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; opacity:0; transition:opacity 0.3s; background:linear-gradient(90deg,var(--cyan),#0066FF); }
-    .card:hover::before { opacity:1; }
-    .card .icon { font-size:2rem; margin-bottom:16px; }
-    .card h3 { font-family:var(--title); font-size:1.1rem; font-weight:600; margin-bottom:8px; }
-    .card p { color:var(--text2); font-size:0.85rem; line-height:1.6; }
-    .card .badge { display:inline-block; margin-top:12px; padding:4px 14px; border-radius:100px; font-size:0.7rem; font-weight:700; text-transform:uppercase; background:rgba(0,210,255,0.1); color:var(--cyan); }
-    .card .badge.pro { background:rgba(52,211,153,0.1); color:var(--green); }
-    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; margin-top:60px; }
-    .stat-item { text-align:center; padding:24px; }
-    .stat-item .sv { font-family:var(--title); font-size:2.5rem; font-weight:700; color:var(--cyan); }
-    .stat-item .sl { font-size:0.85rem; color:var(--text2); margin-top:4px; }
-    .cta-section { text-align:center; padding:80px 0; position:relative; overflow:hidden; }
-    .cta-section::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 50%,rgba(0,210,255,0.03) 0%,transparent 60%); }
-    .cta-section h2 { font-family:var(--title); font-size:2rem; margin-bottom:12px; }
-    .cta-section p { color:var(--text2); margin-bottom:24px; font-size:1rem; }
-    .footer { border-top:1px solid var(--border); padding:40px 0; margin-top:60px; }
-    .footer-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:32px; margin-bottom:32px; }
-    .footer-brand p { font-size:0.8rem; color:var(--text3); margin-top:12px; }
-    .footer-col h5 { font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text); margin-bottom:12px; }
-    .footer-col a { display:block; font-size:0.8rem; color:var(--text2); margin-bottom:8px; }
-    .footer-col a:hover { color:var(--cyan); }
-    .footer-bottom { display:flex; justify-content:space-between; align-items:center; padding-top:24px; border-top:1px solid var(--border); font-size:0.75rem; color:var(--text3); }
-    @media (max-width:768px) { .hero-func h1 { font-size:2rem; } .grid-3,.grid-4 { grid-template-columns:1fr; } .footer-grid { grid-template-columns:1fr 1fr; } .stats-row { grid-template-columns:1fr 1fr; } .nav { gap:12px; } .nav a { font-size:0.8rem; } }
+    :root{--bg:#070b12;--surface:#0f1724;--card:#111c2a;--card-hover:#182638;--line:rgba(255,255,255,.09);--cyan:#16c6ff;--cyan2:#37d2ff;--green:#35d39a;--orange:#ffb84d;--text:#f4f8fb;--muted:#a4b2c4;--dim:#6b7b91}*{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 400px at 78% -5%,rgba(22,198,255,.12),transparent 70%),var(--bg);color:var(--text);font:15px/1.55 Inter,Arial,sans-serif}a{color:inherit;text-decoration:none}.header{position:sticky;top:0;z-index:10;height:74px;display:flex;align-items:center;border-bottom:1px solid var(--line);background:rgba(7,11,18,.82);backdrop-filter:blur(18px)}.nav-wrap{width:min(1240px,calc(100% - 40px));margin:auto;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{font:700 19px 'Space Grotesk';letter-spacing:-.5px;display:flex;align-items:center;gap:10px}.brand-mark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#16c6ff,#2370ff);color:#04101b;font-size:12px}.brand b{color:var(--cyan)}nav{display:flex;gap:23px;align-items:center;color:var(--muted);font-size:13px}nav a.active,nav a:hover{color:var(--cyan)}.actions{display:flex;gap:9px}.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px 15px;font-weight:700;font-size:13px}.button.primary{border-color:transparent;background:linear-gradient(135deg,var(--cyan),#3ed7ff);color:#04101b}.shell{width:min(1240px,calc(100% - 40px));margin:auto}.hero{padding:96px 0 56px;position:relative;overflow:hidden}.hero:after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(22,198,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(22,198,255,.05) 1px,transparent 1px);background-size:46px 46px;mask-image:linear-gradient(to bottom,#000,transparent)}.hero-content{position:relative;z-index:1;max-width:800px}.eyebrow{display:flex;align-items:center;gap:8px;color:var(--cyan);font-size:12px;text-transform:uppercase;font-weight:700;letter-spacing:1.6px}.eyebrow i{width:8px;height:8px;border-radius:999px;background:var(--green);box-shadow:0 0 16px var(--green)}h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;line-height:1.08}h1{font-size:clamp(40px,6vw,69px);letter-spacing:-2.8px;margin:18px 0 20px}h1 span{color:var(--cyan)}.hero p{max-width:650px;color:var(--muted);font-size:18px}.trust{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}.trust span{padding:8px 11px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:12px}.section{padding:38px 0 82px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:30px;margin-bottom:28px}.section-head h2{font-size:31px;letter-spacing:-1px;margin:0}.section-head p{margin:0;color:var(--muted);max-width:530px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.feature{position:relative;min-height:226px;padding:25px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,rgba(24,38,56,.9),var(--card));overflow:hidden;transition:.2s}.feature:before{content:'';position:absolute;inset:auto -35px -60px auto;width:160px;height:160px;background:radial-gradient(circle,rgba(22,198,255,.15),transparent 65%);pointer-events:none}.feature:hover{transform:translateY(-3px);border-color:rgba(22,198,255,.4);background:var(--card-hover)}.icon{width:42px;height:42px;display:grid;place-items:center;border:1px solid rgba(22,198,255,.22);border-radius:12px;color:var(--cyan);background:rgba(22,198,255,.08);margin-bottom:20px}.icon i{width:20px;height:20px}.feature h3{font-size:18px;margin:0 0 8px}.feature p{margin:0;color:var(--muted);font-size:13px;max-width:310px}.tag{position:absolute;bottom:22px;left:25px;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;border:1px solid currentColor;border-radius:999px;padding:4px 9px}.tag.free{color:var(--cyan)}.tag.pro{color:var(--green)}.tag.live{color:var(--orange)}.feature.pro:after{content:'PRO';position:absolute;right:20px;top:18px;color:rgba(53,211,154,.9);border:1px solid rgba(53,211,154,.32);border-radius:999px;padding:3px 8px;font-size:10px;font-weight:800;letter-spacing:1px}.comparison{border:1px solid var(--line);border-radius:20px;background:linear-gradient(135deg,rgba(22,198,255,.08),rgba(17,28,42,.92) 40%);padding:34px;margin-bottom:82px}.comparison h2{margin:0 0 9px;font-size:29px}.comparison>p{color:var(--muted);margin:0 0 25px}.rows{display:grid;grid-template-columns:1fr 1fr;gap:12px}.plan{border:1px solid var(--line);background:rgba(7,11,18,.48);border-radius:14px;padding:22px}.plan h3{margin:0 0 13px}.plan ul{list-style:none;padding:0;margin:0;display:grid;gap:9px;color:var(--muted);font-size:14px}.plan li{display:flex;gap:9px;align-items:start}.plan i{color:var(--green);width:17px;height:17px;flex:none}.plan.pro-plan{border-color:rgba(22,198,255,.42)}.cta{padding:54px 25px;text-align:center;border:1px solid rgba(22,198,255,.28);border-radius:20px;background:radial-gradient(circle at 50% 0,rgba(22,198,255,.18),transparent 62%),var(--surface);margin-bottom:76px}.cta h2{font-size:34px;margin:0 0 10px}.cta p{color:var(--muted);margin:0 0 23px}.footer{border-top:1px solid var(--line);padding:28px 0;color:var(--dim);font-size:12px}@media(max-width:760px){.header{height:68px}.nav-wrap{width:calc(100% - 28px);gap:10px}nav{display:none}.brand{font-size:16px}.brand-mark{width:30px;height:30px}.actions .button{padding:9px 10px;font-size:12px}.actions .login{display:inline-flex}.shell{width:calc(100% - 32px)}.hero{padding:71px 0 37px}.hero p{font-size:16px}.section-head{display:block}.section-head h2{font-size:27px;margin-bottom:10px}.grid{grid-template-columns:1fr}.feature{min-height:205px}.rows{grid-template-columns:1fr}.comparison{padding:23px}.cta h2{font-size:29px}}
   </style>
-  <link rel="stylesheet" href="css/saas.css"><script src="js/operations-feature-suite.js" defer></script>
-  <script src="js/main.js" defer></script>
 </head>
 <body>
-  <header class="header">
-    <div class="header-inner">
-      <a href="/" class="logo"><div class="logo-icon">DH</div><span class="logo-text">Drone<span>Hub</span></span></a>
-      <nav class="nav">
-        <a href="/">Home</a>
-        <a href="funcionalidades.html" class="active">Funcionalidades</a>
-        <a href="precos.html">Preços</a>
-        <a href="sobre.html">Sobre</a>
-        <a href="blog.html">Blog</a>
-        <a href="login.html" class="btn btn-ghost">Entrar</a>
-        <a href="login.html?signup=true" class="btn btn-primary">Cadastrar</a>
-      </nav>
-    </div>
-  </header>
-
-  <section class="hero-func">
-    <div class="grid-bg"></div>
-    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
-    <div class="hc">
-      <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:100px;border:1px solid rgba(0,210,255,0.15);background:rgba(0,210,255,0.05);font-size:0.75rem;color:var(--cyan);margin-bottom:20px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;">12 módulos integrados</div>
-      <h1>Tudo que você precisa para<br>gerenciar suas <span>operações com drones</span></h1>
-      <p>Da Central de Voo inteligente ao financeiro completo. Cada módulo foi projetado para uma operação profissional.</p>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="container">
-      <div class="section-header"><h2>Módulos do Drone Hub</h2><p>Funcionalidades completas para pilotos que levam a profissão a sério.</p></div>
-      <div class="grid-3">
-        <div class="card"><div class="icon">👤</div><h3>Perfil do Piloto</h3><p>Dados pessoais, certificações ANAC e DECEA, além da Homologação ANATEL quando aplicável, sempre centralizados e atualizados.</p><span class="badge">Free</span></div>
-        <div class="card"><div class="icon">✈️</div><h3>Aeronaves</h3><p>Marca, modelo, SISANT, ANATEL, seguro, firmware. Ate 20 no Pro. Banco de specs automatico.</p><span class="badge">Free</span></div>
-        <div class="card"><div class="icon">🌤️</div><h3>Central de Voo</h3><p>Clima real + 29 modelos DJI com resistencia ao vento. Avaliacao inteligente 🟢🟡🟠🔴.</p><span class="badge">Free</span></div>
-        <div class="card"><div class="icon">📄</div><h3>Documentos</h3><p>Upload, validade, lembretes. Piloto, drone, empresa, seguro. Tudo organizado.</p><span class="badge">Free</span></div>
-        <div class="card"><div class="icon">🤖</div><h3>Gerador IA de Documentos</h3><p>Propostas, contratos, orcamentos, recibos, relatorios e autorizacoes. Copie, baixe ou salve.</p><span class="badge pro">Pro</span></div>
-        <div class="card"><div class="icon">🎯</div><h3>Missoes</h3><p>Planejamento completo com checklist pre-voo. Cliente, local, data, horario e status.</p><span class="badge pro">Pro</span></div>
-        <div class="card"><div class="icon">🛡️</div><h3>Fiscalizacao</h3><p>QR Code temporario com carteirinha digital. Compartilhe com a fiscalizacao em segundos.</p><span class="badge pro">Pro</span></div>
-        <div class="card"><div class="icon">💰</div><h3>Financeiro</h3><p>Fluxo de caixa, receitas x despesas, lucro por missao, categorias e historico completo.</p><span class="badge pro">Pro</span></div>
-        <div class="card"><div class="icon">🔋</div><h3>Baterias</h3><p>Ciclos, saude, alertas de substituicao e historico de uso. Prolongue a vida util.</p><span class="badge pro">Pro</span></div>
-        <div class="card"><div class="icon">📊</div><h3>Relatorios</h3><p>Exportacao em PDF, Excel e CSV. Relatorios de missoes, financeiro e documentos.</p><span class="badge pro">Pro</span></div>
-        <div class="card"><div class="icon">👥</div><h3>Clientes</h3><p>Cadastro de clientes com historico de missoes e valores. CRM integrado.</p><span class="badge pro">Pro</span></div>
-        <div class="card"><div class="icon">⚙️</div><h3>Configuracoes</h3><p>Tema, idioma, moeda, backup e exportacao de dados. Personalize sua experiencia.</p><span class="badge">Free</span></div>
+  <header class="header"><div class="nav-wrap"><a class="brand" href="/"><span class="brand-mark">DH</span>DRONE<b>HUB</b></a><nav><a href="/">Home</a><a class="active" href="funcionalidades.html">Funcionalidades</a><a href="precos.html">Preços</a><a href="sobre.html">Sobre</a><a href="blog.html">Blog</a></nav><div class="actions"><a class="button login" href="login.html">Entrar</a><a class="button primary" href="login.html?signup=true">Cadastrar</a></div></div></header>
+  <main>
+    <section class="hero"><div class="shell hero-content"><div class="eyebrow"><i></i> Drone Hub · suíte operacional</div><h1>Menos incerteza.<br><span>Mais controle de voo.</span></h1><p>Uma central profissional para planejar missões, acompanhar condições, proteger a frota e entregar uma operação que transmite confiança.</p><div class="trust"><span>Dados climáticos em tempo real</span><span>Planejamento por local e data</span><span>Operação em todo o Brasil</span></div></div></section>
+    <section class="section"><div class="shell"><div class="section-head"><div><h2>O que você pode usar hoje</h2><p>Cada recurso é classificado com transparência. O plano Free é intencionalmente enxuto; o Pro reúne a operação profissional completa.</p></div></div>
+      <div class="grid">
+        <article class="feature"><div class="icon"><i data-lucide="user-round"></i></div><h3>Perfil do piloto</h3><p>Dados do piloto, ANAC, DECEA e Homologação Anatel em um cadastro operacional.</p><span class="tag free">Free</span></article>
+        <article class="feature"><div class="icon"><i data-lucide="plane"></i></div><h3>Aeronave</h3><p>Cadastro de uma aeronave no Free. No Pro, até 20 aeronaves e controle da frota.</p><span class="tag free">Free</span></article>
+        <article class="feature"><div class="icon"><i data-lucide="cloud-sun"></i></div><h3>Central de voo</h3><p>Condições locais, previsão de até 3 dias, vento, rajadas e leitura de risco para a aeronave.</p><span class="tag free">Free</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="file-text"></i></div><h3>Documentos profissionais</h3><p>Organize documentos, vencimentos e evidências operacionais em uma única pasta.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="sparkles"></i></div><h3>Gerador de documentos</h3><p>Propostas, contratos, recibos e relatórios com limite diário por piloto.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="route"></i></div><h3>Missões e checklist</h3><p>Planeje local, data, equipe e checklist pré-voo; registre o histórico da operação.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="map"></i></div><h3>Mapa de operações</h3><p>Visualize missões com endereço no mapa e transforme o planejamento em uma leitura geográfica.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="radar"></i></div><h3>Espaço aéreo e SARPAS</h3><p>Vincule o código da solicitação e acesse o canal oficial do DECEA. A autorização é sempre oficial.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="wind"></i></div><h3>Meteorologia por altitude</h3><p>Leitura de vento e rajadas para faixas de operação, com direção, visibilidade e pôr do sol.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="shield-check"></i></div><h3>Modo fiscalização</h3><p>Credencial temporária com QR Code para apresentar os documentos necessários em uma abordagem.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="battery-charging"></i></div><h3>Saúde da frota</h3><p>Ciclos de bateria, firmware, seguro e manutenção em uma visão de prontidão operacional.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="bell-ring"></i></div><h3>Alertas inteligentes</h3><p>Alertas de vento, chuva, documentos, baterias e manutenção para antecipar riscos.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="book-open-check"></i></div><h3>Diário e pós-voo</h3><p>Registre piloto, aeronave, local, clima, checklist e evidências em um relatório para o cliente.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="wallet-cards"></i></div><h3>Financeiro e clientes</h3><p>Receitas, despesas, clientes e histórico de missões para acompanhar o resultado da operação.</p><span class="tag pro">Pro</span></article>
+        <article class="feature pro"><div class="icon"><i data-lucide="file-up"></i></div><h3>Logs e exportações</h3><p>Importação de logs DJI e exportação de dados para guardar o histórico da sua operação.</p><span class="tag pro">Pro</span></article>
       </div>
-    </div>
-  </section>
-
-  <section class="cta-section">
-    <div class="container">
-      <h2>Pronto para transformar suas operações?</h2>
-      <p>12 módulos integrados. Comece grátis e evolua quando precisar.</p>
-      <a href="login.html?signup=true" class="btn btn-primary" style="padding:14px 40px;font-size:1rem;">Começar grátis</a>
-    </div>
-  </section>
-
-  <footer class="footer"><div class="container"><div class="footer-grid"><div class="footer-brand"><a href="/" class="logo"><div class="logo-icon" style="width:36px;height:36px;font-size:0.85rem;">DH</div><span class="logo-text" style="font-size:1rem;">Drone<span>Hub</span></span></a><p style="margin-top:12px;">A plataforma inteligente para gestao completa de operacoes com drones.</p></div><div class="footer-col"><h5>Plataforma</h5><a href="funcionalidades.html">Funcionalidades</a><a href="precos.html">Precos</a><a href="login.html">Login</a></div><div class="footer-col"><h5>Empresa</h5><a href="sobre.html">Sobre</a><a href="blog.html">Blog</a><a href="#">Contato</a></div><div class="footer-col"><h5>Legal</h5><a href="#">Termos de Uso</a><a href="#">Privacidade</a><a href="#">LGPD</a></div></div><div class="footer-bottom"><span>&copy; 2026 Drone Hub. Todos os direitos reservados.</span></div></div></footer>
-  <script>if(typeof lucide!=='undefined')lucide.createIcons();</script>
+    </div></section>
+    <section class="shell comparison"><h2>Free é o ponto de partida. Pro é a operação completa.</h2><p>Sem letras pequenas: o que está em cada plano fica claro desde o primeiro acesso.</p><div class="rows"><div class="plan"><h3>Free</h3><ul><li><i data-lucide="check"></i>Perfil do piloto com certificações</li><li><i data-lucide="check"></i>1 aeronave cadastrada</li><li><i data-lucide="check"></i>Central de Voo com leitura de condições</li></ul></div><div class="plan pro-plan"><h3>Pro</h3><ul><li><i data-lucide="check"></i>Até 20 aeronaves, documentos e missões</li><li><i data-lucide="check"></i>IA, fiscalização, financeiro, relatórios e alertas</li><li><i data-lucide="check"></i>Mapa, SARPAS, diário de voo e saúde da frota</li></ul></div></div></section>
+    <section class="shell cta"><h2>Profissionalize sua operação.</h2><p>Crie a sua conta gratuita e evolua para o Pro quando precisar de uma central operacional completa.</p><a class="button primary" href="login.html?signup=true">Começar grátis <i data-lucide="arrow-up-right"></i></a></section>
+  </main><footer class="footer"><div class="shell">© 2026 Drone Hub · Voe. Planeje. Registre. Evolua.</div></footer>
+  <script>lucide.createIcons();</script>
 </body>
 </html>
