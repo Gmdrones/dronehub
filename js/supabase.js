@@ -266,14 +266,30 @@ function deleteBattery(userId, id) {
 // depois de um novo login.
 async function refreshCurrentEntitlement() {
   const before = getCurrentUser();
-  if (!before || !supabaseClient) return;
-  const beforePlan = before.plan;
-  const beforeRole = before.role;
-  migrateLocalDataToCloud(before.id);
-  const updated = await syncCurrentEntitlement();
-  await syncCloudData((updated && updated.id) || before.id);
-  if (updated && (updated.plan !== beforePlan || updated.role !== beforeRole)) {
-    window.location.reload();
+  if (!before || !supabaseClient) return before;
+  try {
+    const authResult = await supabaseClient.auth.getUser();
+    const authUser = authResult && authResult.data && authResult.data.user;
+    if (!authUser) {
+      // Uma sessão local antiga nunca pode simular um plano ou uma conta.
+      // O piloto deve entrar novamente pela autenticação segura.
+      localStorage.removeItem('dronehub_user');
+      if (document.querySelector('.sidebar, .dashboard-shell, .app-layout')) {
+        window.location.replace('login.html');
+      }
+      return null;
+    }
+    const beforePlan = before.plan;
+    const beforeRole = before.role;
+    migrateLocalDataToCloud(authUser.id);
+    const updated = await syncCurrentEntitlement();
+    await syncCloudData((updated && updated.id) || authUser.id);
+    if (updated && (updated.plan !== beforePlan || updated.role !== beforeRole)) {
+      window.location.reload();
+    }
+    return updated;
+  } catch (e) {
+    return before;
   }
 }
 
