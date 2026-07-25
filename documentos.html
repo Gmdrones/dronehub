@@ -8,6 +8,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="js/supabase.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js"></script>
   <style>
@@ -154,7 +156,7 @@
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
           <button class="btn btn-primary" onclick="gerarDocumento()">Gerar documento profissional</button>
           <button class="btn btn-secondary" onclick="copiarDocumento()">Copiar Documento</button>
-          <button class="btn btn-secondary" onclick="baixarWord()">Baixar Word (.doc)</button>
+          <button class="btn btn-secondary" onclick="baixarWord()">Baixar Word (.docx)</button>
           <button class="btn btn-secondary" onclick="baixarPdf()">Baixar PDF</button>
           <button class="btn btn-secondary" onclick="salvarDocumento()">Salvar nos Documentos</button>
         </div>
@@ -536,15 +538,35 @@
       resultado.style.display = 'block';
       if (botao) { botao.disabled = false; botao.textContent = 'Gerar documento profissional'; }
     }
-    function baixarWord() {
-      if (!ultimoDocumentoHtml) { alert('Gere um documento primeiro.'); return; }
-      var blob = new Blob([ultimoDocumentoHtml], {type:'application/msword;charset=utf-8'}), a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = (iaTipoAtual || 'documento')+'_'+Date.now().toString().slice(-6)+'.doc'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+    function baixarArquivo(blob, nome) {
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+    }
+    function xmlSeguro(valor) { return String(valor || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    async function baixarWord() {
+      if (!ultimoDocumentoGerado) { alert('Gere um documento primeiro.'); return; }
+      if (!window.JSZip) { alert('O gerador Word não foi carregado. Verifique sua conexão e tente novamente.'); return; }
+      var linhas = ultimoDocumentoGerado.split(/\r?\n/);
+      var paragrafos = linhas.map(function(linha, index) {
+        var texto = xmlSeguro(linha || ' ');
+        var estilo = index === 0 ? '<w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/><w:color w:val="087EA4"/></w:rPr><w:t xml:space="preserve">'+texto+'</w:t></w:r>' : '<w:r><w:rPr><w:sz w:val="22"/></w:rPr><w:t xml:space="preserve">'+texto+'</w:t></w:r>';
+        return '<w:p>'+estilo+'</w:p>';
+      }).join('');
+      var zip = new JSZip();
+      zip.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+      zip.folder('_rels').file('.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+      zip.folder('word').file('document.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+paragrafos+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>');
+      var blob = await zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+      baixarArquivo(blob, (iaTipoAtual || 'documento')+'_'+Date.now().toString().slice(-6)+'.docx');
     }
     function baixarPdf() {
-      if (!ultimoDocumentoHtml) { alert('Gere um documento primeiro.'); return; }
-      var janela = window.open('', '_blank'); if (!janela) { alert('Permita pop-ups para salvar o documento em PDF.'); return; }
-      janela.document.open(); janela.document.write(ultimoDocumentoHtml); janela.document.close(); janela.focus(); janela.setTimeout(function(){janela.print();},400);
+      if (!ultimoDocumentoGerado) { alert('Gere um documento primeiro.'); return; }
+      if (!window.jspdf) { alert('O gerador PDF não foi carregado. Verifique sua conexão e tente novamente.'); return; }
+      var pdf = new window.jspdf.jsPDF({unit:'mm',format:'a4'}), margem=18, y=23, largura=174;
+      pdf.setFillColor(8,126,164); pdf.rect(0,0,210,8,'F'); pdf.setTextColor(8,126,164); pdf.setFont('helvetica','bold'); pdf.setFontSize(19); pdf.text(tipoDocumento(),margem,y); y+=12;
+      pdf.setDrawColor(190,210,220); pdf.line(margem,y,192,y); y+=9; pdf.setTextColor(26,43,58); pdf.setFont('helvetica','normal'); pdf.setFontSize(10.5);
+      ultimoDocumentoGerado.split(/\r?\n/).forEach(function(linha){ var partes=pdf.splitTextToSize(linha || ' ',largura); if(y + partes.length*5.4 > 278){pdf.addPage();y=20;} pdf.text(partes,margem,y);y+=partes.length*5.4+(linha?1.2:2); });
+      pdf.setFontSize(8);pdf.setTextColor(90,110,125);pdf.text('Documento gerado no Drone Hub',margem,287);pdf.save((iaTipoAtual || 'documento')+'_'+Date.now().toString().slice(-6)+'.pdf');
     }
 
     /* Conteudo editorial por tipo: evita documentos genéricos e adapta a linguagem ao uso profissional. */
