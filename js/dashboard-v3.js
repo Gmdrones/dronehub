@@ -1,9 +1,13 @@
 (function(){
   function ready(fn){document.readyState==='loading'?document.addEventListener('DOMContentLoaded',fn):fn();}
   function count(key){try{return JSON.parse(localStorage.getItem(key)||'[]').filter(function(x){return x.userId===(window.uid||'');}).length;}catch(e){return 0;}}
-  ready(function(){
+  ready(async function(){
     var hero=document.querySelector('.hero');if(!hero||document.getElementById('dashboardCommand'))return;
-    var pro=Boolean(window.isPro),aircraft=count('dronehub_aircraft'),missions=count('dronehub_missoes');
+    // Aguarda o plano oficial antes de montar o painel. Evita mostrar o convite
+    // do Pro a quem já possui uma assinatura ou cortesia ativa.
+    if(typeof syncCurrentEntitlement==='function'){try{await syncCurrentEntitlement();}catch(e){}}
+    var account=(typeof getCurrentUser==='function'&&getCurrentUser())||{};
+    var pro=account.plan==='pro',aircraft=count('dronehub_aircraft'),missions=count('dronehub_missoes');
     if(!pro){
       var content=document.querySelector('.content');
       if(content){
