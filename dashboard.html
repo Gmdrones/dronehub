@@ -7,9 +7,9 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase.js"></script>
+  <script src="js/supabase.js?v=20260725-admin-sync"></script>
   <link rel="stylesheet" href="css/plan-access.css">
-  <script src="js/plan-access.js"></script>
+  <script src="js/plan-access.js?v=20260725-admin-sync"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -155,7 +155,7 @@
   <link rel="stylesheet" href="css/saas.css">
   <link rel="stylesheet" href="css/pro-operations.css">
   <link rel="stylesheet" href="css/dashboard-v3.css?v=20260724-flightdeck">
-  <script src="js/main.js" defer></script>
+  <script src="js/main.js?v=20260725-admin-sync" defer></script>
   <script src="js/pro-operations.js" defer></script>
   <script src="js/intelligent-alerts.js" defer></script>
   <script src="js/dashboard-v3.js" defer></script>
@@ -163,8 +163,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
   <script src="js/mission-airspace-map.js?v=20260724" defer></script>
-  <link rel="stylesheet" href="css/mobile-nav.css?v=20260724">
-  <script src="js/mobile-nav.js?v=20260724" defer></script>
+<link rel="stylesheet" href="css/mobile-nav.css?v=20260724-responsive">
+<script src="js/mobile-nav.js?v=20260724-mobilefix" defer></script>
 </head>
 <body>
   <script>
@@ -174,7 +174,7 @@
     var uid = user.id || user.email || 'default';
     if (typeof syncCurrentEntitlement === 'function') {
       syncCurrentEntitlement().then(function(freshUser) {
-        if (freshUser && freshUser.plan !== user.plan) window.location.reload();
+        if (freshUser && (freshUser.plan !== user.plan || freshUser.role !== user.role)) window.location.reload();
       });
     }
     if (window.location.search.includes('upgrade=true')) {
@@ -243,10 +243,10 @@
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> Documentos
         </a>
         <a href="missoes.html">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 6 3.6 4.8-1.6 6-2-3.8-2 3.8-1.6-6L12 6z"/></svg></span> Missoes
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 6 3.6 4.8-1.6 6-2-3.8-2 3.8-1.6-6L12 6z"/></svg></span> Missões
         </a>
         <a href="fiscalizacao.html">
-          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> Fiscalizacao
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> Fiscalização
         </a>
         <a href="financeiro.html">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> Financeiro
@@ -276,7 +276,7 @@
         <!-- KPIS REAIS -->
         <div class="kpi-row">
           <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg></div></div><div class="kpi-value" id="kpiAircraft">0</div><div class="kpi-label">Aeronaves</div></div>
-          <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 6 3.6 4.8-1.6 6-2-3.8-2 3.8-1.6-6L12 6z"/></svg></div></div><div class="kpi-value" id="kpiMissions">0</div><div class="kpi-label">Missoes</div></div>
+          <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 6 3.6 4.8-1.6 6-2-3.8-2 3.8-1.6-6L12 6z"/></svg></div></div><div class="kpi-value" id="kpiMissions">0</div><div class="kpi-label">Missões</div></div>
           <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div><div class="kpi-value" id="kpiDocs">0</div><div class="kpi-label">Documentos</div></div>
           <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div></div><div class="kpi-value" id="kpiReceita">R$ 0</div><div class="kpi-label">Receita</div></div>
           <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div></div><div class="kpi-value" id="kpiClientes">0</div><div class="kpi-label">Clientes</div></div>
@@ -295,14 +295,14 @@
                   <div class="weather-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/></svg><span class="wd-l">Vento</span><span class="wd-v" id="wVento">--</span></div>
                   <div class="weather-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/></svg><span class="wd-l">Rajadas</span><span class="wd-v" id="wRajada">--</span></div>
                   <div class="weather-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/></svg><span class="wd-l">Umidade</span><span class="wd-v" id="wUmi">--</span></div>
-                  <div class="weather-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/></svg><span class="wd-l">Satelites</span><span class="wd-v" id="wSat">--</span></div>
+                  <div class="weather-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/></svg><span class="wd-l">Satélites</span><span class="wd-v" id="wSat">--</span></div>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="card">
-            <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 6 3.6 4.8-1.6 6-2-3.8-2 3.8-1.6-6L12 6z"/></svg> Proximas Missoes</h3><span class="card-link" onclick="location.href='missoes.html'">Ver todas</span></div>
+            <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 6 3.6 4.8-1.6 6-2-3.8-2 3.8-1.6-6L12 6z"/></svg> Próximas missões</h3><span class="card-link" onclick="location.href='missoes.html'">Ver todas</span></div>
             <div id="missionList"><p style="color:var(--text3);font-size:0.85rem;padding:12px 0;">Nenhuma missao cadastrada.</p></div>
           </div>
 
