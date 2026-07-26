@@ -36,14 +36,41 @@
       '<div class="mobile-condition-card"><div class="mobile-condition-head"><span>CONDIÇÕES ATUAIS</span><b id="mobileStatus">Atualizando</b></div><div class="mobile-condition-metrics"><div><small>Temp.</small><strong id="mobileTemp2">--</strong></div><div><small>Vento</small><strong id="mobileWind2">--</strong></div><div><small>Rajadas</small><strong id="mobileGust">--</strong></div><div><small>Sat.</small><strong id="mobileSat">--</strong></div></div></div>'+
       (today.length?'<div class="card mobile-context-card"><div class="card-header"><h3>Próxima missão</h3><a class="card-link" href="missoes.html">Ver</a></div><strong>'+esc(today[0].titulo||today[0].cliente||'Missão de hoje')+'</strong></div>':'')+
       (alerts?'<div class="card mobile-context-card"><div class="card-header"><h3>Alertas operacionais</h3></div><p>'+alerts+' item(ns) precisam da sua atenção.</p></div>':'')+
-      '<button class="dashboard-more-toggle" id="mobileExpandToggle" type="button" aria-expanded="false">Mostrar mais <span>⌄</span></button><div class="mobile-expand-panel" id="mobileExpandPanel"><div class="mobile-expand-row"><span>Perfil operacional</span><b>'+(profile.nome?'Completo':'Pendente')+'</b></div><div class="mobile-expand-row"><span>Voos concluídos</span><b>'+flightStats().completed+'</b></div><div class="mobile-expand-row"><span>Documentos ativos</span><b>'+(docs||[]).length+'</b></div><div class="mobile-expand-row"><span>Baterias monitoradas</span><b>'+(batteries||[]).length+'</b></div></div><p class="mobile-more-note">Informação essencial primeiro. Detalhes sob demanda.</p>';
+      '<button class="dashboard-more-toggle" id="mobileExpandToggle" type="button" aria-expanded="false"><span class="toggle-label">Mostrar informações operacionais</span><span class="toggle-chevron">⌄</span></button>'+
+      '<div class="mobile-expand-panel" id="mobileExpandPanel">'+
+        '<div class="mobile-expand-summary">'+
+          '<div class="mobile-expand-row"><span>Perfil operacional</span><b>'+(profile.nome?'Completo':'Pendente')+'</b></div>'+
+          '<div class="mobile-expand-row"><span>Voos concluídos</span><b>'+flightStats().completed+'</b></div>'+
+          '<div class="mobile-expand-row"><span>Documentos ativos</span><b>'+(docs||[]).length+'</b></div>'+
+          '<div class="mobile-expand-row"><span>Baterias monitoradas</span><b>'+(batteries||[]).length+'</b></div>'+
+        '</div>'+
+        '<div class="mobile-tools-title">Todas as ferramentas</div>'+
+        '<nav class="mobile-tools-grid" aria-label="Todas as ferramentas do Drone Hub">'+
+          '<a href="perfil.html"><strong>Perfil do piloto</strong><small>Dados e documentos pessoais</small></a>'+
+          '<a href="aeronaves.html"><strong>Frota e baterias</strong><small>Aeronaves, ciclos e manutenção</small></a>'+
+          '<a href="central-voo.html"><strong>Central de Voo</strong><small>Clima e decisão operacional</small></a>'+
+          '<a href="missoes.html"><strong>Missões e checklist</strong><small>Planejamento, SARPAS e diário</small></a>'+
+          '<a href="documentos.html"><strong>Documentos e relatórios</strong><small>IA, PDF, DOCX e arquivos</small></a>'+
+          '<a href="fiscalizacao.html"><strong>Fiscalização</strong><small>Credencial e QR Code</small></a>'+
+          '<a href="financeiro.html"><strong>Financeiro</strong><small>Receitas, despesas e histórico</small></a>'+
+        '</nav>'+
+      '</div><p class="mobile-more-note">Informação essencial primeiro. Todas as ferramentas continuam acessíveis.</p>';
     content.insertBefore(mobile,content.firstChild);
   }
   function syncWeather(){
     var map=[['wTemp','mobileTemp'],['wTemp','mobileTemp2'],['wVento','mobileWind'],['wVento','mobileWind2'],['wRajada','mobileGust'],['wSat','mobileSat'],['wStatus','mobileStatus']];
     map.forEach(function(ids){var source=document.getElementById(ids[0]),target=document.getElementById(ids[1]);if(source&&target&&source.textContent.trim()!=='--')target.textContent=source.textContent.replace('🟢 ','').replace('🟡 ','').replace('🔴 ','');});
   }
-  function bindToggle(btn,section){if(!btn||!section)return;btn.addEventListener('click',function(){var open=btn.getAttribute('aria-expanded')==='true';btn.setAttribute('aria-expanded',String(!open));btn.firstChild.nodeValue=open?'Mostrar mais ':'Mostrar menos ';section.classList.toggle('is-open',!open);});}
+  function bindToggle(btn,section){
+    if(!btn||!section)return;
+    btn.addEventListener('click',function(){
+      var open=btn.getAttribute('aria-expanded')==='true';
+      btn.setAttribute('aria-expanded',String(!open));
+      var label=btn.querySelector('.toggle-label');
+      if(label)label.textContent=open?'Mostrar informações operacionais':'Mostrar menos';
+      section.classList.toggle('is-open',!open);
+    });
+  }
   function toggleMore(){bindToggle(document.getElementById('dashboardMoreToggle'),document.getElementById('dashboardMoreSection'));bindToggle(document.getElementById('mobileExpandToggle'),document.getElementById('mobileExpandPanel'));}
   function fetchMobileWeather(){fetch('https://api.open-meteo.com/v1/forecast?latitude=-22.9068&longitude=-43.1729&current=temperature_2m,wind_speed_10m,wind_gusts_10m&timezone=America%2FSao_Paulo').then(function(r){return r.json();}).then(function(data){var c=data.current;if(!c)return;[['mobileTemp',Math.round(c.temperature_2m)+'°'],['mobileTemp2',Math.round(c.temperature_2m)+'°'],['mobileWind',Math.round(c.wind_speed_10m)+' km/h'],['mobileWind2',Math.round(c.wind_speed_10m)+' km/h'],['mobileGust',Math.round(c.wind_gusts_10m)+' km/h']].forEach(function(x){var el=document.getElementById(x[0]);if(el)el.textContent=x[1];});var status=document.getElementById('mobileStatus');if(status)status.textContent=c.wind_speed_10m<15?'Favorável':c.wind_speed_10m<25?'Atenção':'Não recomendado';}).catch(function(){});}
   function init(){updateDesktopKpis();hideEmpty();smartHero();mobileMarkup();toggleMore();syncWeather();fetchMobileWeather();var weather=document.getElementById('weatherContent');if(weather)new MutationObserver(syncWeather).observe(weather,{subtree:true,childList:true,characterData:true,attributes:true});}
