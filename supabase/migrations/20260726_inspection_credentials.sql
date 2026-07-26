@@ -9,6 +9,17 @@ create table if not exists public.inspection_credentials (
 
 alter table public.inspection_credentials enable row level security;
 
+-- RLS nao substitui os privilegios SQL da tabela. Sem estes grants o
+-- Supabase retorna "permission denied for table inspection_credentials"
+-- antes mesmo de avaliar as politicas abaixo.
+grant usage on schema public to authenticated, anon;
+grant select, insert, update, delete on table public.inspection_credentials to authenticated;
+
+drop policy if exists "inspection credentials select owner" on public.inspection_credentials;
+create policy "inspection credentials select owner"
+on public.inspection_credentials for select to authenticated
+using (auth.uid() = owner_id);
+
 drop policy if exists "inspection credentials insert owner" on public.inspection_credentials;
 create policy "inspection credentials insert owner"
 on public.inspection_credentials for insert to authenticated
