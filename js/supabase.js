@@ -216,10 +216,34 @@ function deleteMission(userId, id) {
 }
 
 // ===== DOCUMENTS =====
+function isSarpasDocument(data) {
+  const raw = [
+    data && data.type,
+    data && data.category,
+    data && data.name,
+    data && data.title
+  ].filter(Boolean).join(' ');
+  return raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('sarpas');
+}
+
 function saveDocument(userId, data) {
   if (!data.id) data.id = Date.now().toString();
   data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString();
-  const d = JSON.parse(localStorage.getItem('dronehub_docs') || '[]');
+  let d = JSON.parse(localStorage.getItem('dronehub_docs') || '[]');
+  if (isSarpasDocument(data)) {
+    const superseded = d.filter(x =>
+      x.userId === userId &&
+      x.id !== data.id &&
+      isSarpasDocument(x)
+    );
+    superseded.forEach(x => removeCloudRecord('documents', userId, x.id));
+    d = d.filter(x => !(
+      x.userId === userId &&
+      x.id !== data.id &&
+      isSarpasDocument(x)
+    ));
+    data.replacesPreviousAuthorization = true;
+  }
   const idx = d.findIndex(x => x.id === data.id && x.userId === userId);
   if (idx >= 0) { d[idx] = data; } else { d.push(data); }
   localStorage.setItem('dronehub_docs', JSON.stringify(d));

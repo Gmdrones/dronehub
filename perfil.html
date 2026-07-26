@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase.js?v=20260726-account-sync"></script>
+  <script src="js/supabase.js?v=20260726-sarpas"></script>
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js?v=20260726-free-lock"></script>
   <style>
@@ -160,7 +160,7 @@
         <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Documentos</h3></div>
         <div class="add-bar">
           <input type="text" id="docName" placeholder="Nome do documento" style="flex:1;min-width:150px;">
-          <select id="docType"><option>Piloto</option><option>Drone</option><option>Empresa</option><option>Seguro</option></select>
+          <select id="docType"><option>Piloto</option><option>Drone</option><option>Empresa</option><option>Seguro</option><option>SARPAS - Autorização de voo</option></select>
           <input type="date" id="docExpiry">
           <button class="btn btn-primary" onclick="addDoc()">Adicionar</button>
         </div>
@@ -229,16 +229,13 @@
       var docs=getDocuments(uid);var d=docs.find(function(x){return x.id===id;});if(!d)return;
       var name=prompt('Nome:',d.name);if(!name)return;
       d.name=name;d.type=prompt('Tipo:',d.type)||d.type;d.expiry=prompt('Validade (AAAA-MM-DD):',d.expiry)||d.expiry;
-      var all=JSON.parse(localStorage.getItem('dronehub_docs')||'[]');
-      var idx=all.findIndex(function(x){return x.id===id&&x.userId===uid;});
-      if(idx>=0){all[idx]=d;localStorage.setItem('dronehub_docs',JSON.stringify(all));}
+      saveDocument(uid,d);
       renderDocs();
     }
 
     function delDoc(id){
       if(!confirm('Excluir documento?'))return;
-      var all=JSON.parse(localStorage.getItem('dronehub_docs')||'[]');
-      localStorage.setItem('dronehub_docs',JSON.stringify(all.filter(function(x){return !(x.id===id&&x.userId===uid);})));
+      deleteDocument(uid,id);
       renderDocs();
     }
     renderDocs();
