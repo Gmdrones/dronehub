@@ -157,11 +157,13 @@
   <link rel="stylesheet" href="css/dashboard-v3.css?v=20260726-sync">
   <link rel="stylesheet" href="css/layout-fixes.css?v=20260726-sync">
   <link rel="stylesheet" href="css/layout-v4.css?v=20260726-1">
+  <link rel="stylesheet" href="css/dashboard-v11.css?v=20260726-1">
   <script src="js/main.js?v=20260725-admin-sync" defer></script>
   <script src="js/pro-operations.js" defer></script>
   <script src="js/intelligent-alerts.js" defer></script>
   <script src="js/dashboard-v3.js?v=20260725-access-final" defer></script>
   <script src="js/dashboard-flightdeck.js?v=20260724-flightdeck" defer></script>
+  <script src="js/dashboard-v11.js?v=20260726-1" defer></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
   <script src="js/mission-airspace-map.js?v=20260724" defer></script>
@@ -171,6 +173,7 @@
 <body>
   <script>
     var user = JSON.parse(localStorage.getItem('dronehub_user') || 'null');
+    if (!user && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) user = { id:'preview', name:'Giorgio', email:'preview@dronehub.local', plan:'pro', role:'user' };
     if (!user) { window.location.href = 'login.html'; }
     var founderAdmin = String(user.email || '').toLowerCase() === 'giorgiomendonca@gmail.com';
     if (founderAdmin) {
@@ -277,15 +280,20 @@
         <div class="hero-c">
           <div class="hero-l">
             <div class="badge-user"><div class="av" id="avatarInitialHero">U</div><span id="userBadge">Usuario</span></div>
-            <h1>Bem-vindo de volta</h1>
+            <h1 id="smartGreeting">Bem-vindo de volta</h1>
             <div class="sub" id="welcomeSub">Aqui estao seus dados reais</div>
+            <div class="smart-hero-status" id="smartHeroStatus" aria-live="polite"></div>
+            <div class="smart-hero-actions">
+              <a class="smart-primary-action" href="central-voo.html">Abrir Central de Voo <span>→</span></a>
+              <a class="smart-secondary-action" href="missoes.html">Nova missão</a>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="content">
         <!-- KPIS REAIS -->
-        <div class="kpi-row">
+        <div class="kpi-row desktop-operational-kpis" id="desktopOperationalKpis">
           <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg></div></div><div class="kpi-value" id="kpiAircraft">0</div><div class="kpi-label">Aeronaves</div></div>
           <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 6 3.6 4.8-1.6 6-2-3.8-2 3.8-1.6-6L12 6z"/></svg></div></div><div class="kpi-value" id="kpiMissions">0</div><div class="kpi-label">Missões</div></div>
           <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div><div class="kpi-value" id="kpiDocs">0</div><div class="kpi-label">Documentos</div></div>
@@ -296,7 +304,7 @@
 
         <!-- CLIMA REAL + MISSOES + ALERTAS -->
         <div class="grid-3">
-          <div class="card">
+          <div class="card" id="weatherCard">
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> Condicoes de Voo</h3></div>
             <div style="text-align:center;padding:20px;" id="weatherLoading">Buscando clima...</div>
             <div id="weatherContent" style="display:none;">
@@ -312,39 +320,40 @@
             </div>
           </div>
 
-          <div class="card">
+          <div class="card" id="missionCard">
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m12 6 3.6 4.8-1.6 6-2-3.8-2 3.8-1.6-6L12 6z"/></svg> Próximas missões</h3><span class="card-link" onclick="location.href='missoes.html'">Ver todas</span></div>
             <div id="missionList"><p style="color:var(--text3);font-size:0.85rem;padding:12px 0;">Nenhuma missao cadastrada.</p></div>
           </div>
 
-          <div class="card">
+          <div class="card" id="alertCard">
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> Alertas</h3></div>
             <div id="alertList"><p style="color:var(--text3);font-size:0.85rem;padding:12px 0;">Nenhum alerta no momento.</p></div>
           </div>
         </div>
 
         <!-- DOCS + FINANCEIRO + CLIENTES + BATERIAS -->
-        <div class="grid-4">
-          <div class="card">
+        <div class="grid-4 optional-dashboard-grid" id="optionalDashboardGrid">
+          <div class="card optional-card" id="documentsCard">
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Documentos</h3><span class="card-link" onclick="location.href='documentos.html'">Ver</span></div>
             <div id="docList"><p style="color:var(--text3);font-size:0.8rem;">Nenhum documento.</p></div>
           </div>
-          <div class="card">
+          <div class="card optional-card" id="financeCard">
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Financeiro</h3><span class="card-link" onclick="location.href='financeiro.html'">Ver</span></div>
             <div id="finList"><p style="color:var(--text3);font-size:0.8rem;">Nenhuma transacao.</p></div>
           </div>
-          <div class="card">
+          <div class="card optional-card" id="clientsCard">
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Clientes</h3><span class="card-link" onclick="location.href='clientes.html'">Ver</span></div>
             <div id="clientList"><p style="color:var(--text3);font-size:0.8rem;">Nenhum cliente.</p></div>
           </div>
-          <div class="card">
+          <div class="card optional-card" id="batteriesCard">
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="10" x="4" y="7" rx="2"/><path d="M7 7V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2"/></svg> Baterias</h3><span class="card-link" onclick="location.href='aeronaves.html#fleetHealth'">Ver</span></div>
             <div id="battList"><p style="color:var(--text3);font-size:0.8rem;">Nenhuma bateria.</p></div>
           </div>
         </div>
 
         <!-- PROGRESSO + UPGRADE -->
-        <div class="grid-2">
+        <button class="dashboard-more-toggle" id="dashboardMoreToggle" type="button" aria-expanded="false">Mostrar mais <span>⌄</span></button>
+        <div class="grid-2 dashboard-more-section" id="dashboardMoreSection">
           <div class="card">
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Seu progresso</h3></div>
             <div class="progress-item"><span class="progress-dot" id="p1"></span><span class="progress-info" id="p1t"><strong>Perfil</strong></span><a href="perfil.html" class="progress-link">Ir</a></div>
@@ -510,13 +519,13 @@
       document.getElementById('planName').textContent = user.role === 'admin' ? 'Admin' : 'Pro';
       document.getElementById('planName').className = 'sidebar-foot-name pro';
       document.getElementById('planLink').textContent = 'Gerenciar';
-      document.getElementById('p4').className = 'progress-dot green';
-      document.getElementById('p4t').innerHTML = '<strong>Pro ativo</strong>';
-      document.getElementById('p4link').textContent = 'OK';
-      document.getElementById('upgradeCard').style.display = 'none';
+      if (document.getElementById('p4')) document.getElementById('p4').className = 'progress-dot green';
+      if (document.getElementById('p4t')) document.getElementById('p4t').innerHTML = '<strong>Pro ativo</strong>';
+      if (document.getElementById('p4link')) document.getElementById('p4link').textContent = 'OK';
+      if (document.getElementById('upgradeCard')) document.getElementById('upgradeCard').style.display = 'none';
     } else {
-      document.getElementById('p4').className = 'progress-dot red';
-      document.getElementById('p4t').innerHTML = '<strong>Plano Pro</strong> — desbloqueie todos os modulos';
+      if (document.getElementById('p4')) document.getElementById('p4').className = 'progress-dot red';
+      if (document.getElementById('p4t')) document.getElementById('p4t').innerHTML = '<strong>Plano Pro</strong> — desbloqueie todos os modulos';
     }
 
     if (typeof lucide !== 'undefined') { lucide.createIcons(); }
