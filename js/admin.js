@@ -12,7 +12,7 @@
       var note=document.getElementById('courtesyNote').value.trim()||null;
       var button=document.getElementById('grantButton');
       if(!email){setStatus('Informe o e-mail do piloto.','error');return;}
-      if(!window.supabaseClient){setStatus('A conexão segura não está disponível. Tente novamente em instantes.','error');return;}
+      if(typeof supabaseClient === 'undefined' || !supabaseClient){setStatus('A conexão segura não está disponível. Tente novamente em instantes.','error');return;}
       button.disabled=true;button.querySelector('span').textContent='Concedendo acesso…';setStatus('');
       try{
         var result=await supabaseClient.rpc('grant_partner_courtesy',{target_email:email,months:months,courtesy_note:note});
