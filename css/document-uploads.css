@@ -1,0 +1,5 @@
+.document-file-field{display:flex;flex-direction:column;gap:6px;min-width:220px;flex:1}.document-file-field span{font-size:.72rem;color:var(--text2);font-weight:600}.document-file-field input{width:100%;padding:9px;border:1px dashed rgba(0,210,255,.35);border-radius:10px;background:#09111b;color:var(--text2)}
+.document-file-note{width:100%;font-size:.74rem;color:var(--text3);line-height:1.5}.document-file-note strong{color:var(--cyan)}
+.doc-file-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}.doc-file-link{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid rgba(0,210,255,.3);border-radius:8px;color:var(--cyan);font-size:.74rem;font-weight:700}.doc-file-link:hover{background:rgba(0,210,255,.08)}
+.upload-progress{color:var(--cyan);font-size:.78rem;font-weight:600;padding:8px 0}
+@media(max-width:720px){.document-file-field{min-width:100%}.add-bar{align-items:stretch}.add-bar>input,.add-bar>select,.add-bar>button{width:100%}}

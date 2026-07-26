@@ -8,6 +8,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="js/supabase.js?v=20260726-sarpas"></script>
+  <link rel="stylesheet" href="css/document-uploads.css?v=20260726-1">
+  <script src="js/document-uploads.js?v=20260726-1" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="stylesheet" href="css/plan-access.css">
@@ -172,7 +174,7 @@
         <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Meus Documentos</h3></div>
         <div class="add-bar" style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);">
           <input type="text" id="docName" placeholder="Nome do documento" style="flex:1;min-width:150px;">
-          <select id="docType"><option>Proposta</option><option>Contrato</option><option>Recibo</option><option>Relatório</option><option>Orçamento</option><option>Autorização</option><option>Avaliação de Risco Operacional (ARO)</option><option>Piloto</option><option>Drone</option><option>Empresa</option><option>Seguro</option><option>SARPAS - Autorização de voo</option></select>
+          <select id="docType"><option>SISANT (ANAC)</option><option>Homologação ANATEL</option><option>Seguro RETA</option><option>SARPAS - Autorização de voo</option><option>Avaliação de Risco Operacional (ARO)</option><option>Proposta</option><option>Contrato</option><option>Recibo</option><option>Relatório</option><option>Orçamento</option><option>Outro documento</option></select>
           <input type="date" id="docExpiry">
           <button class="btn btn-primary" onclick="addDoc()">Adicionar</button>
         </div>
@@ -455,7 +457,7 @@
       var list = document.getElementById('docList');
       if (docs.length === 0) { list.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;">Nenhum documento cadastrado.</p>'; return; }
       list.innerHTML = docs.map(function(d){
-        return '<div class="row"><div class="row-info"><strong>'+(d.name||d.type||'Documento')+'</strong><span>'+(d.type||'')+(d.expiry?' Val: '+new Date(d.expiry).toLocaleDateString('pt-BR'):'')+'</span></div><div class="row-actions"><button class="action-btn edit" onclick="verDoc(\''+d.id+'\')">Ver</button><button class="action-btn delete" onclick="delDoc(\''+d.id+'\')">Excluir</button></div></div>';
+        return '<div class="row"><div class="row-info"><strong>'+(d.name||d.type||'Documento')+'</strong><span>'+(d.type||'')+(d.expiry?' · Validade: '+new Date(d.expiry).toLocaleDateString('pt-BR'):'')+(d.fileName?' · PDF anexado':'')+'</span></div><div class="row-actions">'+(d.filePath?'<button class="action-btn edit" onclick="openDocFile(\''+d.id+'\')">Visualizar arquivo</button>':'')+'<button class="action-btn edit" onclick="verDoc(\''+d.id+'\')">Ver</button><button class="action-btn delete" onclick="delDoc(\''+d.id+'\')">Excluir</button></div></div>';
       }).join('');
     }
 
@@ -466,16 +468,20 @@
       else { alert('Documento: ' + (d.name||d.type)); }
     }
 
-    function addDoc() {
+    async function addDoc() {
       var name = document.getElementById('docName').value.trim(); var type = document.getElementById('docType').value; var expiry = document.getElementById('docExpiry').value;
       if (!name) return alert('Digite o nome do documento');
-      saveDocument(uid, { id: Date.now().toString(), name: name, type: type, expiry: expiry, content: '', createdAt: new Date().toISOString() });
-      document.getElementById('docName').value = ''; renderDocs();
+      var input=document.getElementById('docFile'),file=input&&input.files[0];
+      if(!file)return alert('Selecione o PDF ou a imagem do documento.');
+      try{await saveDocumentWithFile(uid,{id:Date.now().toString(),name:name,type:type,expiry:expiry,content:'',createdAt:new Date().toISOString()},file);document.getElementById('docName').value='';input.value='';renderDocs();}
+      catch(e){alert('Não foi possível anexar o documento: '+e.message);}
     }
 
-    function delDoc(id) {
+    async function openDocFile(id){var d=getDocuments(uid).find(function(x){return x.id===id;});if(!d)return;try{window.open(await signedDocumentUrl(d,300),'_blank','noopener');}catch(e){alert(e.message);}}
+
+    async function delDoc(id) {
       if (!confirm('Excluir documento?')) return;
-      deleteDocument(uid, id); renderDocs();
+      var d=getDocuments(uid).find(function(x){return x.id===id;});if(d)await deletePilotDocumentFile(d);deleteDocument(uid,id);renderDocs();
     }
 
     renderDocs();

@@ -9,6 +9,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="js/supabase.js?v=20260726-sarpas"></script>
+  <script src="js/document-uploads.js?v=20260726-1" defer></script>
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js?v=20260726-free-lock"></script>
   <script src="js/inspection-access.js?v=20260726-public-credential" defer></script>
@@ -181,7 +182,7 @@
       var initial=(profile.nome||user.name||'U').charAt(0).toUpperCase();
       var foto=profile.foto;var photoEl=document.getElementById('pcPhoto');
       if(foto){photoEl.innerHTML='<img src="'+foto+'" alt="">';}else{photoEl.textContent=initial;}
-      var docsHtml='',visibleDocs=docs.filter(function(d){var raw=((d.type||'')+' '+(d.name||'')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return raw.indexOf('avaliacao de risco')<0&&raw.indexOf(' aro')<0;});
+      var docsHtml='',visibleDocs=docs.filter(function(d){return typeof isInspectionDocument==='function'&&isInspectionDocument(d);});
       if(visibleDocs.length===0){docsHtml='<span style="font-size:0.8rem;color:var(--text3);">Nenhum documento liberado</span>';}
       else{docsHtml=visibleDocs.map(function(d){return '<div class="pc-doc-item"><span class="ok">✓</span><span><strong>'+d.name+'</strong>'+(d.expiry?' Val: '+new Date(d.expiry).toLocaleDateString('pt-BR'):'')+'</span></div>';}).join('');}
       document.getElementById('pcDocs').innerHTML=docsHtml;
@@ -190,8 +191,9 @@
     async function gerarQR(token,minutes){
       token=token||(crypto&&crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2));minutes=Number(minutes||15);
       var expiresAt=new Date(Date.now()+minutes*60000).toISOString(),profile=getProfile(uid),aircraft=getAircraft(uid),docs=getDocuments(uid);
-      var visibleDocs=docs.filter(function(d){var raw=((d.type||'')+' '+(d.name||'')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return raw.indexOf('avaliacao de risco')<0&&raw.indexOf(' aro')<0;});
-      var payload={pilot:{name:profile.nome||user.name||'Piloto',cpf:profile.cpf||'',city:profile.cidade||'',photo:profile.foto&&profile.foto.length<1500000?profile.foto:''},aircraft:aircraft.map(function(a){return{id:a.id,brand:a.marca||'',model:a.modelo||'',sisant:a.sisant||'',anatel:a.anatel||'',insurance:a.seguro||'',insuranceExpiry:a.seguroExpiry||''};}),documents:visibleDocs.map(function(d){return{name:d.name||d.type||'Documento',type:d.type||'',expiry:d.expiry||'',isSarpas:typeof isSarpasDocument==='function'&&isSarpasDocument(d)};}),issuedAt:new Date().toISOString()};
+      var visibleDocs=docs.filter(function(d){return typeof isInspectionDocument==='function'&&isInspectionDocument(d);});
+      var sharedDocs=await Promise.all(visibleDocs.map(async function(d){return{name:d.name||d.type||'Documento',type:d.type||'',expiry:d.expiry||'',isSarpas:typeof isSarpasDocument==='function'&&isSarpasDocument(d),fileName:d.fileName||'',fileUrl:d.filePath?await signedDocumentUrl(d,minutes*60):''};}));
+      var payload={pilot:{name:profile.nome||user.name||'Piloto',cpf:profile.cpf||'',city:profile.cidade||'',photo:profile.foto&&profile.foto.length<1500000?profile.foto:''},aircraft:aircraft.map(function(a){return{id:a.id,brand:a.marca||'',model:a.modelo||'',sisant:a.sisant||'',anatel:a.anatel||'',insurance:a.seguro||'',insuranceExpiry:a.seguroExpiry||''};}),documents:sharedDocs,issuedAt:new Date().toISOString()};
       if(!supabaseClient){alert('A conexão segura não está disponível.');return false;}
       var saved=await supabaseClient.from('inspection_credentials').insert({token:token,payload:payload,expires_at:expiresAt,revoked:false});
       if(saved.error){alert('Não foi possível criar a credencial: '+saved.error.message);return false;}

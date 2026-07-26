@@ -244,6 +244,11 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('a[href*="funcionalidades"]').forEach(function(link) {
     if (link.textContent.trim().toLowerCase() === 'conhecer a plataforma') link.textContent = 'Conhecer funcionalidades';
   });
+  var current=null;try{current=JSON.parse(localStorage.getItem('dronehub_user')||'null');}catch(e){}
+  document.querySelectorAll('#planLink').forEach(function(link){
+    if(current&&current.role==='admin'){link.href='admin.html';link.textContent='Gerenciar usuários';}
+    else if(current&&current.plan==='pro'){link.href='perfil.html';link.textContent='Minha conta';}
+  });
 });
 
 // Padroniza a navegação pública entre Home, Funcionalidades, Preços, Sobre e Blog.

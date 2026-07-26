@@ -150,7 +150,7 @@
         <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Upload DJI Fly Log</h3></div>
         <p style="font-size:0.85rem;color:var(--text3);margin-bottom:12px;">Upload do arquivo TXT de log da DJI Fly.</p>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-          <input type="file" id="djiLog" accept=".txt,.csv" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+          <input type="file" id="djiLog" accept=".txt,.csv,.json" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
           <button class="btn btn-secondary" onclick="uploadLog()">Importar</button>
         </div>
         <div id="logResult" style="margin-top:12px;"></div>
@@ -305,7 +305,21 @@
       var file = document.getElementById('djiLog').files[0];
       if (!file) return alert('Selecione um arquivo');
       var reader = new FileReader();
-      reader.onload = function(e) { document.getElementById('logResult').innerHTML = '<div style="background:var(--green-bg);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:12px;color:var(--green);font-weight:600;">Log importado: '+file.name+'</div>'; };
+      reader.onload = function(e) {
+        var raw=String(e.target.result||''),result=document.getElementById('logResult');
+        if(!raw.trim()||((raw.match(/\u0000/g)||[]).length>5)){result.innerHTML='<div class="document-file-note"><strong>Arquivo DJI protegido.</strong> Este TXT binário não expõe telemetria diretamente. Exporte o voo em CSV ou JSON decodificado para que ciclos, firmware e dados operacionais sejam importados sem estimativas.</div>';return;}
+        var aircraft=getAircraft(uid),target=aircraft[0];
+        if(!target){result.innerHTML='<div class="document-file-note">Cadastre uma aeronave antes de importar o log.</div>';return;}
+        function pick(pattern){var m=raw.match(pattern);return m&&String(m[1]||'').trim();}
+        var firmware=pick(/(?:firmware|app[_ ]?version|aircraft[_ ]?version)[,:=;\s]+["']?([^,;\r\n"']+)/i);
+        var serial=pick(/(?:battery[_ ]?(?:serial|sn)|serial[_ ]?number)[,:=;\s]+["']?([^,;\r\n"']+)/i);
+        var cycles=pick(/(?:battery[_ ]?cycles?|cycle[_ ]?count)[,:=;\s]+["']?(\d+)/i);
+        var updated=[];
+        if(firmware){target.firmware=firmware;target.lastLogImport=new Date().toISOString();saveAircraft(uid,target);updated.push('firmware '+firmware);}
+        if(serial||cycles){var known=getBatteries(uid),battery=known.find(function(b){return serial&&String(b.serial||b.nome||'')===serial;})||{id:Date.now().toString(),aircraftId:target.id,nome:serial||('Bateria importada - '+file.name),serial:serial||''};if(cycles)battery.ciclos=Number(cycles);battery.lastLogImport=new Date().toISOString();saveBattery(uid,battery);updated.push(cycles?cycles+' ciclos':'bateria identificada');}
+        if(typeof renderFleetHealth==='function')renderFleetHealth();
+        result.innerHTML='<div style="background:var(--green-bg);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:12px;color:var(--green);font-weight:600;">'+(updated.length?'Dados importados: '+updated.join(', ')+'.':'Log lido, mas o arquivo não contém campos reconhecíveis de bateria ou firmware. Nenhum dado foi inventado.')+'</div>';
+      };
       reader.readAsText(file);
     }
     render();
