@@ -55,7 +55,10 @@ async function signUpWithSupabase(email, password, name) {
   if (supabaseClient) {
     const { data, error } = await supabaseClient.auth.signUp({
       email, password,
-      options: { data: { full_name: name } }
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: window.location.origin + '/login.html?confirmed=1'
+      }
     });
     if (error) throw error;
     if (data?.user) {
