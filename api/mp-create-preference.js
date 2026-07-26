@@ -1,8 +1,10 @@
 // DRONE HUB — WORKER MERCADO PAGO
 // Cria preferência de pagamento via OAuth client_credentials
 
-const CLIENT_ID = '4934588586838432';
-const CLIENT_SECRET = 'APP_USR-4934588586838432-030918-8a7b3c2d1e5f6a7b8c9d0e1f2a3b4c5d-241983636';
+// Configure MP_CLIENT_ID e MP_CLIENT_SECRET como secrets no Cloudflare.
+// Credenciais privadas nunca devem ser gravadas no repositorio.
+const CLIENT_ID_VALUE = typeof MP_CLIENT_ID !== 'undefined' ? MP_CLIENT_ID : '';
+const CLIENT_SECRET_VALUE = typeof MP_CLIENT_SECRET !== 'undefined' ? MP_CLIENT_SECRET : '';
 const API_BASE = 'https://api.mercadopago.com';
 
 addEventListener('fetch', event => {
@@ -30,6 +32,13 @@ async function handle(request) {
   }
 
   try {
+    if (!CLIENT_ID_VALUE || !CLIENT_SECRET_VALUE) {
+      return new Response(JSON.stringify({
+        error: 'Pagamento indisponivel',
+        message: 'Credenciais do provedor nao configuradas no ambiente.'
+      }), { status: 503, headers: cors });
+    }
+
     const body = await request.json();
 
     // Step 1: Get access token via client_credentials
@@ -37,8 +46,8 @@ async function handle(request) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        client_secret: CLIENT_SECRET,
-        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET_VALUE,
+        client_id: CLIENT_ID_VALUE,
         grant_type: 'client_credentials',
         test_token: false
       })
