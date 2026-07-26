@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js?v=20260726-free-lock"></script>
   <link rel="stylesheet" href="css/fleet-health.css?v=20260726-sync">
-  <script src="js/fleet-health.js?v=20260726-user-fix" defer></script>
+  <script src="js/fleet-health.js?v=20260726-snapshot-fix" defer></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -90,6 +90,7 @@
     var isPro = user.plan === 'pro';
     var MAX = isPro ? 20 : 1;
     var uid = user.id || user.email || 'default';
+    window.dronehubFleetUserId = uid;
   </script>
 
   <header class="header">
@@ -212,6 +213,7 @@
     function render() {
       try {
         var list = getAircraft(uid);
+        window.dronehubAircraftSnapshot = list;
         var pct = Math.min((list.length / MAX) * 100, 100);
         document.getElementById('limitFill').style.width = pct + '%';
         document.getElementById('limitText').textContent = list.length + ' de ' + MAX + ' aeronaves cadastradas';

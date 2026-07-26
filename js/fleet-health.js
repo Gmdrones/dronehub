@@ -1,11 +1,21 @@
 (function(){
   function ready(fn){document.readyState==='loading'?document.addEventListener('DOMContentLoaded',fn):fn();}
   function currentUser(){
+    if(window.dronehubFleetUserId)return window.dronehubFleetUserId;
+    if(typeof uid!=='undefined'&&uid)return uid;
     var session=JSON.parse(localStorage.getItem('dronehub_user')||'null');
     return (session&&(session.id||session.email))||window.uid||'local';
   }
-  function aircraft(){return typeof getAircraft==='function'?getAircraft(currentUser()):[];}
+  function aircraft(){return Array.isArray(window.dronehubAircraftSnapshot)?window.dronehubAircraftSnapshot:(typeof getAircraft==='function'?getAircraft(currentUser()):[]);}
   function batteries(){return typeof getBatteries==='function'?getBatteries(currentUser()):[];}
+  function migrateLegacyBatteries(){
+    var owner=currentUser(),a=aircraft(),all=JSON.parse(localStorage.getItem('dronehub_baterias')||'[]'),changed=false;
+    all.forEach(function(b){
+      if(b.userId==='local'&&owner!=='local'){b.userId=owner;b.aircraftId=b.aircraftId||(a[0]&&a[0].id);changed=true;}
+      if(b.userId===owner&&a.length&&!a.some(function(x){return String(x.id)===String(b.aircraftId);})){b.aircraftId=a[0].id;changed=true;}
+    });
+    if(changed){localStorage.setItem('dronehub_baterias',JSON.stringify(all));all.filter(function(b){return b.userId===owner;}).forEach(function(b){saveBattery(owner,b);});}
+  }
   function escapeHtml(value){var e=document.createElement('span');e.textContent=value||'';return e.innerHTML;}
   function render(){
     var root=document.getElementById('fleetHealth');if(!root)return;
@@ -27,9 +37,9 @@
     if(!window.isPro)return;var target=document.querySelector('.main > .card');if(!target)return;
     var section=document.createElement('section');section.id='fleetHealth';section.className='fleet-health';
     section.innerHTML='<div class="fleet-health__top"><div><div class="fleet-health__eyebrow">Saúde da frota</div><h3>Prontidão de aeronaves e baterias</h3><p>Cadastre cada bateria separadamente e acompanhe os ciclos de uso em todos os dispositivos.</p></div><div class="fleet-health__score" id="fleetScore">—<small id="fleetStatus">Carregando</small></div></div><div class="fleet-health__grid"><div class="fleet-health__metric"><span>Aeronaves</span><b id="fleetAircraft">0</b></div><div class="fleet-health__metric"><span>Baterias registradas</span><b id="fleetBatteries">0</b></div><div class="fleet-health__metric"><span>Maior ciclo</span><b id="fleetCycles">—</b></div></div><p id="fleetEmpty" class="fleet-health__notice">Cadastre uma aeronave acima para liberar o registro de baterias.</p><form class="fleet-health__form" id="fleetForm"><select id="fleetAircraftSelect" aria-label="Aeronave"></select><input id="fleetBatteryName" required type="text" placeholder="Identificação (ex.: Bateria 1)"><input id="fleetCyclesInput" required min="0" type="number" placeholder="Ciclos atuais"><input id="fleetFirmware" type="text" placeholder="Firmware / observação"><button class="btn btn-primary" type="submit">Adicionar bateria</button></form><div id="fleetBatteryList"></div>';
-    target.insertAdjacentElement('afterend',section);render();
+    target.insertAdjacentElement('afterend',section);migrateLegacyBatteries();render();
     section.querySelector('#fleetForm').addEventListener('submit',function(e){e.preventDefault();var aircraftId=section.querySelector('#fleetAircraftSelect').value;if(!aircraftId){alert('Cadastre uma aeronave antes de adicionar baterias.');return;}saveBattery(currentUser(),{id:Date.now().toString(),aircraftId:aircraftId,name:section.querySelector('#fleetBatteryName').value.trim(),cycles:Math.max(0,Number(section.querySelector('#fleetCyclesInput').value)||0),firmware:section.querySelector('#fleetFirmware').value.trim(),registeredAt:new Date().toISOString()});e.target.reset();render();});
     window.addEventListener('dronehub:aircraft-updated',render);
-    window.addEventListener('dronehub:cloud-ready',render);
+    window.addEventListener('dronehub:cloud-ready',function(){migrateLegacyBatteries();render();});
   });
 }());
