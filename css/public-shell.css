@@ -1,0 +1,27 @@
+:root{--public-shell:1280px}
+html{font-size:16px!important;scrollbar-gutter:stable}
+body{font-size:16px!important;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html body .site-header,html body>.header{height:72px!important;min-height:72px!important;padding:0!important}
+html body .site-header{display:grid!important;grid-template-columns:1fr auto 1fr!important;align-items:center!important;width:100%!important}
+.site-header>.brand{justify-self:start;margin-left:max(24px,calc((100vw - var(--public-shell))/2))}
+.site-header>nav{justify-self:center}
+.site-header>.header-actions{justify-self:end;margin-right:max(24px,calc((100vw - var(--public-shell))/2))}
+body>.header>.header-inner,body>.header>.nav-wrap{width:min(var(--public-shell),calc(100% - 48px))!important;max-width:var(--public-shell)!important;margin:0 auto!important;padding:0!important}
+.site-header .brand,body>.header .logo,body>.header .brand{font:700 16px/1 'Space Grotesk',Inter,sans-serif!important;letter-spacing:-.02em!important}
+.site-header .brand-mark,body>.header .logo-icon,body>.header .brand-mark{width:34px!important;height:34px!important;border-radius:10px!important;font-size:11px!important}
+.site-header nav,body>.header nav{gap:28px!important;font-size:13px!important}
+.site-header nav a,body>.header nav a{font-size:13px!important;line-height:1!important;white-space:nowrap}
+.site-header .header-actions,body>.header .header-actions,body>.header .actions{gap:10px!important}
+.site-header .header-actions a,body>.header .header-actions a,body>.header .actions a{font-size:13px!important;min-height:40px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+.container,.shell,.hero-sobre .hc,.hero-blog .hc{max-width:var(--public-shell)!important}
+.proof,.showcase,.features,.operations,.final-cta,body>footer{max-width:var(--public-shell)!important}
+@media(max-width:760px){
+  html body .site-header,html body>.header{height:68px!important;min-height:68px!important}
+  html body .site-header{display:flex!important;padding:0 16px!important}
+  .site-header>.brand{margin:0!important}
+  .site-header>.header-actions{margin:0 0 0 auto!important}
+  body>.header>.header-inner,body>.header>.nav-wrap{width:calc(100% - 28px)!important}
+  .site-header nav,body>.header nav{display:none!important}
+  .site-header .brand,body>.header .logo,body>.header .brand{font-size:15px!important}
+  .site-header .brand-mark,body>.header .logo-icon,body>.header .brand-mark{width:32px!important;height:32px!important}
+}
