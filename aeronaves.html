@@ -7,11 +7,11 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase.js?v=20260725-auth-email"></script>
+  <script src="js/supabase.js?v=20260726-account-sync"></script>
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js?v=20260726-free-lock"></script>
-  <link rel="stylesheet" href="css/fleet-health.css">
-  <script src="js/fleet-health.js" defer></script>
+  <link rel="stylesheet" href="css/fleet-health.css?v=20260726-sync">
+  <script src="js/fleet-health.js?v=20260726-sync" defer></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -205,6 +205,7 @@
       saveAircraft(uid, data);
       document.getElementById('aModelo').value='';document.getElementById('aSisant').value='';document.getElementById('aAnatel').value='';document.getElementById('aSeguro').value='';document.getElementById('aPeso').value='';document.getElementById('aWindLimit').value='';document.getElementById('aSpecs').value='';
       render();
+      window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated'));
     }
 
     function editarAeronave(id) {
@@ -222,6 +223,7 @@
       a.windLimit = prompt('Limite de vento do fabricante (km/h):', a.windLimit || '') || a.windLimit;
       saveAircraft(uid, a);
       render();
+      window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated'));
     }
 
     function excluirAeronave(id) {
@@ -232,6 +234,7 @@
         if (!confirm('Excluir ' + (a.modelo||'aeronave') + '?')) return;
         deleteAircraft(uid, id);
         render();
+        window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated'));
       } catch(e) {
         alert('Erro ao excluir: ' + e.message);
       }
@@ -245,6 +248,7 @@
       reader.readAsText(file);
     }
     render();
+    window.addEventListener('dronehub:cloud-ready', function(){ render(); window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated')); });
     if (typeof lucide !== 'undefined') { lucide.createIcons(); }
   </script>
 </body>

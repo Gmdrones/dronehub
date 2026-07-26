@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase.js?v=20260725-auth-email"></script>
+  <script src="js/supabase.js?v=20260726-account-sync"></script>
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js?v=20260726-free-lock"></script>
   <style>
@@ -175,9 +175,20 @@
     document.getElementById('planBadge').textContent = isPro?'PRO':'FREE';
     if(isPro){document.getElementById('planName').textContent='Pro';document.getElementById('planName').className='sidebar-foot-name pro';document.getElementById('planLink').textContent='Gerenciar';}
 
-    var fotoSalva = saved.foto;
-    if(fotoSalva){document.getElementById('photoPreview').innerHTML='<img src="'+fotoSalva+'" alt="Foto">';}
-    else{document.getElementById('photoInitial').textContent=(user.name||'U').charAt(0).toUpperCase();}
+    function hydrateProfile(){
+      saved=getProfile(uid);
+      var fotoSalva=saved.foto;
+      if(fotoSalva){document.getElementById('photoPreview').innerHTML='<img src="'+fotoSalva+'" alt="Foto do piloto">';}
+      else{document.getElementById('photoPreview').innerHTML='<span id="photoInitial">'+(user.name||'U').charAt(0).toUpperCase()+'</span>';}
+      document.getElementById('pNome').value=saved.nome||'';
+      document.getElementById('pCpf').value=saved.cpf||'';
+      document.getElementById('pTel').value=saved.telefone||'';
+      document.getElementById('pCidade').value=saved.cidade||'';
+      document.getElementById('pAnac').value=saved.anac||'';
+      document.getElementById('pDecea').value=saved.decea||'';
+      document.getElementById('pHomologacao').value=saved.homologacao||saved.crea||'';
+      renderDocs();
+    }
 
     function handlePhoto(input){
       var file=input.files[0];if(!file)return;
@@ -189,14 +200,6 @@
       };
       reader.readAsDataURL(file);
     }
-
-    if(saved.nome)document.getElementById('pNome').value=saved.nome;
-    if(saved.cpf)document.getElementById('pCpf').value=saved.cpf;
-    if(saved.telefone)document.getElementById('pTel').value=saved.telefone;
-    if(saved.cidade)document.getElementById('pCidade').value=saved.cidade;
-    if(saved.anac)document.getElementById('pAnac').value=saved.anac;
-    if(saved.decea)document.getElementById('pDecea').value=saved.decea;
-    if(saved.homologacao || saved.crea)document.getElementById('pHomologacao').value=saved.homologacao || saved.crea;
 
     function salvarPerfil(){
       saveProfile(uid,{nome:document.getElementById('pNome').value,cpf:document.getElementById('pCpf').value,telefone:document.getElementById('pTel').value,cidade:document.getElementById('pCidade').value,anac:document.getElementById('pAnac').value,decea:document.getElementById('pDecea').value,homologacao:document.getElementById('pHomologacao').value});
@@ -211,6 +214,9 @@
         return '<div class="row"><div class="row-info"><strong>'+d.name+'</strong><span>'+(d.type||'')+(d.expiry?' Val: '+new Date(d.expiry).toLocaleDateString('pt-BR'):'')+'</span></div><div class="row-actions"><button class="action-btn edit" onclick="editDoc(\''+d.id+'\')">Editar</button><button class="action-btn delete" onclick="delDoc(\''+d.id+'\')">Excluir</button></div></div>';
       }).join('');
     }
+
+    hydrateProfile();
+    window.addEventListener('dronehub:cloud-ready', hydrateProfile);
 
     function addDoc(){
       var name=document.getElementById('docName').value.trim();var type=document.getElementById('docType').value;var expiry=document.getElementById('docExpiry').value;

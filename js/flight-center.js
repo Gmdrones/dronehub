@@ -87,5 +87,13 @@
       place={lat:x.latitude,lon:x.longitude,name:x.name+(x.admin1?', '+x.admin1:'')}; localStorage.setItem('dronehub_lat',place.lat);localStorage.setItem('dronehub_lon',place.lon);localStorage.setItem('dronehub_location_name',place.name);$('flightLocation').value=place.name;load();
     }).catch(()=>{alert('Local não encontrado. Digite o nome da cidade, por exemplo: Rio de Janeiro.');}).finally(()=>{$('searchLocation').disabled=false;$('searchLocation').textContent='Consultar';});
   }
-  document.addEventListener('DOMContentLoaded',()=>{addContext();prepareAircraft();renderOperationalRegistry();load();setInterval(load,10*60*1000);});
+  document.addEventListener('DOMContentLoaded',()=>{
+    addContext();prepareAircraft();renderOperationalRegistry();load();setInterval(load,10*60*1000);
+    window.addEventListener('dronehub:cloud-ready',()=>{
+      const registered=typeof getAircraft==='function'?getAircraft(window.uid||''):[];
+      const select=$('droneSelect');
+      if(registered.length&&select&&select.disabled){window.location.reload();return;}
+      const registry=$('operationalRegistry');if(registry)registry.remove();renderOperationalRegistry();
+    });
+  });
 }());

@@ -1,0 +1,13 @@
+/* Consistencia de largura para os paineis operacionais. */
+.dash-wrap>.main{width:calc(100% - 240px);max-width:none}
+.dash-wrap>.main>.content{width:min(100%,1540px);max-width:1540px;padding-left:clamp(24px,3vw,52px)!important;padding-right:clamp(24px,3vw,52px)!important}
+.dashboard-command,.dashboard-command--flightdeck{width:min(100%,1480px);max-width:1480px}
+
+.dash-wrap .main.flight-deck{width:calc(100% - 240px);max-width:none;margin-right:0;padding:32px clamp(24px,3vw,52px)!important;grid-template-columns:minmax(330px,.8fr) minmax(520px,1.2fr)}
+.flight-deck>.flight-context,.flight-deck>.flight-forecast{width:100%;max-width:none}
+.flight-deck>.aircraft-card{grid-column:1;grid-row:auto}
+.flight-deck>#operationalRegistry{grid-column:2;grid-row:auto;margin:0!important;align-self:stretch}
+.flight-deck>.conditions-card{grid-column:1/-1;grid-row:auto;min-height:0}
+.flight-deck>.conditions-card .weather-grid{grid-template-columns:1.35fr repeat(3,1fr)}
+@media(max-width:1100px){.dash-wrap .main.flight-deck{grid-template-columns:1fr}.flight-deck>.aircraft-card,.flight-deck>#operationalRegistry,.flight-deck>.conditions-card{grid-column:1}}
+@media(max-width:768px){.dash-wrap>.main,.dash-wrap .main.flight-deck{width:100%}.dash-wrap .main.flight-deck{padding:20px!important}.dash-wrap>.main>.content{padding-left:18px!important;padding-right:18px!important}}

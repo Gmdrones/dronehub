@@ -23,11 +23,15 @@ async function syncCurrentEntitlement() {
     });
     var founderAdmin = String(authUser.email || '').toLowerCase() === 'giorgiomendonca@gmail.com';
 
-    var result = await supabaseClient
-      .from('account_entitlements')
-      .select('plan, role, status, courtesy_expires_at')
-      .eq('user_id', authUser.id)
-      .maybeSingle();
+    var result = await supabaseClient.rpc('get_my_entitlement');
+    if (result && !result.error && Array.isArray(result.data)) result.data = result.data[0] || null;
+    if (!result || result.error) {
+      result = await supabaseClient
+        .from('account_entitlements')
+        .select('plan, role, status, courtesy_expires_at')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+    }
 
     if (result && result.data) {
       var access = result.data;
