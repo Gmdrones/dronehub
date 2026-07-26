@@ -2,6 +2,9 @@
 (function () {
   var PRO_PAGES = ['documentos.html', 'missoes.html', 'fiscalizacao.html', 'financeiro.html', 'admin.html'];
   var currentFile = (location.pathname.split('/').pop() || '').toLowerCase();
+  // Cloudflare Pages atende tanto /documentos quanto /documentos.html.
+  // Normalize as rotas limpas antes de aplicar as regras dos planos.
+  if (currentFile && currentFile.indexOf('.') === -1) currentFile += '.html';
 
 
   function user() {
