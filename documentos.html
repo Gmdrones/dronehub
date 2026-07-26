@@ -140,15 +140,20 @@
           <button class="ia-tab" data-ia="recibo" onclick="selectIATab('recibo',this)">Recibo</button>
           <button class="ia-tab" data-ia="relatorio" onclick="selectIATab('relatorio',this)">Relatório</button>
           <button class="ia-tab" data-ia="autorizacao" onclick="selectIATab('autorizacao',this)">Autorização</button>
+          <button class="ia-tab" data-ia="aro" onclick="selectIATab('aro',this)">Avaliação de Risco (ARO)</button>
+        </div>
+
+        <div id="aroNotice" style="display:none;margin:0 0 18px;padding:15px 17px;border:1px solid rgba(22,198,255,.25);border-radius:12px;background:rgba(22,198,255,.06);color:var(--text2);line-height:1.55;">
+          A ARO seguirá o modelo do Apêndice B da IS E94-003A da ANAC. O sistema preencherá operador e aeronaves cadastradas; revise o cenário, os riscos, as medidas mitigadoras e assine o documento antes da operação.
         </div>
 
         <div class="grid-2">
-          <div><label>Cliente / Empresa</label><input type="text" id="iaCliente" placeholder="Ex: Construtora ABC Ltda"></div>
-          <div><label>CNPJ / CPF do Cliente</label><input type="text" id="iaCnpj" placeholder="00.000.000/0001-00"></div>
-          <div><label>Valor (R$)</label><input type="text" id="iaValor" placeholder="Ex: 5.000,00"></div>
-          <div><label>Prazo / Data</label><input type="text" id="iaPrazo" placeholder="Ex: 30 dias ou 15/08/2026"></div>
-          <div style="grid-column:1/-1;"><label>Descricao / Escopo do Servico</label><textarea id="iaDetalhes" rows="3" placeholder="Descreva detalhadamente o servico, equipamentos, local, horario, entregaveis..."></textarea></div>
-          <div style="grid-column:1/-1;"><label>Observacoes Adicionais</label><textarea id="iaObs" rows="2" placeholder="Forma de pagamento, garantia, condicoes especiais..."></textarea></div>
+          <div><label id="iaClienteLabel">Cliente / Empresa</label><input type="text" id="iaCliente" placeholder="Ex: Construtora ABC Ltda"></div>
+          <div><label id="iaCnpjLabel">CNPJ / CPF do Cliente</label><input type="text" id="iaCnpj" placeholder="00.000.000/0001-00"></div>
+          <div><label id="iaValorLabel">Valor (R$)</label><input type="text" id="iaValor" placeholder="Ex: 5.000,00"></div>
+          <div><label id="iaPrazoLabel">Prazo / Data</label><input type="text" id="iaPrazo" placeholder="Ex: 30 dias ou 15/08/2026"></div>
+          <div style="grid-column:1/-1;"><label id="iaDetalhesLabel">Descrição / Escopo do Serviço</label><textarea id="iaDetalhes" rows="3" placeholder="Descreva detalhadamente o serviço, equipamentos, local, horário e entregáveis..."></textarea></div>
+          <div style="grid-column:1/-1;"><label id="iaObsLabel">Observações Adicionais</label><textarea id="iaObs" rows="2" placeholder="Forma de pagamento, garantia e condições especiais..."></textarea></div>
         </div>
 
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
@@ -166,7 +171,7 @@
         <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Meus Documentos</h3></div>
         <div class="add-bar" style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);">
           <input type="text" id="docName" placeholder="Nome do documento" style="flex:1;min-width:150px;">
-          <select id="docType"><option>Proposta</option><option>Contrato</option><option>Recibo</option><option>Relatorio</option><option>Orcamento</option><option>Autorizacao</option><option>Piloto</option><option>Drone</option><option>Empresa</option><option>Seguro</option><option>SARPAS - Autorização de voo</option></select>
+          <select id="docType"><option>Proposta</option><option>Contrato</option><option>Recibo</option><option>Relatório</option><option>Orçamento</option><option>Autorização</option><option>Avaliação de Risco Operacional (ARO)</option><option>Piloto</option><option>Drone</option><option>Empresa</option><option>Seguro</option><option>SARPAS - Autorização de voo</option></select>
           <input type="date" id="docExpiry">
           <button class="btn btn-primary" onclick="addDoc()">Adicionar</button>
         </div>
@@ -206,6 +211,18 @@
       iaTipoAtual = tipo;
       document.querySelectorAll('.ia-tab').forEach(function(t){t.classList.remove('active');});
       btn.classList.add('active');
+      var aro=tipo==='aro';
+      document.getElementById('aroNotice').style.display=aro?'block':'none';
+      document.getElementById('iaClienteLabel').textContent=aro?'Operador / Empresa':'Cliente / Empresa';
+      document.getElementById('iaCnpjLabel').textContent=aro?'CPF / CNPJ do operador':'CNPJ / CPF do Cliente';
+      document.getElementById('iaValorLabel').textContent=aro?'Cenário operacional':'Valor (R$)';
+      document.getElementById('iaPrazoLabel').textContent=aro?'Validade da avaliação':'Prazo / Data';
+      document.getElementById('iaDetalhesLabel').textContent=aro?'Contexto da operação e riscos adicionais':'Descrição / Escopo do Serviço';
+      document.getElementById('iaObsLabel').textContent=aro?'Treinamento, emergência e medidas adicionais':'Observações Adicionais';
+      document.getElementById('iaValor').placeholder=aro?'Ex: inspeção, mapeamento ou filmagem':'Ex: 5.000,00';
+      document.getElementById('iaPrazo').placeholder=aro?'Ex: válida até julho de 2027':'Ex: 30 dias ou 15/08/2026';
+      document.getElementById('iaDetalhes').placeholder=aro?'Informe local, altura, pessoas próximas, obstáculos e particularidades da operação.':'Descreva detalhadamente o serviço, equipamentos, local, horário e entregáveis...';
+      document.getElementById('iaObs').placeholder=aro?'Informe treinamento, contatos de emergência e medidas mitigadoras específicas.':'Forma de pagamento, garantia e condições especiais...';
     }
 
     function gerarDocumento() {
@@ -422,7 +439,7 @@
 
     function salvarDocumento() {
       if (!ultimoDocumentoGerado) { alert('Gere um documento primeiro.'); return; }
-      var nomes = { proposta:'Proposta', contrato:'Contrato', orcamento:'Orcamento', recibo:'Recibo', relatorio:'Relatorio', autorizacao:'Autorizacao' };
+      var nomes = { proposta:'Proposta', contrato:'Contrato', orcamento:'Orcamento', recibo:'Recibo', relatorio:'Relatorio', autorizacao:'Autorizacao', aro:'Avaliação de Risco Operacional' };
       var tipo = nomes[iaTipoAtual] || 'Documento';
       var cliente = document.getElementById('iaCliente').value.trim() || 'Sem cliente';
       var titulo = tipo + ' - ' + cliente + ' - ' + new Date().toLocaleDateString('pt-BR');
@@ -479,7 +496,7 @@
         anac: perfil.anac || ''
       };
     }
-    function tipoDocumento() { return ({proposta:'PROPOSTA COMERCIAL',contrato:'CONTRATO DE PRESTAÇÃO DE SERVIÇOS',orcamento:'ORÇAMENTO',recibo:'RECIBO',relatorio:'RELATÓRIO TÉCNICO',autorizacao:'AUTORIZAÇÃO DE OPERAÇÃO'})[iaTipoAtual] || 'DOCUMENTO'; }
+    function tipoDocumento() { return ({proposta:'PROPOSTA COMERCIAL',contrato:'CONTRATO DE PRESTAÇÃO DE SERVIÇOS',orcamento:'ORÇAMENTO',recibo:'RECIBO',relatorio:'RELATÓRIO TÉCNICO',autorizacao:'AUTORIZAÇÃO DE OPERAÇÃO',aro:'AVALIAÇÃO DE RISCO OPERACIONAL'})[iaTipoAtual] || 'DOCUMENTO'; }
     function valoresDocumento() {
       return {
         cliente: textoSeguro(document.getElementById('iaCliente').value, 'Cliente a definir'),
@@ -490,7 +507,40 @@
         observacoes: document.getElementById('iaObs').value.trim()
       };
     }
+    function dadosAro(d) {
+      var perfil=getProfile(uid)||{}, aeronaves=getAircraft(uid)||[];
+      var operador=d.cliente==='Cliente a definir'?(perfil.empresa||perfil.nome||user.name||'Operador a identificar'):d.cliente;
+      var documento=d.cnpj==='CPF/CNPJ a definir'?(perfil.cpf||'CPF/CNPJ a informar'):d.cnpj;
+      var frota=aeronaves.length?aeronaves.map(function(a){return [a.marca,a.modelo,a.sisant?'SISANT '+a.sisant:''].filter(Boolean).join(' ');}).join('; '):'Nenhuma aeronave cadastrada - completar antes da assinatura';
+      return {operador:operador,documento:documento,aeronaves:frota,cenario:d.valor==='Sob consulta'?'Cenário operacional descrito pelo operador':d.valor,validade:d.prazo==='A combinar'?'12 meses, condicionada à revisão do cenário':d.prazo,contexto:d.escopo,complemento:d.observacoes||'Treinamentos, contatos e procedimentos devem ser confirmados pelo operador antes da assinatura.'};
+    }
+    function aroTexto(d, emissor, numero, data) {
+      var a=dadosAro(d);
+      return 'AVALIAÇÃO DE RISCO OPERACIONAL\nEm cumprimento ao RBAC-E nº 94 e conforme estrutura da IS E94-003A da ANAC\n\n'
+        +'DOCUMENTO Nº '+numero+'\nEMISSÃO: '+data+'\nVALIDADE: '+a.validade+'\n\n'
+        +'1. IDENTIFICAÇÃO\nOperador: '+a.operador+'\nCPF/CNPJ: '+a.documento+'\nAeronave(s): '+a.aeronaves+'\nCenário operacional: '+a.cenario+'\n\n'
+        +'2. ASPECTOS GERAIS\nContexto da operação: '+a.contexto+'\nLegislação aplicável: Código Brasileiro de Aeronáutica, RBAC-E nº 94, IS E94-003A e normas aplicáveis da ANAC, do DECEA e da ANATEL, que deverão ser verificadas em suas versões vigentes na data da assinatura.\nÁrea distante de terceiros: confirmar conforme o enquadramento da operação.\nTreinamentos e resposta a emergência: '+a.complemento+'\n\n'
+        +'3. AVALIAÇÃO PRELIMINAR DOS RISCOS - REVISÃO OBRIGATÓRIA PELO OPERADOR\n'
+        +'Perda do link | Probabilidade 3 | Severidade D | Risco 3D - baixo | Mitigação: conferir RTH, ponto de retorno, enlace, bússola, GNSS, bateria e área de contingência.\n'
+        +'Tráfego aéreo local | Probabilidade 1 | Severidade A | Risco 1A - moderado | Mitigação: consultar SARPAS, observar o espaço aéreo, manter VLOS e interromper diante de tráfego conflitante.\n'
+        +'Pessoas não anuentes | Probabilidade 1 | Severidade B | Risco 1B - baixo | Mitigação: isolar a área, manter afastamento aplicável, utilizar observador e suspender a operação em caso de ingresso.\n'
+        +'Vento ou rajadas acima do limite | Probabilidade 3 | Severidade C | Risco 3C - moderado | Mitigação: comparar a meteorologia com o limite do fabricante e não decolar ou pousar imediatamente se o limite for excedido.\n\n'
+        +'4. MATRIZ UTILIZADA\nProbabilidade: 5 frequente, 4 ocasional, 3 remoto, 2 improvável, 1 muito improvável.\nSeveridade: A catastrófica, B crítica, C significativa, D pequena, E insignificante.\n\n'
+        +'5. DECLARAÇÃO\nO responsável declara que revisou o cenário, a legislação aplicável, as classificações, a tolerabilidade e as medidas mitigadoras. Esta ARO não substitui a autorização de uso do espaço aéreo emitida pelo SARPAS.\n\n'
+        +'RESPONSÁVEL PELAS INFORMAÇÕES\n'+emissor.responsavel+'\n'+emissor.cidade+', '+data+'\n\nAssinatura: ______________________________________________\nTodas as páginas devem ser rubricadas quando aplicável.';
+    }
+    function aroHtml(d, emissor, numero, data) {
+      var a=dadosAro(d), riscos=[
+        ['Perda do link','3','D','3D - baixo','Conferir RTH, enlace, GNSS, bateria e área de contingência.'],
+        ['Tráfego aéreo local','1','A','1A - moderado','Consultar SARPAS, manter VLOS e interromper diante de tráfego conflitante.'],
+        ['Pessoas não anuentes','1','B','1B - baixo','Isolar a área, observar afastamentos e suspender em caso de ingresso.'],
+        ['Vento/rajadas acima do limite','3','C','3C - moderado','Comparar clima e limite do fabricante; não decolar ou pousar se excedido.']
+      ];
+      var linhas=riscos.map(function(r){return '<tr><td>'+htmlSeguro(r[0])+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td><b>'+r[3]+'</b></td><td>'+htmlSeguro(r[4])+'</td></tr>';}).join('');
+      return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Avaliação de Risco Operacional</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{margin:0;background:#eaf0f5;color:#16283a;font:13px Arial,sans-serif}.page{max-width:900px;margin:auto;background:#fff;padding:42px 46px;min-height:100vh}.bar{height:7px;background:linear-gradient(90deg,#087ea4,#16c6ff,#35d39a);margin:-42px -46px 28px}.head{display:flex;justify-content:space-between;gap:24px;border-bottom:2px solid #173f57;padding-bottom:20px}.eyebrow{color:#087ea4;font-size:9px;font-weight:700;letter-spacing:1.4px}.head h1{font-size:25px;margin:7px 0}.meta{text-align:right;color:#526b7e;line-height:1.7}.notice{margin:22px 0;padding:14px 16px;background:#eef9fd;border-left:4px solid #16c6ff;line-height:1.55}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.box{border:1px solid #d9e3ea;border-radius:7px;padding:12px}.box small{display:block;color:#687e90;font-size:9px;font-weight:700;letter-spacing:.8px;margin-bottom:5px}h2{font-size:12px;color:#123f58;letter-spacing:.8px;margin:24px 0 9px}p{line-height:1.6;margin:0}table{width:100%;border-collapse:collapse;font-size:10px}th{background:#153a50;color:white;text-align:left;padding:8px}td{border:1px solid #dbe4ea;padding:8px;vertical-align:top;line-height:1.35}.matrix{background:#f5f8fa;border:1px solid #dfe7ec;padding:13px;line-height:1.6}.signature{margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:35px}.line{border-top:1px solid #607585;padding-top:7px;color:#607585}.warning{margin-top:18px;color:#8a5b00;background:#fff7df;padding:11px;border:1px solid #f1d48a}@media print{body{background:#fff}.page{padding:0}.bar{margin:0 0 24px}}</style></head><body><main class="page"><div class="bar"></div><header class="head"><div><div class="eyebrow">DRONE HUB · SEGURANÇA OPERACIONAL</div><h1>AVALIAÇÃO DE RISCO OPERACIONAL</h1><p>RBAC-E nº 94 · Estrutura baseada na IS E94-003A da ANAC</p></div><div class="meta">DOCUMENTO Nº '+numero+'<br>EMISSÃO '+data+'<br>VALIDADE '+htmlSeguro(a.validade)+'</div></header><div class="notice">Documento de apoio ao operador. As classificações são preliminares e devem ser revisadas, assinadas e mantidas atualizadas pelo responsável antes da operação.</div><div class="grid"><div class="box"><small>OPERADOR</small><b>'+htmlSeguro(a.operador)+'</b></div><div class="box"><small>CPF / CNPJ</small><b>'+htmlSeguro(a.documento)+'</b></div><div class="box"><small>AERONAVE(S) / SISANT</small><b>'+htmlSeguro(a.aeronaves)+'</b></div><div class="box"><small>CENÁRIO OPERACIONAL</small><b>'+htmlSeguro(a.cenario)+'</b></div></div><h2>ASPECTOS GERAIS</h2><p>'+htmlSeguro(a.contexto).replace(/\n/g,'<br>')+'</p><div class="matrix" style="margin-top:10px"><b>Legislação:</b> CBA, RBAC-E nº 94, IS E94-003A e normas aplicáveis da ANAC, do DECEA e da ANATEL, a verificar em suas versões vigentes.<br><b>Treinamento e emergência:</b> '+htmlSeguro(a.complemento)+'</div><h2>AVALIAÇÃO PRELIMINAR DOS RISCOS</h2><table><thead><tr><th>Situação</th><th>Prob.</th><th>Sev.</th><th>Risco</th><th>Medidas mitigadoras</th></tr></thead><tbody>'+linhas+'</tbody></table><h2>MATRIZ UTILIZADA</h2><div class="matrix">Probabilidade: 5 frequente, 4 ocasional, 3 remoto, 2 improvável, 1 muito improvável.<br>Severidade: A catastrófica, B crítica, C significativa, D pequena, E insignificante.</div><p class="warning">Esta ARO não substitui a autorização de uso do espaço aéreo emitida pelo SARPAS. Revise área de terceiros, nível de aprovação, tolerabilidade e riscos específicos do cenário.</p><div class="signature"><div class="line"><b>'+htmlSeguro(emissor.responsavel)+'</b><br>Responsável pelas informações</div><div class="line">Data e assinatura</div></div></main></body></html>';
+    }
     function propostaTexto(d, emissor, numero, data) {
+      if(iaTipoAtual==='aro') return aroTexto(d,emissor,numero,data);
       var titulo = tipoDocumento();
       var abertura = iaTipoAtual === 'proposta'
         ? 'Apresentamos esta proposta para a execução do serviço descrito abaixo, com planejamento operacional, segurança e entregáveis alinhados ao briefing do cliente.'
@@ -506,6 +556,7 @@
         +'\nEMISSOR\n'+emissor.empresa+'\nResponsável: '+emissor.responsavel+'\nContato: '+emissor.telefone+'\nLocalidade: '+emissor.cidade+(emissor.anac?'\nRegistro ANAC: '+emissor.anac:'')+'\n';
     }
     function propostaHtml(d, emissor, numero, data) {
+      if(iaTipoAtual==='aro') return aroHtml(d,emissor,numero,data);
       var obs = d.observacoes ? '<section><h2>Observações</h2><p>'+htmlSeguro(d.observacoes).replace(/\n/g,'<br>')+'</p></section>' : '';
       return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>'+htmlSeguro(tipoDocumento())+'</title><style>body{margin:0;background:#f2f5f8;color:#152235;font:15px Arial,sans-serif}.page{max-width:820px;margin:0 auto;padding:54px 58px;background:#fff;min-height:100vh}.brand{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:28px;border-bottom:3px solid #16c6ff}.eyebrow{margin:0 0 8px;color:#168ab5;font-size:11px;font-weight:700;letter-spacing:1.5px}.brand h1{margin:0;font-size:30px;letter-spacing:-.7px}.brand .company{margin:8px 0 0;color:#506278;font-size:15px}.number{text-align:right;color:#506278;font-size:12px;line-height:1.7}.intro{margin:30px 0;padding:20px 22px;border-left:4px solid #16c6ff;background:#f3fbfe;line-height:1.65}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0}.detail{padding:16px;border:1px solid #dce5eb;border-radius:8px}.detail small{display:block;margin-bottom:6px;color:#688096;font-size:10px;font-weight:700;letter-spacing:1.1px}.detail strong{font-size:15px}section{margin-top:28px}section h2{margin:0 0 10px;color:#153a50;font-size:13px;letter-spacing:.7px;text-transform:uppercase}section p{margin:0;line-height:1.7;white-space:normal}.terms{padding:20px;border-radius:8px;background:#f5f7f9;line-height:1.8}.signature{margin-top:48px;padding-top:20px;border-top:1px solid #dce5eb;color:#506278;line-height:1.7}.signature strong{display:block;color:#152235;font-size:16px}@media print{body{background:#fff}.page{max-width:none;margin:0;box-shadow:none}}</style></head><body><main class="page"><header class="brand"><div><p class="eyebrow">DRONE HUB · DOCUMENTO OPERACIONAL</p><h1>'+htmlSeguro(tipoDocumento())+'</h1><p class="company">'+htmlSeguro(emissor.empresa)+'</p></div><div class="number">DOCUMENTO Nº '+numero+'<br>EMISSÃO '+data+'<br>VALIDADE 15 DIAS</div></header><p class="intro">Apresentamos este documento com escopo, investimento e condições operacionais organizados para uma decisão clara e segura.</p><div class="grid"><div class="detail"><small>CLIENTE / EMPRESA</small><strong>'+htmlSeguro(d.cliente)+'</strong></div><div class="detail"><small>CPF / CNPJ</small><strong>'+htmlSeguro(d.cnpj)+'</strong></div><div class="detail"><small>INVESTIMENTO</small><strong>R$ '+htmlSeguro(d.valor)+'</strong></div><div class="detail"><small>PRAZO / DATA</small><strong>'+htmlSeguro(d.prazo)+'</strong></div></div><section><h2>Escopo do serviço</h2><p>'+htmlSeguro(d.escopo).replace(/\n/g,'<br>')+'</p></section><section><h2>Condições operacionais</h2><div class="terms">A execução considera condições meteorológicas adequadas, segurança operacional e acesso ao local. Os entregáveis, forma de pagamento e ajustes de escopo serão confirmados no briefing com o cliente.</div></section>'+obs+'<footer class="signature"><strong>'+htmlSeguro(emissor.empresa)+'</strong>Responsável: '+htmlSeguro(emissor.responsavel)+'<br>Contato: '+htmlSeguro(emissor.telefone)+'<br>'+htmlSeguro(emissor.cidade)+'</footer></main></body></html>';
     }
@@ -522,12 +573,15 @@
       try {
         var endpoint = window.DRONEHUB_OPERATIONS_API || 'https://dronehub-operations.primesecureconsultoria.workers.dev';
         if (endpoint) {
-          var prompt = 'Elabore o conteúdo editorial de um '+tipoDocumento()+' para operações profissionais com drones. Dados: cliente '+d.cliente+'; CPF/CNPJ '+d.cnpj+'; valor R$ '+d.valor+'; prazo '+d.prazo+'; escopo '+d.escopo+'; observações '+d.observacoes+'. Não crie dados ou autorizações oficiais. Retorne apenas texto profissional em português.';
+          var prompt = iaTipoAtual === 'aro'
+            ? 'Redija conteúdo técnico complementar para uma Avaliação de Risco Operacional de drone conforme a estrutura da IS E94-003A da ANAC. Cenário: '+d.valor+'. Contexto operacional: '+d.escopo+'. Treinamento, emergência e observações: '+d.observacoes+'. Identifique perigos e sugira mitigações prudentes, sem inventar registros, aprovações, autorizações ou dados oficiais. Informe que o operador deve revisar, classificar, assinar e manter a ARO atualizada. Retorne somente texto profissional em português.'
+            : 'Elabore o conteúdo editorial de um '+tipoDocumento()+' para operações profissionais com drones. Dados: cliente '+d.cliente+'; CPF/CNPJ '+d.cnpj+'; valor R$ '+d.valor+'; prazo '+d.prazo+'; escopo '+d.escopo+'; observações '+d.observacoes+'. Não crie dados ou autorizações oficiais. Retorne apenas texto profissional em português.';
           var response = await fetch(endpoint.replace(/\/$/, '') + '/ai/document', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt}) });
           var generated = await response.json();
           if (response.ok && generated.text) {
-            ultimoDocumentoGerado = generated.text;
-            ultimoDocumentoHtml = propostaHtml(Object.assign({}, d, {escopo:generated.text}), emissor, numero, data);
+            var documentoEnriquecido = Object.assign({}, d, {escopo:generated.text});
+            ultimoDocumentoGerado = propostaTexto(documentoEnriquecido, emissor, numero, data);
+            ultimoDocumentoHtml = propostaHtml(documentoEnriquecido, emissor, numero, data);
           }
         }
       } catch (error) { /* The professional template is intentionally retained. */ }

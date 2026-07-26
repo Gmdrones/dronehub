@@ -147,13 +147,12 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6"/><path d="M12 9v6"/><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/></svg> Certificacoes</h3></div>
-        <div class="grid-3">
+        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6"/><path d="M12 9v6"/><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/></svg> Certificações</h3></div>
+        <div class="grid-2">
           <div><label>ANAC</label><input type="text" id="pAnac"></div>
-          <div><label>DECEA</label><input type="text" id="pDecea"></div>
           <div><label>ANATEL</label><input type="text" id="pHomologacao" placeholder="Número da homologação ANATEL"></div>
         </div>
-        <button class="btn btn-primary" onclick="salvarPerfil()" style="margin-top:16px;">Salvar Certificacoes</button>
+        <button class="btn btn-primary" onclick="salvarPerfil()" style="margin-top:16px;">Salvar certificações</button>
       </div>
 
       <div class="card">
@@ -185,7 +184,6 @@
       document.getElementById('pTel').value=saved.telefone||'';
       document.getElementById('pCidade').value=saved.cidade||'';
       document.getElementById('pAnac').value=saved.anac||'';
-      document.getElementById('pDecea').value=saved.decea||'';
       document.getElementById('pHomologacao').value=saved.homologacao||saved.crea||'';
       renderDocs();
     }
@@ -202,7 +200,7 @@
     }
 
     function salvarPerfil(){
-      saveProfile(uid,{nome:document.getElementById('pNome').value,cpf:document.getElementById('pCpf').value,telefone:document.getElementById('pTel').value,cidade:document.getElementById('pCidade').value,anac:document.getElementById('pAnac').value,decea:document.getElementById('pDecea').value,homologacao:document.getElementById('pHomologacao').value});
+      saveProfile(uid,{nome:document.getElementById('pNome').value,cpf:document.getElementById('pCpf').value,telefone:document.getElementById('pTel').value,cidade:document.getElementById('pCidade').value,anac:document.getElementById('pAnac').value,homologacao:document.getElementById('pHomologacao').value});
       alert('Perfil salvo!');
     }
 

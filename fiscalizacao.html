@@ -142,7 +142,7 @@
           <div class="pc-field"><span class="lbl">CPF</span><span class="val" id="pcCpf">—</span></div>
           <div class="pc-field"><span class="lbl">Cidade</span><span class="val" id="pcCidade">—</span></div>
           <div class="pc-field"><span class="lbl">ANAC</span><span class="val" id="pcAnac">—</span></div>
-          <div class="pc-field"><span class="lbl">DECEA</span><span class="val" id="pcDecea">—</span></div>
+          <div class="pc-field"><span class="lbl">Autorização de voo SARPAS</span><span class="val" id="pcSarpas">—</span></div>
           <div class="pc-field"><span class="lbl">Aeronaves</span><span class="val" id="pcAircraft">0</span></div>
           <div class="pc-field"><span class="lbl">Plano</span><span class="val" id="pcPlan">Free</span></div>
         </div>
@@ -169,7 +169,8 @@
       document.getElementById('pcCpf').textContent=profile.cpf||'—';
       document.getElementById('pcCidade').textContent=profile.cidade||'—';
       document.getElementById('pcAnac').textContent=profile.anac||'—';
-      document.getElementById('pcDecea').textContent=profile.decea||'—';
+      var sarpasDocs=docs.filter(function(d){return typeof isSarpasDocument==='function'&&isSarpasDocument(d);}).sort(function(a,b){return String(b.createdAt||'').localeCompare(String(a.createdAt||''));});
+      document.getElementById('pcSarpas').textContent=sarpasDocs.length?(sarpasDocs[0].name||'Autorização anexada'):'Não anexada';
       document.getElementById('pcAircraft').textContent=aircraft.length;
       document.getElementById('pcPlan').textContent=isPro?'Pro':'Free';
       var initial=(profile.nome||user.name||'U').charAt(0).toUpperCase();
@@ -201,6 +202,7 @@
     }
 
     renderPilotCard();
+    window.addEventListener('dronehub:cloud-ready', renderPilotCard);
     if(typeof lucide!=='undefined'){lucide.createIcons();}
   </script>
 </body>
