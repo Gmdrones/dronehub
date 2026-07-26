@@ -17,6 +17,7 @@ create table if not exists public.user_records (
   primary key (user_id, collection, record_id)
 );
 alter table public.user_records enable row level security;
+grant select, insert, update, delete on table public.user_records to authenticated;
 drop policy if exists "user_records_select_own" on public.user_records;
 drop policy if exists "user_records_insert_own" on public.user_records;
 drop policy if exists "user_records_update_own" on public.user_records;
