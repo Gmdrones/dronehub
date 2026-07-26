@@ -461,6 +461,12 @@ syncCurrentEntitlement
         else if (dias <= 30) alerts.push({tipo:'green', texto:d.name+' vence em '+dias+' dias'});
       }
     });
+    aircraft.forEach(function(a){
+      if(!a.seguroExpiry)return;
+      var dias=Math.ceil((new Date(a.seguroExpiry+'T23:59:59').getTime()-Date.now())/86400000),nome=((a.marca||'')+' '+(a.modelo||'')).trim()||'aeronave';
+      if(dias<0)alerts.push({tipo:'red',texto:'Seguro RETA de '+nome+' vencido há '+Math.abs(dias)+' dias'});
+      else if(dias<=30)alerts.push({tipo:dias<=7?'red':'amber',texto:'Seguro RETA de '+nome+' vence em '+dias+' dias'});
+    });
     if (alerts.length === 0) {
       alertContainer.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;padding:12px 0;">Nenhum alerta no momento.</p>';
     } else {

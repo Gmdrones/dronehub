@@ -11,7 +11,7 @@
   <script src="js/supabase.js?v=20260726-sarpas"></script>
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js?v=20260726-free-lock"></script>
-  <script src="js/inspection-access.js" defer></script>
+  <script src="js/inspection-access.js?v=20260726-public-credential" defer></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -186,19 +186,26 @@
       document.getElementById('pcDocs').innerHTML=docsHtml;
     }
 
-    function gerarQR(){
-      var pastaId=Date.now().toString(36).toUpperCase();
-      var token=Math.random().toString(36).slice(2,10);
-      var url=window.location.origin+'/pasta/'+pastaId+'?token='+token;
+    async function gerarQR(token,minutes){
+      token=token||(crypto&&crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2));minutes=Number(minutes||15);
+      var expiresAt=new Date(Date.now()+minutes*60000).toISOString(),profile=getProfile(uid),aircraft=getAircraft(uid),docs=getDocuments(uid);
+      var visibleDocs=docs.filter(function(d){var raw=((d.type||'')+' '+(d.name||'')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return raw.indexOf('avaliacao de risco')<0&&raw.indexOf(' aro')<0;});
+      var payload={pilot:{name:profile.nome||user.name||'Piloto',cpf:profile.cpf||'',city:profile.cidade||'',photo:profile.foto&&profile.foto.length<1500000?profile.foto:''},aircraft:aircraft.map(function(a){return{id:a.id,brand:a.marca||'',model:a.modelo||'',sisant:a.sisant||'',anatel:a.anatel||'',insurance:a.seguro||'',insuranceExpiry:a.seguroExpiry||''};}),documents:visibleDocs.map(function(d){return{name:d.name||d.type||'Documento',type:d.type||'',expiry:d.expiry||'',isSarpas:typeof isSarpasDocument==='function'&&isSarpasDocument(d)};}),issuedAt:new Date().toISOString()};
+      if(!supabaseClient){alert('A conexão segura não está disponível.');return false;}
+      var saved=await supabaseClient.from('inspection_credentials').insert({token:token,payload:payload,expires_at:expiresAt,revoked:false});
+      if(saved.error){alert('Não foi possível criar a credencial: '+saved.error.message);return false;}
+      var url=window.location.origin+'/fiscalizacao-publica.html?token='+encodeURIComponent(token);
       var qrDiv=document.getElementById('qrcode');if(!qrDiv)return;
       qrDiv.innerHTML='';
       try{new QRCode(qrDiv,{text:url,width:160,height:160,colorDark:'#00D2FF',colorLight:'#ffffff'});}
       catch(e){qrDiv.innerHTML='<div style="padding:20px;color:var(--cyan);font-size:0.8rem;">QR Code</div>';}
       document.getElementById('qrStatus').textContent='QR Code ativo';
-      document.getElementById('qrValidMsg').textContent='Valido por 24 horas';
+      document.getElementById('qrValidMsg').textContent='Válido por '+minutes+' minutos';
+      return true;
     }
 
-    function revogar(){
+    async function revogar(token){
+      if(token&&supabaseClient)await supabaseClient.from('inspection_credentials').update({revoked:true}).eq('token',token);
       var qrDiv=document.getElementById('qrcode');
       if(qrDiv)qrDiv.innerHTML='<div style="padding:40px;color:var(--red);font-size:0.85rem;">Acesso revogado</div>';
       document.getElementById('qrStatus').textContent='Acesso revogado';

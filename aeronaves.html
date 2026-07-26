@@ -137,6 +137,7 @@
           <div><label>SISANT</label><input type="text" id="aSisant"></div>
           <div><label>ANATEL</label><input type="text" id="aAnatel"></div>
           <div><label>Seguro RETA</label><input type="text" id="aSeguro"></div>
+          <div><label>Vencimento do Seguro RETA</label><input type="date" id="aSeguroExpiry"></div>
           <div><label>Peso (g)</label><input type="number" id="aPeso"></div>
           <div><label>Limite de vento do fabricante (km/h)</label><input type="number" id="aWindLimit" min="1" step="0.1" placeholder="Preenchido automaticamente"><small id="windLimitHelp" style="display:block;margin-top:6px;color:var(--text3);">Selecione um modelo do banco. Para outro modelo, informe manualmente.</small></div>
         </div>
@@ -221,7 +222,8 @@
         var c = document.getElementById('aircraftList');
         if (list.length === 0) { c.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;">Nenhuma aeronave cadastrada.</p>'; return; }
         c.innerHTML = list.map(function(a) {
-          return '<div class="row" id="row-'+a.id+'"><div class="row-info"><strong>'+(a.marca||'')+' '+(a.modelo||'')+'</strong><span>'+(a.sisant?'SISANT: '+a.sisant:'')+(a.anatel?' ANATEL: '+a.anatel:'')+(a.peso?' '+a.peso+'g':'')+'</span></div><div class="row-actions"><button class="action-btn edit" onclick="editarAeronave(\''+a.id+'\')">Editar</button><button class="action-btn delete" onclick="excluirAeronave(\''+a.id+'\')">Excluir</button></div></div>';
+          var insurance='';if(a.seguroExpiry){var days=Math.ceil((new Date(a.seguroExpiry+'T23:59:59').getTime()-Date.now())/86400000);insurance='<span style="display:block;margin-top:5px;color:'+(days<0?'var(--red)':days<=30?'var(--amber)':'var(--green)')+'">Seguro RETA '+(days<0?'vencido há '+Math.abs(days)+' dias':days===0?'vence hoje':'vence em '+days+' dias')+'</span>';}
+          return '<div class="row" id="row-'+a.id+'"><div class="row-info"><strong>'+(a.marca||'')+' '+(a.modelo||'')+'</strong><span>'+(a.sisant?'SISANT: '+a.sisant:'')+(a.anatel?' ANATEL: '+a.anatel:'')+(a.peso?' '+a.peso+'g':'')+'</span>'+insurance+'</div><div class="row-actions"><button class="action-btn edit" onclick="editarAeronave(\''+a.id+'\')">Editar</button><button class="action-btn delete" onclick="excluirAeronave(\''+a.id+'\')">Excluir</button></div></div>';
         }).join('');
       } catch(e) {
         document.getElementById('aircraftList').innerHTML = '<p style="color:var(--red);font-size:0.85rem;">Erro ao carregar: ' + e.message + '</p>';
@@ -246,12 +248,13 @@
         sisant: document.getElementById('aSisant').value.trim(),
         anatel: document.getElementById('aAnatel').value.trim(),
         seguro: document.getElementById('aSeguro').value.trim(),
+        seguroExpiry: document.getElementById('aSeguroExpiry').value,
         peso: document.getElementById('aPeso').value,
         windLimit: document.getElementById('aWindLimit').value,
         specs: document.getElementById('aSpecs').value.trim()
       };
       saveAircraft(uid, data);
-      document.getElementById('aModelo').value='';document.getElementById('aSisant').value='';document.getElementById('aAnatel').value='';document.getElementById('aSeguro').value='';document.getElementById('aPeso').value='';document.getElementById('aWindLimit').value='';document.getElementById('aWindLimit').readOnly=false;document.getElementById('aSpecs').value='';updateWindLimit();
+      document.getElementById('aModelo').value='';document.getElementById('aSisant').value='';document.getElementById('aAnatel').value='';document.getElementById('aSeguro').value='';document.getElementById('aSeguroExpiry').value='';document.getElementById('aPeso').value='';document.getElementById('aWindLimit').value='';document.getElementById('aWindLimit').readOnly=false;document.getElementById('aSpecs').value='';updateWindLimit();
       render();
       window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated'));
     }
@@ -267,6 +270,7 @@
       a.sisant = prompt('SISANT:', a.sisant) || a.sisant;
       a.anatel = prompt('ANATEL:', a.anatel) || a.anatel;
       a.seguro = prompt('Seguro:', a.seguro) || a.seguro;
+      var seguroExpiry=prompt('Vencimento do Seguro RETA (AAAA-MM-DD):',a.seguroExpiry||'');if(seguroExpiry!==null)a.seguroExpiry=seguroExpiry;
       a.peso = prompt('Peso (g):', a.peso) || a.peso;
       var known=Object.keys(DRONE_WIND_LIMITS).find(function(name){return normalizedModel(name)===normalizedModel(((a.marca||'')+' '+(a.modelo||'')).trim())||normalizedModel(name)===normalizedModel(a.modelo);});
       if(known){a.windLimit=DRONE_WIND_LIMITS[known];}
