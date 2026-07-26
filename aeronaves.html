@@ -137,6 +137,7 @@
           <div><label>ANATEL</label><input type="text" id="aAnatel"></div>
           <div><label>Seguro RETA</label><input type="text" id="aSeguro"></div>
           <div><label>Peso (g)</label><input type="number" id="aPeso"></div>
+          <div><label>Limite de vento do fabricante (km/h)</label><input type="number" id="aWindLimit" min="1" step="0.1" placeholder="Ex.: 38,5"></div>
         </div>
         <div style="margin-top:14px;"><label>Especificações</label><textarea id="aSpecs" rows="2" placeholder="Ex: Vento máx: 12m/s, Bateria: 5000mAh"></textarea></div>
         <button class="btn btn-primary" onclick="cadastrar()" style="margin-top:16px;">Cadastrar</button>
@@ -198,10 +199,11 @@
         anatel: document.getElementById('aAnatel').value.trim(),
         seguro: document.getElementById('aSeguro').value.trim(),
         peso: document.getElementById('aPeso').value,
+        windLimit: document.getElementById('aWindLimit').value,
         specs: document.getElementById('aSpecs').value.trim()
       };
       saveAircraft(uid, data);
-      document.getElementById('aModelo').value='';document.getElementById('aSisant').value='';document.getElementById('aAnatel').value='';document.getElementById('aSeguro').value='';document.getElementById('aPeso').value='';document.getElementById('aSpecs').value='';
+      document.getElementById('aModelo').value='';document.getElementById('aSisant').value='';document.getElementById('aAnatel').value='';document.getElementById('aSeguro').value='';document.getElementById('aPeso').value='';document.getElementById('aWindLimit').value='';document.getElementById('aSpecs').value='';
       render();
     }
 
@@ -217,6 +219,7 @@
       a.anatel = prompt('ANATEL:', a.anatel) || a.anatel;
       a.seguro = prompt('Seguro:', a.seguro) || a.seguro;
       a.peso = prompt('Peso (g):', a.peso) || a.peso;
+      a.windLimit = prompt('Limite de vento do fabricante (km/h):', a.windLimit || '') || a.windLimit;
       saveAircraft(uid, a);
       render();
     }

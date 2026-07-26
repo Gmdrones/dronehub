@@ -169,10 +169,10 @@
 
     <main class="main">
       <h1 class="page-title">Central de Comando de Voo</h1>
-      <p class="page-sub">29 modelos cadastrados • Clima real • Avaliacao inteligente em 4 niveis</p>
+      <p class="page-sub">Aeronaves e documentos do seu cadastro • Clima real • Avaliação inteligente em 4 níveis</p>
 
       <div class="card">
-        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg> Selecione sua Aeronave</h3></div>
+        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg> Aeronave da operação</h3></div>
         <div class="grid-2">
           <div><label>Modelo do Drone</label><select id="droneSelect">
             <option value="">-- Selecione entre 29 modelos --</option>
@@ -210,20 +210,20 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> Condicoes de Voo</h3>
+        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> Condições de voo</h3>
           <span id="statusBadge" class="status-badge green"><span class="status-dot green"></span> Aguardando dados</span>
         </div>
         <div style="text-align:center;padding:20px;" id="weatherLoading">Buscando dados meteorologicos...</div>
         <div id="weatherContent" style="display:none;">
           <div class="weather-grid" id="weatherGrid"></div>
           <div style="margin-top:16px;padding:16px;background:var(--bg);border-radius:12px;border:1px solid var(--border);">
-            <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">Avaliacao Inteligente</div>
+            <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">Avaliação inteligente</div>
             <div id="avaliacaoTexto" style="font-size:0.85rem;color:var(--text2);white-space:pre-wrap;">Selecione um drone e aguarde os dados meteorologicos.</div>
           </div>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" hidden aria-hidden="true">
         <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Tabela de Resistencia ao Vento — 29 Modelos</h3></div>
         <div style="overflow-x:auto;max-height:400px;overflow-y:auto;">
           <table class="dji-table">
