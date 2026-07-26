@@ -196,6 +196,10 @@ syncCurrentEntitlement
     var txns = getTransactions(uid);
     var clients = getClients(uid);
     var batteries = getBatteries(uid);
+    window.addEventListener('dronehub:cloud-ready', function(){
+      var key='dronehub_dashboard_cloud_refresh_'+uid,last=Number(sessionStorage.getItem(key)||0);
+      if(Date.now()-last>15000){sessionStorage.setItem(key,String(Date.now()));window.location.reload();}
+    });
   </script>
 
   <header class="header">
@@ -334,7 +338,7 @@ syncCurrentEntitlement
             <div id="clientList"><p style="color:var(--text3);font-size:0.8rem;">Nenhum cliente.</p></div>
           </div>
           <div class="card">
-            <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="10" x="4" y="7" rx="2"/><path d="M7 7V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2"/></svg> Baterias</h3><span class="card-link" onclick="location.href='baterias.html'">Ver</span></div>
+            <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="10" x="4" y="7" rx="2"/><path d="M7 7V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2"/></svg> Baterias</h3><span class="card-link" onclick="location.href='aeronaves.html#fleetHealth'">Ver</span></div>
             <div id="battList"><p style="color:var(--text3);font-size:0.8rem;">Nenhuma bateria.</p></div>
           </div>
         </div>
@@ -445,8 +449,8 @@ syncCurrentEntitlement
     // BATERIAS REAIS
     if (batteries.length > 0) {
       document.getElementById('battList').innerHTML = batteries.slice(0,3).map(function(b){
-        var cor = Number(b.saude) > 70 ? 'var(--green)' : Number(b.saude) > 40 ? 'var(--amber)' : 'var(--red)';
-        return '<div style="padding:6px 0;font-size:0.8rem;border-bottom:1px solid var(--border);">' + (b.nome||'Bateria') + ' <span style="color:'+cor+';float:right;">' + (b.saude||'100') + '%</span></div>';
+        var cycles=Number(b.cycles)||0,cor=cycles<150?'var(--green)':cycles<250?'var(--amber)':'var(--red)';
+        return '<div style="padding:6px 0;font-size:0.8rem;border-bottom:1px solid var(--border);">' + (b.name||b.nome||'Bateria') + ' <span style="color:'+cor+';float:right;">' + cycles + ' ciclos</span></div>';
       }).join('');
     }
 

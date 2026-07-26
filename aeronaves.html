@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js?v=20260726-free-lock"></script>
   <link rel="stylesheet" href="css/fleet-health.css?v=20260726-sync">
-  <script src="js/fleet-health.js?v=20260726-snapshot-fix" defer></script>
+  <script src="js/fleet-health.js?v=20260726-live-source" defer></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -220,11 +220,12 @@
         document.getElementById('limitText').textContent = list.length + ' de ' + MAX + ' aeronaves cadastradas';
         document.getElementById('subtitle').textContent = isPro ? 'Gerencie até 20 aeronaves' : 'Gerencie sua aeronave (máx 1 no Free)';
         var c = document.getElementById('aircraftList');
-        if (list.length === 0) { c.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;">Nenhuma aeronave cadastrada.</p>'; return; }
+        if (list.length === 0) { c.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;">Nenhuma aeronave cadastrada.</p>'; if(window.renderFleetHealth)window.renderFleetHealth(); return; }
         c.innerHTML = list.map(function(a) {
           var insurance='';if(a.seguroExpiry){var days=Math.ceil((new Date(a.seguroExpiry+'T23:59:59').getTime()-Date.now())/86400000);insurance='<span style="display:block;margin-top:5px;color:'+(days<0?'var(--red)':days<=30?'var(--amber)':'var(--green)')+'">Seguro RETA '+(days<0?'vencido há '+Math.abs(days)+' dias':days===0?'vence hoje':'vence em '+days+' dias')+'</span>';}
           return '<div class="row" id="row-'+a.id+'"><div class="row-info"><strong>'+(a.marca||'')+' '+(a.modelo||'')+'</strong><span>'+(a.sisant?'SISANT: '+a.sisant:'')+(a.anatel?' ANATEL: '+a.anatel:'')+(a.peso?' '+a.peso+'g':'')+'</span>'+insurance+'</div><div class="row-actions"><button class="action-btn edit" onclick="editarAeronave(\''+a.id+'\')">Editar</button><button class="action-btn delete" onclick="excluirAeronave(\''+a.id+'\')">Excluir</button></div></div>';
         }).join('');
+        if(window.renderFleetHealth)window.renderFleetHealth();
       } catch(e) {
         document.getElementById('aircraftList').innerHTML = '<p style="color:var(--red);font-size:0.85rem;">Erro ao carregar: ' + e.message + '</p>';
       }
@@ -302,7 +303,7 @@
       reader.readAsText(file);
     }
     render();
-    window.addEventListener('dronehub:cloud-ready', function(){ backfillKnownWindLimits();render();window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated')); });
+    window.addEventListener('dronehub:cloud-ready', function(){ var syncedUser=getCurrentUser();if(syncedUser&&syncedUser.id&&syncedUser.id!==uid){uid=syncedUser.id;window.dronehubFleetUserId=uid;}backfillKnownWindLimits();render();window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated')); });
     if (typeof lucide !== 'undefined') { lucide.createIcons(); }
   </script>
 </body>

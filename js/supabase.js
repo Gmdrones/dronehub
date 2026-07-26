@@ -118,12 +118,13 @@ const CLOUD_COLLECTIONS = {
 };
 function cloudRecordId(data, fallback) { return String((data && data.id) || fallback || 'primary'); }
 function persistCloudRecord(collection, userId, data, fallbackId) {
-  if (!supabaseClient || !userId || !CLOUD_COLLECTIONS[collection]) return;
+  if (!supabaseClient || !userId || !CLOUD_COLLECTIONS[collection]) return Promise.resolve(false);
   const recordId = cloudRecordId(data, fallbackId);
-  supabaseClient.from('user_records').upsert({
+  return supabaseClient.from('user_records').upsert({
     user_id: userId, collection: collection, record_id: recordId, payload: data || {}
   }, { onConflict: 'user_id,collection,record_id' }).then(function (result) {
-    if (result && result.error) console.warn('Não foi possível sincronizar os dados.', result.error.message);
+    if (result && result.error) { console.warn('Não foi possível sincronizar os dados.', result.error.message); return false; }
+    return true;
   });
 }
 function removeCloudRecord(collection, userId, id) {
@@ -152,14 +153,16 @@ async function syncCloudData(userId) {
     return true;
   } catch (e) { return false; }
 }
-function migrateLocalDataToCloud(userId) {
+async function migrateLocalDataToCloud(userId) {
   if (!userId || !supabaseClient) return;
+  const writes = [];
   const profile = getProfile(userId);
-  if (Object.keys(profile).length) persistCloudRecord('profile', userId, profile, 'primary');
+  if (Object.keys(profile).length) writes.push(persistCloudRecord('profile', userId, profile, 'primary'));
   const readers = { aircraft: getAircraft, missions: getMissions, documents: getDocuments, transactions: getTransactions, clients: getClients, batteries: getBatteries };
   Object.keys(readers).forEach(function (collection) {
-    readers[collection](userId).forEach(function (record) { persistCloudRecord(collection, userId, record); });
+    readers[collection](userId).forEach(function (record) { writes.push(persistCloudRecord(collection, userId, record)); });
   });
+  await Promise.all(writes);
 }
 
 // ===== PROFILES =====
@@ -224,6 +227,38 @@ function isSarpasDocument(data) {
     data && data.title
   ].filter(Boolean).join(' ');
   return raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('sarpas');
+}
+
+// Consolida dados gravados por versoes antigas sob o e-mail do piloto.
+// O Supabase usa UUID; sem esta migracao celular e computador podem parecer
+// contas diferentes mesmo pertencendo ao mesmo login.
+function migrateLocalOwnerAliases(oldId, newId, email) {
+  if (!newId) return;
+  const aliases = [oldId, email].filter(function (value, index, list) {
+    return value && value !== newId && list.indexOf(value) === index;
+  });
+  if (!aliases.length) return;
+  const profileStore = JSON.parse(localStorage.getItem('dronehub_profiles') || '{}');
+  aliases.forEach(function (alias) {
+    if (profileStore[alias]) {
+      profileStore[newId] = Object.assign({}, profileStore[alias], profileStore[newId] || {});
+      delete profileStore[alias];
+    }
+  });
+  localStorage.setItem('dronehub_profiles', JSON.stringify(profileStore));
+  Object.keys(CLOUD_COLLECTIONS).filter(function (name) { return name !== 'profile'; }).forEach(function (collection) {
+    const key = CLOUD_COLLECTIONS[collection];
+    const records = JSON.parse(localStorage.getItem(key) || '[]');
+    let changed = false;
+    records.forEach(function (record) {
+      if (aliases.indexOf(record.userId) >= 0) { record.userId = newId; changed = true; }
+    });
+    if (changed) {
+      const unique = new Map();
+      records.forEach(function (record) { unique.set(String(record.userId) + ':' + String(record.id), record); });
+      localStorage.setItem(key, JSON.stringify(Array.from(unique.values())));
+    }
+  });
 }
 
 function saveDocument(userId, data) {
@@ -317,9 +352,11 @@ async function refreshCurrentEntitlement() {
   if (!before || !supabaseClient) return;
   const beforePlan = before.plan;
   const beforeRole = before.role;
-  migrateLocalDataToCloud(before.id);
   const updated = await syncCurrentEntitlement();
-  await syncCloudData((updated && updated.id) || before.id);
+  const canonicalId = (updated && updated.id) || before.id;
+  migrateLocalOwnerAliases(before.id, canonicalId, (updated && updated.email) || before.email);
+  await migrateLocalDataToCloud(canonicalId);
+  await syncCloudData(canonicalId);
   if (updated && (updated.plan !== beforePlan || updated.role !== beforeRole)) {
     window.location.reload();
   }
