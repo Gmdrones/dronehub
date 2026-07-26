@@ -2,7 +2,7 @@
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
 
 function reply(body, status = 200, cacheControl = 'public, max-age=600') {
@@ -75,6 +75,7 @@ export default {
     upstream.searchParams.set('latitude', String(lat));
     upstream.searchParams.set('longitude', String(lon));
     upstream.searchParams.set('current', 'temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,cloud_cover');
+    upstream.searchParams.set('hourly', 'temperature_2m,precipitation_probability,precipitation,cloud_cover,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m');
     upstream.searchParams.set('daily', 'wind_speed_10m_max,wind_gusts_10m_max,precipitation_probability_max,sunrise,sunset');
     upstream.searchParams.set('forecast_days', '4');
     upstream.searchParams.set('timezone', 'auto');

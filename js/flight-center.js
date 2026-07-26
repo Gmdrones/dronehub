@@ -74,7 +74,7 @@
   }
   function load(){
     $('weatherLoading').style.display='block';
-    fetch(operationsApi+'/weather?lat='+encodeURIComponent(place.lat)+'&lon='+encodeURIComponent(place.lon)).then(r=>r.json()).then(data=>{weather=data;render();}).catch(()=>{$('weatherLoading').textContent='Não foi possível atualizar o clima agora. Tente novamente em instantes.';});
+    fetch(operationsApi+'/weather?lat='+encodeURIComponent(place.lat)+'&lon='+encodeURIComponent(place.lon)).then(r=>r.json()).then(data=>{weather=data;window.DroneHubFlightWeather=data;render();window.dispatchEvent(new CustomEvent('dronehub:weather-ready',{detail:data}));}).catch(()=>{$('weatherLoading').textContent='Não foi possível atualizar o clima agora. Tente novamente em instantes.';});
   }
   function geocode(){
     const query=$('flightLocation').value.trim(); if(!query)return;

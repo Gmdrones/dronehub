@@ -1,0 +1,51 @@
+/* Drone Hub layout v4 — fonte única para grades internas. */
+.dash-wrap > .main { min-width:0; width:calc(100% - 240px); margin-left:240px; }
+.dash-wrap > .main > .hero,
+.dash-wrap > .main > .content { width:min(100%,1600px); margin-left:auto; margin-right:auto; }
+.dash-wrap > .main > .content { padding:32px clamp(20px,2.4vw,40px) 64px; }
+.dashboard-command,
+.dashboard-command--flightdeck { position:relative!important; inset:auto!important; width:min(100%,1520px)!important; max-width:1520px!important; margin:24px auto 30px!important; padding:0 clamp(20px,2.4vw,40px)!important; }
+.dashboard-command + .content { padding-top:0; }
+.hero { overflow:hidden; isolation:isolate; }
+.hero-telemetry { max-width:640px; }
+.kpi-row { display:grid!important; grid-template-columns:repeat(6,minmax(0,1fr))!important; gap:14px!important; overflow:visible!important; }
+.grid-2,.grid-3,.grid-4 { display:grid!important; align-items:stretch; grid-auto-flow:row; gap:18px!important; }
+.grid-2 { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
+.grid-3 { grid-template-columns:minmax(0,1.55fr) repeat(2,minmax(260px,.75fr))!important; }
+.grid-4 { grid-template-columns:repeat(4,minmax(0,1fr))!important; }
+.grid-2 > *, .grid-3 > *, .grid-4 > *, .kpi-row > * { min-width:0; width:auto!important; margin:0!important; }
+.grid-2 > :only-child,.grid-3 > :only-child,.grid-4 > :only-child { grid-column:1/-1; }
+.grid-3 > .card,.grid-4 > .card { height:100%; min-height:176px; }
+.grid-3 > .card:first-child { min-height:210px; }
+.card { overflow:hidden; }
+#operationsMapCard { min-height:210px; }
+
+/* A Central usa fluxo normal; nenhuma seção pode ocupar linha fixa. */
+.dash-wrap .main.flight-deck { display:grid!important; grid-template-columns:minmax(300px,.82fr) minmax(460px,1.18fr)!important; align-content:start; align-items:start; gap:20px!important; min-width:0; width:calc(100% - 240px)!important; max-width:none!important; margin-left:240px!important; margin-right:0!important; padding:32px clamp(24px,3vw,52px)!important; }
+.main.flight-deck > * { min-width:0; width:100%; max-width:none; margin:0!important; grid-row:auto!important; }
+.main.flight-deck > .page-title,.main.flight-deck > .page-sub,.main.flight-deck > .flight-context,.main.flight-deck > .flight-forecast,.main.flight-deck > #centralTierExperience { grid-column:1/-1!important; }
+.main.flight-deck > .aircraft-card { grid-column:1!important; }
+.main.flight-deck > #operationalRegistry { grid-column:2!important; }
+.main.flight-deck > .conditions-card { grid-column:1/-1!important; }
+
+@media (max-width:1280px) {
+  .kpi-row { grid-template-columns:repeat(3,minmax(0,1fr))!important; }
+  .grid-3 { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
+  .grid-3 > .card:first-child { grid-column:1/-1; }
+  .grid-4 { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
+}
+@media (max-width:1040px) {
+  .dash-wrap .main.flight-deck { grid-template-columns:1fr!important; }
+  .main.flight-deck > .aircraft-card,.main.flight-deck > #operationalRegistry,.main.flight-deck > .conditions-card { grid-column:1!important; }
+}
+@media (max-width:768px) {
+  .dash-wrap > .main,.dash-wrap .main.flight-deck { width:100%!important; margin-left:0!important; }
+  .dash-wrap .main.flight-deck { padding:20px 16px 56px!important; gap:16px!important; }
+  .dash-wrap > .main > .content { padding:18px 16px 48px!important; }
+  .dashboard-command,.dashboard-command--flightdeck { margin:18px auto 22px!important; padding:0 16px!important; }
+  .kpi-row { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; overflow:visible!important; margin-right:0!important; }
+  .kpi-card { min-width:0!important; }
+  .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr!important; }
+  .grid-3 > .card:first-child { grid-column:auto; }
+  .grid-3 > .card,.grid-4 > .card { min-height:0; }
+}

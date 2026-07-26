@@ -1,0 +1,26 @@
+.central-tier-shell{grid-column:1/-1;display:grid;gap:20px;margin-top:2px!important}
+.central-tier-head,.central-tier-panel{border:1px solid rgba(148,163,184,.14);border-radius:20px;background:linear-gradient(145deg,rgba(17,31,46,.98),rgba(8,16,26,.98));box-shadow:0 22px 65px rgba(0,0,0,.18)}
+.central-tier-head{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:25px 28px}
+.central-tier-kicker{display:block;color:#55d9ff;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.central-tier-head h2,.central-tier-panel h2{margin:7px 0 5px;font:700 clamp(1.3rem,2vw,1.8rem) var(--title);letter-spacing:-.04em}
+.central-tier-head p,.central-tier-panel p{margin:0;color:#9dafc2;line-height:1.55}
+.tier-pill{flex:0 0 auto;padding:9px 13px;border:1px solid rgba(53,211,154,.28);border-radius:999px;color:#75ebbd;background:rgba(53,211,154,.08);font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.central-tier-panel{padding:25px 28px}
+.tier-basic-grid,.tier-pro-grid,.tier-diagnostics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:20px}
+.tier-metric,.tier-tool{position:relative;min-width:0;padding:18px;border:1px solid rgba(148,163,184,.12);border-radius:14px;background:rgba(4,12,21,.55)}
+.tier-metric small,.tier-tool small{display:block;color:#71859b;font-size:.6rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.tier-metric strong,.tier-tool strong{display:block;margin-top:8px;color:#f4f8fb;font:700 1.05rem var(--title)}
+.tier-metric span,.tier-tool span{display:block;margin-top:6px;color:#96a9bd;font-size:.75rem;line-height:1.45}
+.tier-result{border-color:rgba(53,211,154,.3);background:linear-gradient(145deg,rgba(53,211,154,.1),rgba(4,12,21,.58))}
+.tier-result.attention{border-color:rgba(255,184,77,.34)}.tier-result.danger{border-color:rgba(255,107,107,.38)}
+.tier-pro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tier-tool a,.tier-action{display:inline-flex;margin-top:13px;padding:8px 11px;border:1px solid rgba(22,198,255,.25);border-radius:8px;color:#83e7ff;background:rgba(22,198,255,.06);font-size:.7rem;font-weight:800;text-decoration:none;cursor:pointer}
+.tier-tool.locked{overflow:hidden;min-height:142px}.tier-tool.locked>*{filter:blur(2.5px);opacity:.48;user-select:none;pointer-events:none}
+.tier-lock{position:absolute!important;inset:0;display:grid!important;place-items:center;margin:0!important;filter:none!important;opacity:1!important;color:#edf8fc!important;background:rgba(5,12,20,.58);font-size:.75rem!important;font-weight:800;backdrop-filter:blur(2px);pointer-events:auto!important}
+.tier-upgrade{display:flex;align-items:center;justify-content:space-between;gap:22px;margin-top:18px;padding:18px 20px;border:1px solid rgba(255,184,77,.2);border-radius:14px;background:rgba(255,184,77,.05)}
+.tier-upgrade strong{font:700 1rem var(--title)}.tier-upgrade p{font-size:.78rem}.tier-upgrade a{flex:0 0 auto;padding:10px 14px;border-radius:9px;color:#111820;background:#ffb84d;font-size:.75rem;font-weight:800;text-decoration:none}
+.tier-pro-note{margin-top:16px;padding:13px 15px;border-left:3px solid #16c6ff;color:#a9bacb;background:rgba(22,198,255,.055);font-size:.78rem;line-height:1.5}
+.tier-compare{width:100%;margin-top:20px;border-collapse:collapse;font-size:.78rem}.tier-compare th,.tier-compare td{padding:10px 12px;border-bottom:1px solid rgba(148,163,184,.11);text-align:left}.tier-compare th{color:#6f8499;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase}.tier-yes{color:#35d39a;font-weight:800}.tier-no{color:#68768a}
+.admin-simulator{display:flex;gap:8px;margin-top:14px}.admin-simulator button{padding:8px 12px;border:1px solid rgba(148,163,184,.2);border-radius:8px;color:#b9d4e3;background:#09131e;cursor:pointer}.admin-simulator button.active{border-color:#16c6ff;color:#16c6ff}
+@media(max-width:980px){.tier-basic-grid,.tier-pro-grid,.tier-diagnostics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.central-tier-head,.tier-upgrade{align-items:flex-start;flex-direction:column}.central-tier-head,.central-tier-panel{padding:21px 18px}.tier-basic-grid,.tier-pro-grid,.tier-diagnostics{grid-template-columns:1fr}.tier-upgrade a{width:100%;text-align:center}.tier-compare{font-size:.7rem}.tier-compare th,.tier-compare td{padding:9px 6px}}

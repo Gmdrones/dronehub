@@ -200,7 +200,16 @@ function deleteAircraft(userId, id) {
 }
 
 // ===== MISSIONS =====
+function requireProCapability(feature) {
+  var account = getCurrentUser() || {};
+  var founder = String(account.email || '').toLowerCase() === 'giorgiomendonca@gmail.com';
+  if (account.plan !== 'pro' && account.role !== 'admin' && !founder) {
+    throw new Error((feature || 'Este recurso') + ' está disponível no plano Pro.');
+  }
+  return true;
+}
 function saveMission(userId, data) {
+  requireProCapability('Salvar missões e checklists');
   if (!data.id) data.id = Date.now().toString();
   data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString();
   data.status = data.status || 'agendada';
@@ -262,6 +271,7 @@ function migrateLocalOwnerAliases(oldId, newId, email) {
 }
 
 function saveDocument(userId, data) {
+  requireProCapability('Gerar e salvar documentos');
   if (!data.id) data.id = Date.now().toString();
   data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString();
   let d = JSON.parse(localStorage.getItem('dronehub_docs') || '[]');
@@ -294,6 +304,7 @@ function deleteDocument(userId, id) {
 
 // ===== TRANSACTIONS =====
 function saveTransaction(userId, data) {
+  requireProCapability('O módulo financeiro');
   if (!data.id) data.id = Date.now().toString();
   data.userId = userId; data.date = data.date || new Date().toISOString().split('T')[0];
   const t = JSON.parse(localStorage.getItem('dronehub_transactions') || '[]');
@@ -312,6 +323,7 @@ function deleteTransaction(userId, id) {
 
 // ===== CLIENTS =====
 function saveClient(userId, data) {
+  requireProCapability('O cadastro de clientes');
   if (!data.id) data.id = Date.now().toString(); data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString();
   const c = JSON.parse(localStorage.getItem('dronehub_clientes') || '[]');
   const idx = c.findIndex(x => x.id === data.id && x.userId === userId);
@@ -329,6 +341,7 @@ function deleteClient(userId, id) {
 
 // ===== BATTERIES =====
 function saveBattery(userId, data) {
+  requireProCapability('A gestão de baterias');
   if (!data.id) data.id = Date.now().toString(); data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString();
   const b = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]');
   const idx = b.findIndex(x => x.id === data.id && x.userId === userId);
