@@ -141,7 +141,8 @@
         <div class="pc-info">
           <div class="pc-field"><span class="lbl">CPF</span><span class="val" id="pcCpf">—</span></div>
           <div class="pc-field"><span class="lbl">Cidade</span><span class="val" id="pcCidade">—</span></div>
-          <div class="pc-field"><span class="lbl">ANAC</span><span class="val" id="pcAnac">—</span></div>
+          <div class="pc-field"><span class="lbl">SISANT (ANAC)</span><span class="val" id="pcAnac">—</span></div>
+          <div class="pc-field"><span class="lbl">Homologação ANATEL</span><span class="val" id="pcAnatel">—</span></div>
           <div class="pc-field"><span class="lbl">Autorização de voo SARPAS</span><span class="val" id="pcSarpas">—</span></div>
           <div class="pc-field"><span class="lbl">Aeronaves</span><span class="val" id="pcAircraft">0</span></div>
           <div class="pc-field"><span class="lbl">Plano</span><span class="val" id="pcPlan">Free</span></div>
@@ -168,7 +169,10 @@
       document.getElementById('pcName').textContent=profile.nome||user.name||'Piloto';
       document.getElementById('pcCpf').textContent=profile.cpf||'—';
       document.getElementById('pcCidade').textContent=profile.cidade||'—';
-      document.getElementById('pcAnac').textContent=profile.anac||'—';
+      var sisant=aircraft.map(function(a){return a.sisant;}).filter(Boolean);
+      var anatel=aircraft.map(function(a){return a.anatel;}).filter(Boolean);
+      document.getElementById('pcAnac').textContent=sisant.length?sisant.join(', '):'Não informado';
+      document.getElementById('pcAnatel').textContent=anatel.length?anatel.join(', '):'Não informado';
       var sarpasDocs=docs.filter(function(d){return typeof isSarpasDocument==='function'&&isSarpasDocument(d);}).sort(function(a,b){return String(b.createdAt||'').localeCompare(String(a.createdAt||''));});
       document.getElementById('pcSarpas').textContent=sarpasDocs.length?(sarpasDocs[0].name||'Autorização anexada'):'Não anexada';
       document.getElementById('pcAircraft').textContent=aircraft.length;
@@ -176,9 +180,9 @@
       var initial=(profile.nome||user.name||'U').charAt(0).toUpperCase();
       var foto=profile.foto;var photoEl=document.getElementById('pcPhoto');
       if(foto){photoEl.innerHTML='<img src="'+foto+'" alt="">';}else{photoEl.textContent=initial;}
-      var docsHtml='';
-      if(docs.length===0){docsHtml='<span style="font-size:0.8rem;color:var(--text3);">Nenhum documento</span>';}
-      else{docsHtml=docs.map(function(d){return '<div class="pc-doc-item"><span class="ok">✓</span><span><strong>'+d.name+'</strong>'+(d.expiry?' Val: '+new Date(d.expiry).toLocaleDateString('pt-BR'):'')+'</span></div>';}).join('');}
+      var docsHtml='',visibleDocs=docs.filter(function(d){var raw=((d.type||'')+' '+(d.name||'')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return raw.indexOf('avaliacao de risco')<0&&raw.indexOf(' aro')<0;});
+      if(visibleDocs.length===0){docsHtml='<span style="font-size:0.8rem;color:var(--text3);">Nenhum documento liberado</span>';}
+      else{docsHtml=visibleDocs.map(function(d){return '<div class="pc-doc-item"><span class="ok">✓</span><span><strong>'+d.name+'</strong>'+(d.expiry?' Val: '+new Date(d.expiry).toLocaleDateString('pt-BR'):'')+'</span></div>';}).join('');}
       document.getElementById('pcDocs').innerHTML=docsHtml;
     }
 

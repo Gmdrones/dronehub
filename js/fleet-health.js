@@ -1,6 +1,9 @@
 (function(){
   function ready(fn){document.readyState==='loading'?document.addEventListener('DOMContentLoaded',fn):fn();}
-  function currentUser(){return window.uid||'local';}
+  function currentUser(){
+    var session=JSON.parse(localStorage.getItem('dronehub_user')||'null');
+    return (session&&(session.id||session.email))||window.uid||'local';
+  }
   function aircraft(){return typeof getAircraft==='function'?getAircraft(currentUser()):[];}
   function batteries(){return typeof getBatteries==='function'?getBatteries(currentUser()):[];}
   function escapeHtml(value){var e=document.createElement('span');e.textContent=value||'';return e.innerHTML;}
