@@ -1,33 +1,19 @@
 (function(){
-  function setStatus(message, type){var status=document.getElementById('formStatus');status.textContent=message;status.className='form-status '+(type||'');}
-  async function boot(){
-    var user=typeof getCurrentUser==='function'?getCurrentUser():null;
-    if(!user){location.replace('login.html');return;}
-    if(typeof syncCurrentEntitlement==='function') user=await syncCurrentEntitlement();
-    if(!user||user.role!=='admin'){location.replace('dashboard.html');return;}
-    document.getElementById('grantForm').addEventListener('submit',async function(event){
-      event.preventDefault();
-      var email=document.getElementById('pilotEmail').value.trim();
-      var months=Number(document.getElementById('courtesyMonths').value);
-      var note=document.getElementById('courtesyNote').value.trim()||null;
-      var button=document.getElementById('grantButton');
-      if(!email){setStatus('Informe o e-mail do piloto.','error');return;}
-      if(typeof supabaseClient === 'undefined' || !supabaseClient){setStatus('A conexão segura não está disponível. Tente novamente em instantes.','error');return;}
-      button.disabled=true;button.querySelector('span').textContent='Concedendo acesso…';setStatus('');
-      try{
-        var result=await supabaseClient.rpc('grant_partner_courtesy',{target_email:email,months:months,courtesy_note:note});
-        if(result.error) throw result.error;
-        setStatus('Pro concedido por '+months+' '+(months===1?'mês':'meses')+'. O piloto verá o acesso ao entrar novamente.','success');
-        event.target.reset();document.getElementById('courtesyMonths').value='12';
-      }catch(error){
-        var msg=(error&&error.message)||'Não foi possível conceder a cortesia.';
-        if(/Nenhum piloto encontrado/i.test(msg)) msg='Nenhuma conta encontrada com este e-mail. Peça ao piloto para criar a conta primeiro.';
-        if(/Apenas administradores/i.test(msg)) msg='Sua sessão não possui permissão administrativa. Entre novamente.';
-        setStatus(msg,'error');
-      }finally{button.disabled=false;button.querySelector('span').textContent='Conceder Pro';}
-    });
-    document.getElementById('signOutBtn').addEventListener('click',async function(){if(typeof signOut==='function') await signOut();location.replace('login.html');});
-    if(window.lucide) lucide.createIcons();
-  }
+  var stylesheet=document.createElement('link');stylesheet.rel='stylesheet';stylesheet.href='css/admin-users.css?v=20260726-admin-users';document.head.appendChild(stylesheet);
+  var accounts=[],currentId=''; function el(id){return document.getElementById(id)}
+  function status(id,msg,type){var n=el(id);n.textContent=msg||'';n.className=(id==='accountsStatus'?'accounts-status':'form-status')+(type?' '+type:'')}
+  function safe(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]})}
+  function date(v){return v?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short'}).format(new Date(v)):'—'}
+  async function rpc(name,args){var r=await supabaseClient.rpc(name,args||{});if(r.error)throw r.error;return r.data}
+  function render(){var body=el('accountsBody');body.innerHTML='';accounts.forEach(function(a){var self=a.user_id===currentId,blocked=a.account_status==='blocked',tr=document.createElement('tr');tr.innerHTML='<td><div class="account-person"><span class="account-avatar">'+safe((a.full_name||a.email||'P').charAt(0).toUpperCase())+'</span><div><strong>'+safe(a.full_name||'Piloto')+'</strong><small>'+safe(a.email)+'</small></div></div></td><td><span class="access-badge '+safe(a.plan)+'">'+safe(a.role==='admin'?'Admin':a.plan==='pro'?'Pro':'Free')+'</span></td><td><span class="status-badge '+(blocked?'blocked':'active')+'">'+(blocked?'Bloqueada':'Ativa')+'</span></td><td>'+date(a.created_at)+'<small class="record-count">'+Number(a.record_count||0)+' registros</small></td><td><div class="account-actions"><button data-action="edit" data-id="'+a.user_id+'"><i data-lucide="pencil"></i><span>Editar</span></button><button data-action="block" data-id="'+a.user_id+'" '+(self?'disabled':'')+'><i data-lucide="'+(blocked?'lock-open':'ban')+'"></i><span>'+(blocked?'Liberar':'Bloquear')+'</span></button><button class="danger" data-action="delete" data-id="'+a.user_id+'" '+(self?'disabled':'')+'><i data-lucide="trash-2"></i><span>Excluir</span></button></div></td>';body.appendChild(tr)});el('metricAccounts').textContent=accounts.length;el('metricPro').textContent=accounts.filter(function(a){return a.plan==='pro'&&a.account_status!=='blocked'}).length;el('metricAdmins').textContent=accounts.filter(function(a){return a.role==='admin'}).length;status('accountsStatus',accounts.length?accounts.length+' conta(s) encontrada(s).':'Nenhuma conta encontrada.','success');if(window.lucide)lucide.createIcons()}
+  async function load(term){status('accountsStatus','Carregando cadastros…');try{accounts=await rpc('admin_list_accounts',{search_term:term||null})||[];render()}catch(e){status('accountsStatus',e.message||'Não foi possível carregar os cadastros.','error')}}
+  function openEdit(id){var a=accounts.find(function(x){return x.user_id===id});if(!a)return;el('editUserId').value=a.user_id;el('editName').value=a.full_name||'';el('editPhone').value=a.phone||'';el('editCity').value=a.city||'';el('editPlan').value=a.plan||'free';el('editRole').value=a.role==='admin'?'admin':'pilot';el('dialogTitle').textContent=a.email;el('editMonthsLabel').hidden=a.plan!=='pro';status('editStatus','');el('accountDialog').showModal();if(window.lucide)lucide.createIcons()}
+  async function toggleBlock(id){var a=accounts.find(function(x){return x.user_id===id}),block=a.account_status!=='blocked';if(!confirm((block?'Bloquear':'Desbloquear')+' a conta de '+a.email+'?'))return;try{await rpc('admin_set_account_blocked',{target_user_id:id,should_block:block});await load(el('accountSearch').value.trim())}catch(e){alert(e.message||'Não foi possível alterar a conta.')}}
+  async function remove(id){var a=accounts.find(function(x){return x.user_id===id});if(prompt('Digite EXCLUIR para apagar a conta e os dados de '+a.email+'.')!=='EXCLUIR')return;try{await rpc('admin_delete_account',{target_user_id:id});await load(el('accountSearch').value.trim())}catch(e){alert(e.message||'Não foi possível excluir a conta.')}}
+  async function boot(){var user=typeof getCurrentUser==='function'?getCurrentUser():null;if(!user){location.replace('login.html');return}if(typeof syncCurrentEntitlement==='function')user=await syncCurrentEntitlement();if(!user||user.role!=='admin'){location.replace('dashboard.html');return}currentId=user.id;
+    el('grantForm').onsubmit=async function(event){event.preventDefault();var email=el('pilotEmail').value.trim(),months=Number(el('courtesyMonths').value),note=el('courtesyNote').value.trim()||null,b=el('grantButton');if(!email){status('formStatus','Informe o e-mail do piloto.','error');return}b.disabled=true;b.querySelector('span').textContent='Concedendo acesso…';try{await rpc('grant_partner_courtesy',{target_email:email,months:months,courtesy_note:note});status('formStatus','Pro concedido com sucesso.','success');event.target.reset();el('courtesyMonths').value='12';await load()}catch(e){status('formStatus',e.message||'Não foi possível conceder a cortesia.','error')}finally{b.disabled=false;b.querySelector('span').textContent='Conceder Pro'}};
+    el('accountSearch').oninput=function(){clearTimeout(this.timer);var term=this.value.trim();this.timer=setTimeout(function(){load(term)},300)};el('accountsBody').onclick=function(event){var b=event.target.closest('button[data-action]');if(!b||b.disabled)return;if(b.dataset.action==='edit')openEdit(b.dataset.id);if(b.dataset.action==='block')toggleBlock(b.dataset.id);if(b.dataset.action==='delete')remove(b.dataset.id)};
+    el('editPlan').onchange=function(){el('editMonthsLabel').hidden=this.value!=='pro'};el('dialogClose').onclick=el('dialogCancel').onclick=function(){el('accountDialog').close()};el('accountForm').onsubmit=async function(event){event.preventDefault();var b=el('saveAccount');b.disabled=true;b.querySelector('span').textContent='Salvando…';try{await rpc('admin_update_account',{target_user_id:el('editUserId').value,new_full_name:el('editName').value.trim(),new_phone:el('editPhone').value.trim(),new_city:el('editCity').value.trim(),new_plan:el('editPlan').value,new_role:el('editRole').value,pro_months:Number(el('editMonths').value)});status('editStatus','Cadastro atualizado.','success');await load(el('accountSearch').value.trim());setTimeout(function(){el('accountDialog').close()},500)}catch(e){status('editStatus',e.message||'Não foi possível salvar.','error')}finally{b.disabled=false;b.querySelector('span').textContent='Salvar alterações'}};
+    el('signOutBtn').onclick=async function(){if(supabaseClient)await supabaseClient.auth.signOut();localStorage.removeItem('dronehub_user');location.replace('login.html')};await load();if(window.lucide)lucide.createIcons()}
   document.addEventListener('DOMContentLoaded',boot);
 })();
