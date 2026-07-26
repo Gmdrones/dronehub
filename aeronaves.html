@@ -167,7 +167,7 @@
     document.getElementById('avatarInitial').textContent = (user.name||'U').charAt(0).toUpperCase();
     document.getElementById('userNameHeader').textContent = user.name||'Usuário';
     document.getElementById('planBadge').textContent = isPro?'PRO':'FREE';
-    if(isPro){document.getElementById('planName').textContent='Pro';document.getElementById('planName').className='sidebar-foot-name pro';document.getElementById('planLink').textContent='Gerenciar';}
+    if(isPro){document.getElementById('planName').textContent=user.role==='admin'?'Admin':'Pro';document.getElementById('planName').className='sidebar-foot-name pro';document.getElementById('planLink').textContent=user.role==='admin'?'Gerenciar usuários':'Minha conta';document.getElementById('planLink').href=user.role==='admin'?'admin.html':'perfil.html';}
 
     var DRONE_WIND_LIMITS = {
       'DJI Neo':28.8,'DJI Flip':38.5,'DJI Mini 2 SE':38.5,'DJI Mini 3':38.5,'DJI Mini 3 Pro':38.5,

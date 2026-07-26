@@ -164,7 +164,7 @@
     document.getElementById('avatarInitial').textContent = (user.name||'U').charAt(0).toUpperCase();
     document.getElementById('userNameHeader').textContent = user.name||'Usuario';
     document.getElementById('planBadge').textContent = isPro?'PRO':'FREE';
-    if(isPro){document.getElementById('planName').textContent='Pro';document.getElementById('planName').className='sidebar-foot-name pro';document.getElementById('planLink').textContent='Gerenciar';}
+    if(isPro){document.getElementById('planName').textContent=user.role==='admin'?'Admin':'Pro';document.getElementById('planName').className='sidebar-foot-name pro';document.getElementById('planLink').textContent=user.role==='admin'?'Gerenciar usuários':'Minha conta';document.getElementById('planLink').href=user.role==='admin'?'admin.html':'perfil.html';}
 
     function renderPilotCard(){
       var profile=getProfile(uid);var docs=getDocuments(uid);var aircraft=getAircraft(uid);
