@@ -1,0 +1,23 @@
+@media (min-width:701px){
+  .dashboard-command--flightdeck,
+  #missionMapCard,
+  .main>.pro-readiness,
+  .main>.content{
+    width:min(calc(100% - 64px),1150px)!important;
+    max-width:1150px!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+  }
+  #missionMapCard{margin-top:0!important;margin-bottom:24px!important;border-radius:18px!important}
+  #missionMapCard .mission-map-card__head{min-height:78px;padding:20px 22px!important}
+  #missionMapCard .mission-map-card__head h3{font-size:1rem!important}
+  #missionMapCard .mission-map-card__head p{max-width:520px;line-height:1.45}
+  #missionMapCard .mission-map-empty{min-height:150px!important}
+  .flight-deck{grid-template-columns:1.05fr 1.1fr .95fr!important}
+  .flight-deck__decision,.flight-deck__instruments{min-width:0}
+}
+@media (max-width:700px){
+  #missionMapCard{width:auto!important;margin:14px 16px 20px!important}
+  #missionMapCard .mission-map-card__head{flex-direction:column;padding:18px!important}
+  #missionMapCard .mission-map-empty{min-height:130px!important}
+}
