@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="js/supabase.js?v=20260726-fleet-unified"></script>
+  <script src="js/dji-flight-log.js?v=20260726-native-txt"></script>
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js?v=20260726-free-lock"></script>
   <link rel="stylesheet" href="css/fleet-health.css?v=20260726-sync">
@@ -151,7 +152,7 @@
         <p style="font-size:0.85rem;color:var(--text3);margin-bottom:12px;">Upload do arquivo TXT de log da DJI Fly.</p>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
           <input type="file" id="djiLog" accept=".txt,.csv,.json" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
-          <button class="btn btn-secondary" onclick="uploadLog()">Importar</button>
+          <button class="btn btn-secondary" onclick="uploadNativeDjiLog()">Importar</button>
         </div>
         <div id="logResult" style="margin-top:12px;"></div>
       </div>
@@ -321,6 +322,30 @@
         result.innerHTML='<div style="background:var(--green-bg);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:12px;color:var(--green);font-weight:600;">'+(updated.length?'Dados importados: '+updated.join(', ')+'.':'Log lido, mas o arquivo não contém campos reconhecíveis de bateria ou firmware. Nenhum dado foi inventado.')+'</div>';
       };
       reader.readAsText(file);
+    }
+    function uploadNativeDjiLog() {
+      var file=document.getElementById('djiLog').files[0],result=document.getElementById('logResult');
+      if(!file)return alert('Selecione um arquivo');
+      var reader=new FileReader();
+      reader.onload=function(event){
+        try{
+          var parsed=DroneHubDJILog.parse(event.target.result),d=parsed.details||{},aircraft=getAircraft(uid);
+          var norm=function(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();},wanted=norm(d.aircraftName);
+          var target=aircraft.find(function(a){var model=norm(a.modelo||a.model);return model===wanted||model.indexOf(wanted)>=0||wanted.indexOf(model)>=0;})||aircraft[0];
+          if(!target){result.innerHTML='<div class="document-file-note">Cadastre a aeronave antes de importar o log. O arquivo identifica <strong>'+(d.aircraftName||'uma aeronave DJI')+'</strong>.</div>';return;}
+          var now=new Date().toISOString();
+          target.aircraftSerial=d.aircraftSerial;target.djiAppVersion=d.appVersion;target.lastLogImport=now;target.lastFlightAt=d.startTime;target.lastFlightDistanceM=Math.round(d.totalDistance||0);target.lastFlightDurationS=Math.round(d.totalTime||0);target.maxRecordedHeightM=d.maxHeight;target.maxRecordedSpeedMS=d.maxHorizontalSpeed;saveAircraft(uid,target);
+          if(d.batterySerial){var list=getBatteries(uid),battery=list.find(function(b){return String(b.serial||'')===d.batterySerial;})||{id:Date.now().toString(),aircraftId:target.id,name:'Bateria '+d.batterySerial.slice(-6),nome:'Bateria '+d.batterySerial.slice(-6),serial:d.batterySerial,cycles:0};battery.aircraftId=target.id;battery.lastFlightAt=d.startTime;battery.lastLogImport=now;battery.flightCount=(Number(battery.flightCount)||0)+1;saveBattery(uid,battery);}
+          var history=JSON.parse(localStorage.getItem('dronehub_flight_logs')||'[]');history.push({id:String(Date.now()),userId:uid,fileName:file.name,version:parsed.version,aircraftId:target.id,details:d,importedAt:now});localStorage.setItem('dronehub_flight_logs',JSON.stringify(history.slice(-200)));
+          if(typeof renderFleetHealth==='function')renderFleetHealth();
+          var duration=Math.floor((d.totalTime||0)/60)+' min '+String(Math.round((d.totalTime||0)%60)).padStart(2,'0')+' s',date=d.startTime?new Date(d.startTime).toLocaleString('pt-BR'):'—';
+          result.innerHTML='<div class="document-file-note" style="border-color:rgba(52,211,153,.35)"><strong>Voo DJI importado com sucesso.</strong><br>Aeronave: '+(d.aircraftName||target.modelo)+' · Data: '+date+'<br>Duração: '+duration+' · Distância: '+((d.totalDistance||0)/1000).toFixed(2).replace('.',',')+' km · Altura máxima: '+Number(d.maxHeight||0).toFixed(1).replace('.',',')+' m<br>Bateria: '+(d.batterySerial||'não identificada')+' · DJI Fly '+(d.appVersion||'')+'<br><small>Ciclos e firmware não estão expostos neste TXT criptografado pela DJI; nenhum valor foi estimado.</small></div>';
+          window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated'));window.dispatchEvent(new CustomEvent('dronehub:battery-updated'));
+        }catch(error){
+          result.innerHTML='<div class="document-file-note"><strong>Não foi possível ler este log DJI.</strong> '+error.message+'. O arquivo precisa ser o FlightRecord original do DJI Fly.</div>';
+        }
+      };
+      reader.readAsArrayBuffer(file);
     }
     render();
     window.addEventListener('load',function(){render();});
