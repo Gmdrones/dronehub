@@ -13,6 +13,7 @@ function reply(body, status = 200, cacheControl = 'public, max-age=600') {
 }
 
 function validCoordinate(value, maximum) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
   const number = Number(value);
   return Number.isFinite(number) && Math.abs(number) <= maximum ? number : null;
 }
