@@ -21,7 +21,6 @@ async function syncCurrentEntitlement() {
       email: authUser.email || savedUser.email || '',
       name: (authUser.user_metadata && (authUser.user_metadata.full_name || authUser.user_metadata.name)) || savedUser.name || authUser.email || 'Piloto'
     });
-    var founderAdmin = String(authUser.email || '').toLowerCase() === 'giorgiomendonca@gmail.com';
 
     var result = await supabaseClient.rpc('get_my_entitlement');
     if (result && !result.error && Array.isArray(result.data)) result.data = result.data[0] || null;
@@ -39,11 +38,10 @@ async function syncCurrentEntitlement() {
       localUser.plan = access.status === 'active' && !isExpired && access.plan === 'pro' ? 'pro' : 'free';
       localUser.role = access.role === 'admin' ? 'admin' : 'pilot';
       localUser.courtesyExpiresAt = access.courtesy_expires_at || null;
-      if (founderAdmin) { localUser.plan = 'pro'; localUser.role = 'admin'; localUser.courtesyExpiresAt = null; }
     } else {
       // A conta fundadora mantém acesso administrativo mesmo durante uma falha de leitura da tabela de planos.
-      localUser.plan = founderAdmin ? 'pro' : 'free';
-      localUser.role = founderAdmin ? 'admin' : 'pilot';
+      localUser.plan = 'free';
+      localUser.role = 'pilot';
       localUser.courtesyExpiresAt = null;
     }
 
@@ -102,6 +100,11 @@ async function updatePasswordWithSupabase(password) {
   if (!supabaseClient) throw new Error('A recuperação de senha está indisponível no momento.');
   const { data, error } = await supabaseClient.auth.updateUser({ password: password });
   if (error) throw error;
+  try {
+    const session = await supabaseClient.auth.getSession();
+    const token = session && session.data && session.data.session && session.data.session.access_token;
+    if (token) await fetch('/api/email/password-changed', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
+  } catch (_) {}
   return data;
 }
 
@@ -117,15 +120,39 @@ const CLOUD_COLLECTIONS = {
   batteries: 'dronehub_baterias'
 };
 function cloudRecordId(data, fallback) { return String((data && data.id) || fallback || 'primary'); }
+function setCloudSyncStatus(state) {
+  localStorage.setItem('dronehub_sync_state', JSON.stringify({ state: state, at: new Date().toISOString() }));
+  var badge = document.getElementById('cloudSyncStatus');
+  if (!badge && document.body) {
+    badge = document.createElement('button'); badge.id = 'cloudSyncStatus'; badge.type = 'button';
+    badge.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9999;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:8px 12px;background:#0f1724;color:#ffb84d;font:600 12px Inter,sans-serif;display:none';
+    badge.onclick = retryCloudQueue; document.body.appendChild(badge);
+  }
+  if (!badge) return;
+  badge.style.display = state === 'ok' ? 'none' : 'block';
+  badge.textContent = state === 'error' ? 'Dados não sincronizados · tentar novamente' : 'Sincronizando…';
+}
+function queueCloudWrite(item) {
+  var queue = JSON.parse(localStorage.getItem('dronehub_sync_queue') || '[]');
+  queue = queue.filter(function (x) { return !(x.collection === item.collection && x.userId === item.userId && x.recordId === item.recordId); });
+  queue.push(item); localStorage.setItem('dronehub_sync_queue', JSON.stringify(queue));
+}
+async function retryCloudQueue() {
+  var queue = JSON.parse(localStorage.getItem('dronehub_sync_queue') || '[]');
+  if (!queue.length) return setCloudSyncStatus('ok');
+  localStorage.removeItem('dronehub_sync_queue');
+  for (var i = 0; i < queue.length; i++) await persistCloudRecord(queue[i].collection, queue[i].userId, queue[i].data, queue[i].recordId);
+}
 function persistCloudRecord(collection, userId, data, fallbackId) {
   if (!supabaseClient || !userId || !CLOUD_COLLECTIONS[collection]) return Promise.resolve(false);
   const recordId = cloudRecordId(data, fallbackId);
+  setCloudSyncStatus('syncing');
   return supabaseClient.from('user_records').upsert({
     user_id: userId, collection: collection, record_id: recordId, payload: data || {}
   }, { onConflict: 'user_id,collection,record_id' }).then(function (result) {
-    if (result && result.error) { console.warn('Não foi possível sincronizar os dados.', result.error.message); return false; }
-    return true;
-  });
+    if (result && result.error) { queueCloudWrite({ collection: collection, userId: userId, recordId: recordId, data: data || {} }); setCloudSyncStatus('error'); return false; }
+    setCloudSyncStatus('ok'); return true;
+  }).catch(function () { queueCloudWrite({ collection: collection, userId: userId, recordId: recordId, data: data || {} }); setCloudSyncStatus('error'); return false; });
 }
 function removeCloudRecord(collection, userId, id) {
   if (!supabaseClient || !userId) return;
@@ -143,15 +170,14 @@ async function syncCloudData(userId) {
       localStorage.setItem(CLOUD_COLLECTIONS.profile, JSON.stringify(profiles));
     }
     ['aircraft','missions','documents','transactions','clients','batteries'].forEach(function (collection) {
-      if (!grouped[collection]) return;
       const key = CLOUD_COLLECTIONS[collection];
       const others = JSON.parse(localStorage.getItem(key) || '[]').filter(function (item) { return item.userId !== userId; });
-      const current = grouped[collection].map(function (row) { return Object.assign({}, row.payload || {}, { id: row.record_id, userId: userId }); });
+      const current = (grouped[collection] || []).map(function (row) { return Object.assign({}, row.payload || {}, { id: row.record_id, userId: userId }); });
       localStorage.setItem(key, JSON.stringify(others.concat(current)));
     });
     window.dispatchEvent(new CustomEvent('dronehub:cloud-ready'));
-    return true;
-  } catch (e) { return false; }
+    setCloudSyncStatus('ok'); return true;
+  } catch (e) { setCloudSyncStatus('error'); return false; }
 }
 async function migrateLocalDataToCloud(userId) {
   if (!userId || !supabaseClient) return;
@@ -202,8 +228,7 @@ function deleteAircraft(userId, id) {
 // ===== MISSIONS =====
 function requireProCapability(feature) {
   var account = getCurrentUser() || {};
-  var founder = String(account.email || '').toLowerCase() === 'giorgiomendonca@gmail.com';
-  if (account.plan !== 'pro' && account.role !== 'admin' && !founder) {
+  if (account.plan !== 'pro' && account.role !== 'admin') {
     throw new Error((feature || 'Este recurso') + ' está disponível no plano Pro.');
   }
   return true;
@@ -368,7 +393,6 @@ async function refreshCurrentEntitlement() {
   const updated = await syncCurrentEntitlement();
   const canonicalId = (updated && updated.id) || before.id;
   migrateLocalOwnerAliases(before.id, canonicalId, (updated && updated.email) || before.email);
-  await migrateLocalDataToCloud(canonicalId);
   await syncCloudData(canonicalId);
   if (updated && (updated.plan !== beforePlan || updated.role !== beforeRole)) {
     window.location.reload();
@@ -388,3 +412,4 @@ if (supabaseClient) {
     }
   });
 }
+window.addEventListener('online', retryCloudQueue);

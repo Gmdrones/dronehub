@@ -507,3 +507,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (link.textContent.trim().toLowerCase() === 'conhecer a plataforma') link.textContent = 'Conhecer funcionalidades';
   });
 });
+// Links legais comuns, inclusive em páginas antigas que ainda usam rodapé próprio.
+document.addEventListener('DOMContentLoaded', function () {
+  var footer = document.querySelector('footer');
+  if (footer && !footer.querySelector('[data-legal-links]')) {
+    var legal = document.createElement('div'); legal.dataset.legalLinks = 'true';
+    legal.innerHTML = '<a href="termos.html">Termos de Uso</a> · <a href="privacidade.html">Privacidade e LGPD</a>';
+    footer.appendChild(legal);
+  }
+});

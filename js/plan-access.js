@@ -11,15 +11,12 @@
     try { return JSON.parse(localStorage.getItem('dronehub_user') || 'null') || {}; }
     catch (e) { return {}; }
   }
-  function isFounderAdmin() {
-    return String(user().email || '').toLowerCase() === 'giorgiomendonca@gmail.com';
-  }
   function isPro() {
     var current = user();
-    return current.plan === 'pro' || current.role === 'admin' || isFounderAdmin();
+    return current.plan === 'pro' || current.role === 'admin';
   }
   function isAdmin() {
-    return user().role === 'admin' || isFounderAdmin();
+    return user().role === 'admin';
   }
   function isPremiumPage() { return PRO_PAGES.indexOf(currentFile) !== -1; }
 

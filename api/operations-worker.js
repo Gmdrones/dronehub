@@ -17,6 +17,22 @@ function validCoordinate(value, maximum) {
   return Number.isFinite(number) && Math.abs(number) <= maximum ? number : null;
 }
 
+async function requirePro(request, env) {
+  const authorization = request.headers.get('Authorization') || '';
+  const token = authorization.replace(/^Bearer\s+/i, '').trim();
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return false;
+  const headers = { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const userResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, { headers });
+  if (!userResponse.ok) return false;
+  const entitlementResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/get_my_entitlement`, {
+    method: 'POST', headers, body: '{}'
+  });
+  if (!entitlementResponse.ok) return false;
+  const entitlement = await entitlementResponse.json();
+  const access = Array.isArray(entitlement) ? entitlement[0] : entitlement;
+  return access && (access.role === 'admin' || access.plan === 'pro');
+}
+
 export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
@@ -28,6 +44,7 @@ export default {
 
     if (url.pathname === '/ai/document') {
       if (request.method !== 'POST') return reply({ error: 'Use POST para gerar um documento.' }, 405, 'no-store');
+      if (!(await requirePro(request, env))) return reply({ error: 'Este recurso exige um plano Pro ativo.' }, 403, 'no-store');
       if (!env.AI) return reply({ error: 'A IA ainda não foi ativada neste ambiente.' }, 503, 'no-store');
       try {
         const payload = await request.json();
@@ -95,6 +112,11 @@ export default {
   async scheduled(event, env, ctx) {
     if (env.OPERATIONS_KV) {
       ctx.waitUntil(env.OPERATIONS_KV.put('weather-service-heartbeat', JSON.stringify({ updatedAt: new Date().toISOString(), schedule: event.cron })));
+    }
+    if (env.SITE_URL && env.CRON_SECRET) {
+      ctx.waitUntil(fetch(`${env.SITE_URL.replace(/\/$/, '')}/api/cron/subscription-expiry`, {
+        headers: { Authorization: `Bearer ${env.CRON_SECRET}` }
+      }));
     }
   }
 };

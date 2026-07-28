@@ -583,7 +583,13 @@
           var prompt = iaTipoAtual === 'aro'
             ? 'Redija conteúdo técnico complementar para uma Avaliação de Risco Operacional de drone conforme a estrutura da IS E94-003A da ANAC. Cenário: '+d.valor+'. Contexto operacional: '+d.escopo+'. Treinamento, emergência e observações: '+d.observacoes+'. Identifique perigos e sugira mitigações prudentes, sem inventar registros, aprovações, autorizações ou dados oficiais. Informe que o operador deve revisar, classificar, assinar e manter a ARO atualizada. Retorne somente texto profissional em português.'
             : 'Elabore o conteúdo editorial de um '+tipoDocumento()+' para operações profissionais com drones. Dados: cliente '+d.cliente+'; CPF/CNPJ '+d.cnpj+'; valor R$ '+d.valor+'; prazo '+d.prazo+'; escopo '+d.escopo+'; observações '+d.observacoes+'. Não crie dados ou autorizações oficiais. Retorne apenas texto profissional em português.';
-          var response = await fetch(endpoint.replace(/\/$/, '') + '/ai/document', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:prompt}) });
+          var authHeaders = {'Content-Type':'application/json'};
+          if (window.supabaseClient) {
+            var authSession = await window.supabaseClient.auth.getSession();
+            var authToken = authSession && authSession.data && authSession.data.session && authSession.data.session.access_token;
+            if (authToken) authHeaders.Authorization = 'Bearer ' + authToken;
+          }
+          var response = await fetch(endpoint.replace(/\/$/, '') + '/ai/document', { method:'POST', headers:authHeaders, body:JSON.stringify({prompt:prompt}) });
           var generated = await response.json();
           if (response.ok && generated.text) {
             var documentoEnriquecido = Object.assign({}, d, {escopo:generated.text});

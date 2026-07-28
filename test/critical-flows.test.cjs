@@ -1,0 +1,31 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { paymentState, effectiveAccess, canWriteCollection, validUpload } = require('../lib/domain.cjs');
+
+test('pagamentos aprovados, pendentes e estornados são normalizados', () => {
+  assert.equal(paymentState('approved'), 'approved');
+  assert.equal(paymentState('in_process'), 'pending');
+  assert.equal(paymentState('refunded'), 'refunded');
+  assert.equal(paymentState('rejected'), 'cancelled');
+});
+
+test('Pro vencido retorna ao Free; Admin ativo permanece Pro', () => {
+  assert.equal(effectiveAccess({ plan:'pro', role:'pilot', status:'active', courtesy_expires_at:'2020-01-01' }).plan, 'free');
+  assert.equal(effectiveAccess({ plan:'pro', role:'pilot', status:'active', courtesy_expires_at:'2099-01-01' }).plan, 'pro');
+  assert.equal(effectiveAccess({ plan:'free', role:'admin', status:'active' }).role, 'admin');
+});
+
+test('Free grava apenas perfil e uma aeronave', () => {
+  const free = { active:false };
+  assert.equal(canWriteCollection(free, 'profile'), true);
+  assert.equal(canWriteCollection(free, 'aircraft', 0), true);
+  assert.equal(canWriteCollection(free, 'aircraft', 1), false);
+  assert.equal(canWriteCollection(free, 'missions'), false);
+});
+
+test('upload aceita PDF/JPEG/PNG até 10 MB', () => {
+  assert.equal(validUpload({ type:'application/pdf', size:1024 }), true);
+  assert.equal(validUpload({ type:'text/html', size:1024 }), false);
+  assert.equal(validUpload({ type:'application/pdf', size:11*1024*1024 }), false);
+});
