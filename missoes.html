@@ -172,7 +172,7 @@
     if(isPro){document.getElementById('planName').textContent='Pro';document.getElementById('planName').className='sidebar-foot-name pro';document.getElementById('planLink').textContent='Gerenciar';}
 
     function getMissoes(){return JSON.parse(localStorage.getItem('dronehub_missoes')||'[]').filter(function(m){return m.userId===uid;});}
-    function saveMissoes(list){var all=JSON.parse(localStorage.getItem('dronehub_missoes')||'[]');var others=all.filter(function(m){return m.userId!==uid;});localStorage.setItem('dronehub_missoes',JSON.stringify(others.concat(list)));}
+    function saveMissoes(list){var all=JSON.parse(localStorage.getItem('dronehub_missoes')||'[]');var others=all.filter(function(m){return m.userId!==uid;});localStorage.setItem('dronehub_missoes',JSON.stringify(others.concat(list)));setTimeout(function(){if(typeof window.refreshMissionMap==='function')window.refreshMissionMap();},0);}
 
     function criarMissao(){
       var titulo=document.getElementById('mTitulo').value.trim();
