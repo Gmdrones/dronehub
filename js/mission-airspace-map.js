@@ -2,7 +2,13 @@
   var sarpasUrl='https://servicos.decea.mil.br/sarpas/';
   function ready(fn){document.readyState==='loading'?document.addEventListener('DOMContentLoaded',fn):fn();}
   function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-  function missions(){try{return typeof getMissoes==='function'?getMissoes():[];}catch(e){return [];}}
+  function missions(){
+    try{
+      if(typeof getMissoes==='function')return getMissoes();
+      if(typeof getMissions==='function')return getMissions(window.uid||'default');
+      return [];
+    }catch(e){return [];}
+  }
   function save(list){if(typeof saveMissoes==='function')saveMissoes(list);}
   function isMissionPage(){return location.pathname.indexOf('missoes')>-1;}
   function isDashboardPage(){return location.pathname.indexOf('dashboard')>-1;}
