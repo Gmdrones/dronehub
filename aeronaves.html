@@ -76,6 +76,9 @@
     .limit-bar { width:100%; height:4px; border-radius:4px; background:var(--bg3); margin:12px 0 8px; overflow:hidden; }
     .limit-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--cyan),var(--green)); transition:width 0.3s; }
     .limit-text { font-size:0.75rem; color:var(--text3); }
+    .aircraft-add-action { display:none; margin-bottom:18px; padding:18px 20px; align-items:center; justify-content:space-between; gap:16px; }
+    .aircraft-add-action__copy strong { display:block; color:var(--text); font-size:1rem; margin-bottom:4px; }
+    .aircraft-add-action__copy span { color:var(--text3); font-size:.82rem; }
     @media (max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .grid-2 { grid-template-columns:1fr; } }
   </style>
   <link rel="stylesheet" href="css/saas.css">
@@ -89,7 +92,7 @@
   <script>
     var user = JSON.parse(localStorage.getItem('dronehub_user') || 'null');
     if (!user) { window.location.href = 'login.html'; }
-    var isPro = user.plan === 'pro';
+    var isPro = user.plan === 'pro' || user.role === 'admin';
     var MAX = isPro ? 20 : 1;
     var uid = user.id || user.email || 'default';
     window.dronehubFleetUserId = uid;
@@ -131,7 +134,12 @@
       <div class="limit-bar"><div class="limit-fill" id="limitFill" style="width:0%;"></div></div>
       <div class="limit-text" id="limitText"></div>
 
-      <div class="card">
+      <div class="card aircraft-add-action" id="addAircraftAction">
+        <div class="aircraft-add-action__copy"><strong>Adicionar outra aeronave</strong><span>Abra o catálogo somente quando quiser ampliar sua frota.</span></div>
+        <button class="btn btn-primary" type="button" onclick="openAircraftForm()">Cadastrar outra aeronave</button>
+      </div>
+
+      <div class="card" id="aircraftFormCard">
         <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg> Cadastrar Aeronave</h3></div>
         <div class="grid-2">
           <div><label>Marca</label><select id="aMarca"><option>DJI</option><option>Autel</option><option>FIMI</option><option>HoverAir</option><option>Outra</option></select></div>
@@ -218,14 +226,36 @@
       if(window.renderFleetHealth){window.renderFleetHealth(context);return;}
       setTimeout(function(){if(window.renderFleetHealth)window.renderFleetHealth(context);},0);
     }
+    var aircraftFormRequested=false;
+    function refreshAccess(){
+      var current=typeof getCurrentUser==='function'?(getCurrentUser()||user):user;
+      if(current){user=current;isPro=current.plan==='pro'||current.role==='admin'||window.isPro===true;MAX=isPro?20:1;}
+    }
+    function openAircraftForm(){
+      refreshAccess();
+      if(getAircraft(uid).length>=MAX)return;
+      aircraftFormRequested=true;
+      updateAircraftFormVisibility(getAircraft(uid));
+      document.getElementById('aircraftFormCard').scrollIntoView({behavior:'smooth',block:'start'});
+      setTimeout(function(){document.getElementById('aModelo').focus();},250);
+    }
+    function updateAircraftFormVisibility(list){
+      var form=document.getElementById('aircraftFormCard'),action=document.getElementById('addAircraftAction');
+      var hasAircraft=list.length>0,atLimit=list.length>=MAX;
+      var showForm=!hasAircraft||(aircraftFormRequested&&!atLimit);
+      form.style.display=showForm?'block':'none';
+      action.style.display=(isPro&&hasAircraft&&!atLimit&&!showForm)?'flex':'none';
+    }
     function render() {
       try {
+        refreshAccess();
         var list = getAircraft(uid);
         window.dronehubAircraftSnapshot = list;
         var pct = Math.min((list.length / MAX) * 100, 100);
         document.getElementById('limitFill').style.width = pct + '%';
         document.getElementById('limitText').textContent = list.length + ' de ' + MAX + ' aeronaves cadastradas';
         document.getElementById('subtitle').textContent = isPro ? 'Gerencie até 20 aeronaves' : 'Gerencie sua aeronave (máx 1 no Free)';
+        updateAircraftFormVisibility(list);
         var c = document.getElementById('aircraftList');
         if (list.length === 0) { c.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;">Nenhuma aeronave cadastrada.</p>'; syncFleetHealth(list); return; }
         c.innerHTML = list.map(function(a) {
@@ -262,6 +292,7 @@
         specs: document.getElementById('aSpecs').value.trim()
       };
       saveAircraft(uid, data);
+      aircraftFormRequested=false;
       document.getElementById('aModelo').value='';document.getElementById('aSisant').value='';document.getElementById('aAnatel').value='';document.getElementById('aSeguro').value='';document.getElementById('aSeguroExpiry').value='';document.getElementById('aPeso').value='';document.getElementById('aWindLimit').value='';document.getElementById('aWindLimit').readOnly=false;document.getElementById('aSpecs').value='';updateWindLimit();
       render();
       window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated'));
