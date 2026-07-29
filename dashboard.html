@@ -159,7 +159,7 @@
   <link rel="stylesheet" href="css/layout-v4.css?v=20260726-1">
   <link rel="stylesheet" href="css/dashboard-v11.css?v=20260726-2">
   <link rel="stylesheet" href="css/module-premium.css?v=20260726-map-layout">
-  <link rel="stylesheet" href="css/dashboard-cards-final.css?v=20260728-dashboard-map">
+  <link rel="stylesheet" href="css/dashboard-cards-final.css?v=20260728-progress-row">
   <script src="js/main.js?v=20260725-admin-sync" defer></script>
   <script src="js/pro-operations.js" defer></script>
   <script src="js/intelligent-alerts.js" defer></script>
@@ -358,7 +358,7 @@
         <!-- PROGRESSO + UPGRADE -->
         <button class="dashboard-more-toggle" id="dashboardMoreToggle" type="button" aria-expanded="false">Mostrar mais <span>⌄</span></button>
         <div class="grid-2 dashboard-more-section" id="dashboardMoreSection">
-          <div class="card">
+          <div class="card dashboard-progress-card" id="progressCard">
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Seu progresso</h3></div>
             <div class="progress-item"><span class="progress-dot" id="p1"></span><span class="progress-info" id="p1t"><strong>Perfil</strong></span><a href="perfil.html" class="progress-link">Ir</a></div>
             <div class="progress-item"><span class="progress-dot" id="p2"></span><span class="progress-info" id="p2t"><strong>Aeronave</strong></span><a href="aeronaves.html" class="progress-link">Ir</a></div>
@@ -531,6 +531,29 @@
       if (document.getElementById('p4')) document.getElementById('p4').className = 'progress-dot red';
       if (document.getElementById('p4t')) document.getElementById('p4t').innerHTML = '<strong>Plano Pro</strong> — desbloqueie todos os modulos';
     }
+
+    (function setupResponsiveProgressCard() {
+      var progressCard = document.getElementById('progressCard');
+      var optionalGrid = document.getElementById('optionalDashboardGrid');
+      var moreSection = document.getElementById('dashboardMoreSection');
+      var desktopQuery = window.matchMedia('(min-width: 701px)');
+
+      function placeProgressCard() {
+        if (!progressCard || !optionalGrid || !moreSection) return;
+        if (desktopQuery.matches) {
+          optionalGrid.appendChild(progressCard);
+        } else if (moreSection.firstElementChild !== progressCard) {
+          moreSection.insertBefore(progressCard, moreSection.firstChild);
+        }
+      }
+
+      placeProgressCard();
+      if (desktopQuery.addEventListener) {
+        desktopQuery.addEventListener('change', placeProgressCard);
+      } else {
+        desktopQuery.addListener(placeProgressCard);
+      }
+    })();
 
     if (typeof lucide !== 'undefined') { lucide.createIcons(); }
   </script>

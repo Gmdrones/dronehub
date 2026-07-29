@@ -52,3 +52,10 @@
   }
   .dashboard-mobile>#missionMapCard .mission-map{height:300px}
 }
+@media (min-width: 701px) {
+  #optionalDashboardGrid > #progressCard {
+    grid-column: span 2;
+    min-width: 0;
+    align-self: stretch;
+  }
+}
