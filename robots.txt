@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /dashboard.html
+Disallow: /perfil.html
+Disallow: /aeronaves.html
+Disallow: /central-voo.html
+Disallow: /documentos.html
+Disallow: /missoes.html
+Disallow: /financeiro.html
+Disallow: /fiscalizacao.html
+Sitemap: https://dronehub.app.br/sitemap.xml
