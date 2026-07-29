@@ -10,7 +10,20 @@
   function cache(){try{return JSON.parse(localStorage.getItem('dronehub_geocode_cache')||'{}');}catch(e){return {};}}
   function geo(address){var c=cache();if(c[address])return Promise.resolve(c[address]);return fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q='+encodeURIComponent(address),{headers:{Accept:'application/json'}}).then(function(r){return r.json();}).then(function(rows){if(!rows[0])return null;var point={lat:Number(rows[0].lat),lon:Number(rows[0].lon),label:rows[0].display_name};c[address]=point;localStorage.setItem('dronehub_geocode_cache',JSON.stringify(c));return point;}).catch(function(){return null;});}
   var operationsMap=null;
-  function mapCard(){if(!window.isPro||document.getElementById('missionMapCard'))return;var main=document.querySelector('.main');if(!main)return;var card=document.createElement('section');card.id='missionMapCard';card.className='card mission-map-card';card.innerHTML='<div class="mission-map-card__head"><div><h3>Mapa de operações</h3><p>Histórico geográfico de todas as missões: agendadas, em andamento e concluídas.</p></div><div class="mission-map-badge"><i></i>DADOS DAS MISSÕES</div></div><div id="missionMap" class="mission-map"></div>';var anchor=document.getElementById('dashboardCommand')||document.getElementById('missionTools')||main.querySelector('.tabs')||main.querySelector('.card');anchor.insertAdjacentElement('afterend',card);renderMap();}
+  function mapCard(){
+    if(!window.isPro)return false;
+    var main=document.querySelector('.main');if(!main)return false;
+    var card=document.getElementById('missionMapCard');
+    if(!card){
+      card=document.createElement('section');card.id='missionMapCard';card.className='card mission-map-card';
+      var anchor=document.getElementById('dashboardCommand')||document.getElementById('missionTools')||main.querySelector('.tabs')||main.querySelector('.card');
+      if(!anchor)return false;
+      anchor.insertAdjacentElement('afterend',card);
+    }
+    card.className='card mission-map-card';
+    card.innerHTML='<div class="mission-map-card__head"><div><h3>Mapa de operações</h3><p>Histórico geográfico de todas as missões: agendadas, em andamento e concluídas.</p></div><div class="mission-map-badge"><i></i>DADOS DAS MISSÕES</div></div><div id="missionMap" class="mission-map"></div>';
+    renderMap();return true;
+  }
   function profileRegion(){try{var p=typeof getProfile==='function'?getProfile(window.uid):{};return p.cidade||p.city||'Rio de Janeiro, RJ';}catch(e){return 'Rio de Janeiro, RJ';}}
   function markerClass(status){if(status==='concluida')return 'ops-map-marker--concluida';if(status==='em_andamento')return 'ops-map-marker--andamento';return 'ops-map-marker--agendada';}
   function renderMap(){
@@ -39,5 +52,10 @@
     setTimeout(function(){operationsMap&&operationsMap.invalidateSize();},120);
   }
   window.refreshMissionMap=renderMap;
-  ready(function(){airspacePanel();sarpasField();mapCard();});
+  function bootMap(){
+    airspacePanel();sarpasField();
+    if(mapCard())return;
+    var attempts=0,timer=setInterval(function(){attempts+=1;if(mapCard()||attempts>=20)clearInterval(timer);},400);
+  }
+  ready(bootMap);
 }());
