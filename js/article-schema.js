@@ -1,4 +1,8 @@
 (function () {
+  var navScript = document.createElement('script');
+  navScript.src = 'js/public-content-nav.js';
+  document.head.appendChild(navScript);
+
   var article = document.querySelector('article');
   var heading = document.querySelector('h1');
   var description = document.querySelector('meta[name="description"]');
