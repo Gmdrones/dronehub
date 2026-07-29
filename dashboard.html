@@ -159,7 +159,7 @@
   <link rel="stylesheet" href="css/layout-v4.css?v=20260726-1">
   <link rel="stylesheet" href="css/dashboard-v11.css?v=20260726-2">
   <link rel="stylesheet" href="css/module-premium.css?v=20260726-map-layout">
-  <link rel="stylesheet" href="css/dashboard-cards-final.css?v=20260726-2111">
+  <link rel="stylesheet" href="css/dashboard-cards-final.css?v=20260728-dashboard-map">
   <script src="js/main.js?v=20260725-admin-sync" defer></script>
   <script src="js/pro-operations.js" defer></script>
   <script src="js/intelligent-alerts.js" defer></script>
@@ -168,7 +168,7 @@
   <script src="js/dashboard-v11.js?v=20260726-2" defer></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-  <script src="js/mission-airspace-map.js?v=20260724" defer></script>
+  <script src="js/mission-airspace-map.js?v=20260728-dashboard-sync" defer></script>
 <link rel="stylesheet" href="css/mobile-nav.css?v=20260724-responsive">
 <script src="js/mobile-nav.js?v=20260724-mobilefix" defer></script>
 </head>
@@ -305,7 +305,7 @@
         </div>
 
         <!-- CLIMA REAL + MISSOES + ALERTAS -->
-        <div class="grid-3">
+        <div class="grid-3 dashboard-live-grid">
           <div class="card" id="weatherCard">
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> Condicoes de Voo</h3></div>
             <div style="text-align:center;padding:20px;" id="weatherLoading">Buscando clima...</div>
@@ -331,6 +331,8 @@
             <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> Alertas</h3></div>
             <div id="alertList"><p style="color:var(--text3);font-size:0.85rem;padding:12px 0;">Nenhum alerta no momento.</p></div>
           </div>
+
+          <section id="missionMapCard" class="card mission-map-card dashboard-map-card" aria-label="Mapa de operações" hidden></section>
         </div>
 
         <!-- DOCS + FINANCEIRO + CLIENTES + BATERIAS -->

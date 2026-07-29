@@ -5,23 +5,43 @@
   function missions(){try{return typeof getMissoes==='function'?getMissoes():[];}catch(e){return [];}}
   function save(list){if(typeof saveMissoes==='function')saveMissoes(list);}
   function isMissionPage(){return location.pathname.indexOf('missoes')>-1;}
+  function isDashboardPage(){return location.pathname.indexOf('dashboard')>-1;}
   function airspacePanel(){if(!isMissionPage()||!window.isPro||document.getElementById('airspacePanel'))return;var main=document.querySelector('.main');var card=main&&main.querySelector('.card');if(!card)return;var panel=document.createElement('section');panel.id='airspacePanel';panel.className='airspace-panel';panel.innerHTML='<div><span class="airspace-panel__eyebrow">ESPAÇO AÉREO E SARPAS</span><h3>Planeje legalmente antes de decolar.</h3><p>Vincule o protocolo SARPAS à missão e abra a consulta oficial do DECEA. O Drone Hub não confirma autorização de voo automaticamente.</p><a target="_blank" rel="noopener" href="'+sarpasUrl+'">Abrir SARPAS oficial ↗</a></div><div class="airspace-panel__check"><b>Confirmação oficial obrigatória</b><span>Consulte no SARPAS possíveis restrições, aeródromos, áreas condicionadas e autorizações aplicáveis ao local e à data da operação.</span></div>';card.insertAdjacentElement('afterend',panel);}
   function sarpasField(){if(!isMissionPage()||!window.isPro||document.getElementById('mSarpasStatus'))return;var grid=document.querySelector('.main .card .grid-2');if(!grid)return;var old=document.getElementById('mSarpas');if(!old){var field=document.createElement('div');field.innerHTML='<label for="mSarpas">Código SARPAS / autorização</label><input id="mSarpas" type="text" placeholder="Informe o código após a consulta oficial">';grid.appendChild(field);}var status=document.createElement('div');status.innerHTML='<label for="mSarpasStatus">Situação da consulta oficial</label><select id="mSarpasStatus"><option value="pendente">Consulta SARPAS pendente</option><option value="solicitada">Solicitação enviada</option><option value="autorizacao_informada">Código/autorização informado</option></select>';grid.appendChild(status);var create=window.criarMissao;if(typeof create==='function'){window.criarMissao=function(){var code=document.getElementById('mSarpas').value.trim(),statusValue=document.getElementById('mSarpasStatus').value;create.apply(this,arguments);var list=missions();if(!list.length)return;var latest=list.slice().sort(function(a,b){return String(b.createdAt||'').localeCompare(String(a.createdAt||''));})[0];if(latest){latest.sarpas=code;latest.sarpasStatus=statusValue;save(list);}document.getElementById('mSarpas').value='';document.getElementById('mSarpasStatus').value='pendente';};}}
   function cache(){try{return JSON.parse(localStorage.getItem('dronehub_geocode_cache')||'{}');}catch(e){return {};}}
   function geo(address){var c=cache();if(c[address])return Promise.resolve(c[address]);return fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q='+encodeURIComponent(address),{headers:{Accept:'application/json'}}).then(function(r){return r.json();}).then(function(rows){if(!rows[0])return null;var point={lat:Number(rows[0].lat),lon:Number(rows[0].lon),label:rows[0].display_name};c[address]=point;localStorage.setItem('dronehub_geocode_cache',JSON.stringify(c));return point;}).catch(function(){return null;});}
   var operationsMap=null;
+  var dashboardMapHome=null;
+  function positionDashboardMap(card){
+    if(!isDashboardPage()||!card)return;
+    if(!dashboardMapHome&&card.parentNode){
+      dashboardMapHome=document.createComment('dashboard-map-home');
+      card.parentNode.insertBefore(dashboardMapHome,card.nextSibling);
+    }
+    var mobile=document.querySelector('.dashboard-mobile');
+    if(window.matchMedia('(max-width: 700px)').matches&&mobile){
+      mobile.appendChild(card);
+    }else if(dashboardMapHome&&dashboardMapHome.parentNode){
+      dashboardMapHome.parentNode.insertBefore(card,dashboardMapHome);
+    }
+    setTimeout(function(){operationsMap&&operationsMap.invalidateSize();},80);
+  }
   function mapCard(){
     if(!window.isPro)return false;
     var main=document.querySelector('.main');if(!main)return false;
     var card=document.getElementById('missionMapCard');
     if(!card){
+      if(isDashboardPage())return false;
       card=document.createElement('section');card.id='missionMapCard';card.className='card mission-map-card';
       var anchor=document.getElementById('dashboardCommand')||document.getElementById('missionTools')||main.querySelector('.tabs')||main.querySelector('.card');
       if(!anchor)return false;
       anchor.insertAdjacentElement('afterend',card);
     }
-    card.className='card mission-map-card';
+    card.className='card mission-map-card'+(isDashboardPage()?' dashboard-map-card':'');
+    card.removeAttribute('hidden');
     card.innerHTML='<div class="mission-map-card__head"><div><h3>Mapa de operações</h3><p>Histórico geográfico de todas as missões: agendadas, em andamento e concluídas.</p></div><div class="mission-map-badge"><i></i>DADOS DAS MISSÕES</div></div><div id="missionMap" class="mission-map"></div>';
+    positionDashboardMap(card);
+    if(isDashboardPage())setTimeout(function(){positionDashboardMap(card);},250);
     renderMap();return true;
   }
   function profileRegion(){try{var p=typeof getProfile==='function'?getProfile(window.uid):{};return p.cidade||p.city||'Rio de Janeiro, RJ';}catch(e){return 'Rio de Janeiro, RJ';}}
@@ -58,4 +78,5 @@
     var attempts=0,timer=setInterval(function(){attempts+=1;if(mapCard()||attempts>=20)clearInterval(timer);},400);
   }
   ready(bootMap);
+  window.addEventListener('resize',function(){positionDashboardMap(document.getElementById('missionMapCard'));});
 }());

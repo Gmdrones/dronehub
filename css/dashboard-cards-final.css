@@ -21,3 +21,34 @@
   #missionMapCard .mission-map-card__head{flex-direction:column;padding:18px!important}
   #missionMapCard .mission-map-empty{min-height:130px!important}
 }
+
+/* Dashboard: mapa sincronizado com Missões e alertas na antiga posição do mapa. */
+@media (min-width:701px){
+  .dashboard-live-grid{
+    grid-template-columns:2fr 1fr 1fr!important;
+    grid-template-areas:
+      "weather alerts missions"
+      "map map missions";
+    align-items:stretch;
+  }
+  .dashboard-live-grid>#weatherCard{grid-area:weather}
+  .dashboard-live-grid>#alertCard{grid-area:alerts}
+  .dashboard-live-grid>#missionCard{grid-area:missions}
+  .dashboard-live-grid>#missionMapCard{
+    grid-area:map;
+    width:auto!important;
+    max-width:none!important;
+    min-width:0;
+    margin:0!important;
+  }
+  .dashboard-live-grid>#missionMapCard .mission-map-card__head{min-height:auto;padding:16px 18px!important}
+  .dashboard-live-grid>#missionMapCard .mission-map{height:300px}
+}
+@media (max-width:700px){
+  .dashboard-mobile>#missionMapCard{
+    display:block!important;
+    width:100%!important;
+    margin:22px 0 0!important;
+  }
+  .dashboard-mobile>#missionMapCard .mission-map{height:300px}
+}
