@@ -1,6 +1,6 @@
 (function () {
   var navScript = document.createElement('script');
-  navScript.src = 'js/public-content-nav.js';
+  navScript.src = 'js/public-content-nav.js?v=20260728-2';
   document.head.appendChild(navScript);
 
   var article = document.querySelector('article');
