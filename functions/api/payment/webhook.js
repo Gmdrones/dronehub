@@ -6,7 +6,9 @@ import {
 } from '../../_lib/server.js';
 
 function normalizedState(status) {
-  if (status === 'approved') return 'approved';
+  if (status === 'approved') {
+    return 'approved';
+  }
 
   if (['refunded', 'charged_back'].includes(status)) {
     return status;
@@ -69,6 +71,35 @@ function extractPaymentData(payment) {
   };
 }
 
+async function safeLogIntegration(
+  env,
+  service,
+  event,
+  level,
+  details,
+  userId = null
+) {
+  try {
+    await logIntegration(
+      env,
+      service,
+      event,
+      level,
+      details,
+      userId
+    );
+  } catch (logError) {
+    console.error('INTEGRATION_LOG_ERROR', {
+      event,
+      userId,
+      message:
+        logError?.message ||
+        'Falha desconhecida ao gravar log.',
+      stack: logError?.stack || null
+    });
+  }
+}
+
 export async function onRequestPost({
   request,
   env
@@ -95,31 +126,31 @@ export async function onRequestPost({
       url.searchParams.get('data.id') ||
       url.searchParams.get('id');
 
-    /*
-     * Algumas notificações do Mercado Pago não contêm
-     * um ID de pagamento. Nesses casos, apenas confirmamos
-     * o recebimento.
-     */
     if (!paymentId) {
       return json({
         received: true,
         ignored: true,
-        reason: 'Pagamento sem ID.'
+        reason: 'Notificação sem ID de pagamento.'
       });
     }
 
-    /*
-     * Consulta diretamente a API do Mercado Pago.
-     * Não confiamos somente nos dados enviados no webhook.
-     */
+    console.log('MERCADO_PAGO_WEBHOOK_RECEIVED', {
+      paymentId: String(paymentId),
+      action: body?.action || null,
+      type: body?.type || null,
+      liveMode: body?.live_mode ?? null
+    });
+
     const mercadoPagoResponse = await fetch(
       `https://api.mercadopago.com/v1/payments/${encodeURIComponent(
-        paymentId
+        String(paymentId)
       )}`,
       {
+        method: 'GET',
         headers: {
           Authorization:
-            `Bearer ${env.MERCADO_PAGO_ACCESS_TOKEN}`
+            `Bearer ${env.MERCADO_PAGO_ACCESS_TOKEN}`,
+          Accept: 'application/json'
         }
       }
     );
@@ -129,9 +160,13 @@ export async function onRequestPost({
       .catch(() => ({}));
 
     if (!mercadoPagoResponse.ok) {
+      const mercadoPagoMessage =
+        payment?.message ||
+        payment?.error ||
+        `Mercado Pago respondeu HTTP ${mercadoPagoResponse.status}.`;
+
       throw new Error(
-        payment.message ||
-        'Falha ao validar o pagamento no Mercado Pago.'
+        `Falha ao validar pagamento no Mercado Pago: ${mercadoPagoMessage}`
       );
     }
 
@@ -155,11 +190,20 @@ export async function onRequestPost({
     const state =
       normalizedState(payment.status);
 
-    const months = paymentData.months;
+    const months =
+      paymentData.months;
 
-    /*
-     * Salva ou atualiza a transação.
-     */
+    console.log('MERCADO_PAGO_PAYMENT_VALIDATED', {
+      paymentId: String(payment.id),
+      userId,
+      status: payment.status,
+      normalizedStatus: state,
+      plan: paymentData.planKey || null,
+      months,
+      externalReference:
+        paymentData.externalReference
+    });
+
     await supabaseAdmin(
       env,
       'payment_transactions?on_conflict=provider,provider_payment_id',
@@ -169,52 +213,41 @@ export async function onRequestPost({
           'resolution=merge-duplicates,return=representation',
         body: JSON.stringify({
           user_id: userId,
-
           provider: 'mercado_pago',
-
           provider_payment_id:
             String(payment.id),
-
           preference_id:
             payment.preference_id || null,
-
           status: state,
-
           status_detail:
             payment.status_detail || null,
-
           amount:
             payment.transaction_amount,
-
           currency:
             payment.currency_id || 'BRL',
-
           payment_method:
             payment.payment_type_id ||
             payment.payment_method_id ||
             null,
-
           payer_email:
             payment.payer?.email || null,
-
           raw_payload: payment,
-
           paid_at:
             payment.date_approved || null,
-
           expires_at:
             payment.date_of_expiration || null,
-
           updated_at:
             new Date().toISOString()
         })
       }
     );
 
-    /*
-     * Ativa, mantém, cancela ou revoga o acesso
-     * conforme o estado do pagamento.
-     */
+    console.log('PAYMENT_TRANSACTION_SAVED', {
+      paymentId: String(payment.id),
+      userId,
+      status: state
+    });
+
     await supabaseAdmin(
       env,
       'rpc/apply_payment_entitlement',
@@ -230,7 +263,14 @@ export async function onRequestPost({
       }
     );
 
-    await logIntegration(
+    console.log('PAYMENT_ENTITLEMENT_APPLIED', {
+      paymentId: String(payment.id),
+      userId,
+      status: state,
+      months
+    });
+
+    await safeLogIntegration(
       env,
       'payment',
       `payment_${state}`,
@@ -252,9 +292,6 @@ export async function onRequestPost({
       userId
     );
 
-    /*
-     * Envia a confirmação somente quando aprovado.
-     */
     if (
       state === 'approved' &&
       payment.payer?.email
@@ -288,12 +325,29 @@ export async function onRequestPost({
             </p>
           `
         });
+
+        console.log(
+          'PAYMENT_CONFIRMATION_EMAIL_SENT',
+          {
+            paymentId: String(payment.id),
+            userId,
+            email: payment.payer.email
+          }
+        );
       } catch (emailError) {
-        /*
-         * Uma falha no envio do e-mail não deve fazer
-         * o Mercado Pago reenviar o webhook indefinidamente.
-         */
-        await logIntegration(
+        console.error(
+          'PAYMENT_CONFIRMATION_EMAIL_ERROR',
+          {
+            paymentId: String(payment.id),
+            userId,
+            message:
+              emailError?.message ||
+              'Falha no envio do e-mail.',
+            stack: emailError?.stack || null
+          }
+        );
+
+        await safeLogIntegration(
           env,
           'payment',
           'confirmation_email_error',
@@ -316,7 +370,24 @@ export async function onRequestPost({
       entitlement_processed: true
     });
   } catch (error) {
-    await logIntegration(
+    const errorMessage =
+      error?.message ||
+      'Erro desconhecido ao processar o webhook.';
+
+    console.error(
+      'MERCADO_PAGO_WEBHOOK_ERROR',
+      {
+        paymentId:
+          paymentId !== null
+            ? String(paymentId)
+            : null,
+        userId,
+        message: errorMessage,
+        stack: error?.stack || null
+      }
+    );
+
+    await safeLogIntegration(
       env,
       'payment',
       'webhook_error',
@@ -324,9 +395,7 @@ export async function onRequestPost({
       {
         payment_id: paymentId,
         user_id: userId,
-        message:
-          error?.message ||
-          'Erro desconhecido.'
+        message: errorMessage
       },
       userId
     );
@@ -334,9 +403,11 @@ export async function onRequestPost({
     return json(
       {
         received: false,
-        error:
-          error?.message ||
-          'Erro ao processar o pagamento.'
+        payment_id:
+          paymentId !== null
+            ? String(paymentId)
+            : null,
+        error: errorMessage
       },
       500
     );
