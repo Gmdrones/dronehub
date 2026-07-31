@@ -27,26 +27,6 @@ function isValidUuid(value) {
   );
 }
 
-async function tokenFingerprint(token) {
-  const data = new TextEncoder().encode(
-    String(token || '')
-  );
-
-  const hash = await crypto.subtle.digest(
-    'SHA-256',
-    data
-  );
-
-  return Array.from(new Uint8Array(hash))
-    .map(byte =>
-      byte
-        .toString(16)
-        .padStart(2, '0')
-    )
-    .join('')
-    .slice(0, 12);
-}
-
 function extractPaymentData(payment) {
   const externalReference = String(
     payment.external_reference || ''
@@ -92,6 +72,71 @@ function extractPaymentData(payment) {
   };
 }
 
+/*
+ * Cria uma cópia do pagamento sem informações
+ * desnecessárias ou muito sensíveis.
+ *
+ * O objeto original continua sendo usado normalmente
+ * durante o processamento do webhook.
+ */
+function sanitizePaymentPayload(payment) {
+  if (
+    !payment ||
+    typeof payment !== 'object'
+  ) {
+    return {};
+  }
+
+  try {
+    const sanitized =
+      JSON.parse(JSON.stringify(payment));
+
+    const transactionData =
+      sanitized
+        ?.point_of_interaction
+        ?.transaction_data;
+
+    if (transactionData) {
+      delete transactionData.qr_code;
+      delete transactionData.qr_code_base64;
+      delete transactionData.ticket_url;
+    }
+
+    if (sanitized.payer) {
+      delete sanitized.payer.phone;
+      delete sanitized.payer.identification;
+    }
+
+    return sanitized;
+  } catch {
+    return {
+      id:
+        payment.id ||
+        null,
+
+      status:
+        payment.status ||
+        null,
+
+      status_detail:
+        payment.status_detail ||
+        null,
+
+      external_reference:
+        payment.external_reference ||
+        null,
+
+      transaction_amount:
+        payment.transaction_amount ??
+        null,
+
+      currency_id:
+        payment.currency_id ||
+        null
+    };
+  }
+}
+
 async function safeLogIntegration(
   env,
   service,
@@ -110,16 +155,17 @@ async function safeLogIntegration(
       userId
     );
   } catch (logError) {
-    console.error('INTEGRATION_LOG_ERROR', {
-      event,
-      userId,
-      message:
-        logError?.message ||
-        'Falha desconhecida ao gravar log.',
-      stack:
-        logError?.stack ||
-        null
-    });
+    console.error(
+      'INTEGRATION_LOG_ERROR',
+      {
+        event,
+        userId,
+
+        message:
+          logError?.message ||
+          'Falha desconhecida ao gravar log.'
+      }
+    );
   }
 }
 
@@ -129,9 +175,7 @@ export async function onRequestPost({
 }) {
   let paymentId = null;
   let userId = null;
-  let mercadoPagoTokenFingerprint = null;
   let mercadoPagoStatus = null;
-  let mercadoPagoResponseText = null;
 
   try {
     if (!env.MERCADO_PAGO_ACCESS_TOKEN) {
@@ -140,13 +184,10 @@ export async function onRequestPost({
       );
     }
 
-    /*
-     * Remove espaços ou quebras de linha que possam
-     * ter sido inseridos ao salvar o token no Cloudflare.
-     */
-    const mercadoPagoAccessToken = String(
-      env.MERCADO_PAGO_ACCESS_TOKEN
-    ).trim();
+    const mercadoPagoAccessToken =
+      String(
+        env.MERCADO_PAGO_ACCESS_TOKEN
+      ).trim();
 
     if (!mercadoPagoAccessToken) {
       throw new Error(
@@ -154,31 +195,13 @@ export async function onRequestPost({
       );
     }
 
-    mercadoPagoTokenFingerprint =
-      await tokenFingerprint(
-        mercadoPagoAccessToken
-      );
+    const url =
+      new URL(request.url);
 
-    console.log(
-      'MERCADO_PAGO_TOKEN_DIAGNOSTIC',
-      {
-        configured: true,
-        originalLength:
-          String(
-            env.MERCADO_PAGO_ACCESS_TOKEN
-          ).length,
-        trimmedLength:
-          mercadoPagoAccessToken.length,
-        fingerprint:
-          mercadoPagoTokenFingerprint
-      }
-    );
-
-    const url = new URL(request.url);
-
-    const body = await request
-      .json()
-      .catch(() => ({}));
+    const body =
+      await request
+        .json()
+        .catch(() => ({}));
 
     paymentId =
       body?.data?.id ||
@@ -190,97 +213,90 @@ export async function onRequestPost({
       return json({
         received: true,
         ignored: true,
+
         reason:
           'Notificação sem ID de pagamento.'
       });
     }
 
-    paymentId = String(paymentId).trim();
+    paymentId =
+      String(paymentId).trim();
 
     console.log(
       'MERCADO_PAGO_WEBHOOK_RECEIVED',
       {
         paymentId,
+
         action:
           body?.action ||
           null,
+
         type:
           body?.type ||
           null,
+
         liveMode:
           body?.live_mode ??
           null
       }
     );
 
-    const mercadoPagoResponse = await fetch(
-      `https://api.mercadopago.com/v1/payments/${encodeURIComponent(
-        paymentId
-      )}`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization:
-            `Bearer ${mercadoPagoAccessToken}`,
-          Accept:
-            'application/json'
+    const mercadoPagoResponse =
+      await fetch(
+        `https://api.mercadopago.com/v1/payments/${encodeURIComponent(
+          paymentId
+        )}`,
+        {
+          method: 'GET',
+
+          headers: {
+            Authorization:
+              `Bearer ${mercadoPagoAccessToken}`,
+
+            Accept:
+              'application/json'
+          }
         }
-      }
-    );
+      );
 
     mercadoPagoStatus =
       mercadoPagoResponse.status;
 
     /*
-     * Lê a resposta como texto para não esconder
-     * nenhuma mensagem retornada pelo Mercado Pago.
+     * A resposta é lida como texto primeiro para permitir
+     * identificar respostas inválidas, mas seu conteúdo
+     * completo não é enviado aos logs.
      */
-    mercadoPagoResponseText =
+    const responseText =
       await mercadoPagoResponse.text();
-
-    console.log(
-      'MP_STATUS',
-      mercadoPagoStatus
-    );
-
-    console.log(
-      'MP_HEADERS',
-      Object.fromEntries(
-        mercadoPagoResponse.headers.entries()
-      )
-    );
-
-    console.log(
-      'MP_RESPONSE',
-      mercadoPagoResponseText
-    );
 
     let payment = {};
 
     try {
-      payment = JSON.parse(
-        mercadoPagoResponseText
-      );
-    } catch (parseError) {
-      console.error(
-        'MP_JSON_PARSE_ERROR',
-        {
-          paymentId,
-          message:
-            parseError?.message ||
-            'A resposta do Mercado Pago não é um JSON válido.',
-          response:
-            mercadoPagoResponseText
-        }
+      payment =
+        responseText
+          ? JSON.parse(responseText)
+          : {};
+    } catch {
+      throw new Error(
+        `O Mercado Pago retornou uma resposta inválida. HTTP ${mercadoPagoStatus}.`
       );
     }
 
     if (!mercadoPagoResponse.ok) {
+      const mercadoPagoMessage =
+        payment?.message ||
+        payment?.error ||
+        'Não foi possível consultar o pagamento.';
+
       throw new Error(
-        `Mercado Pago HTTP ${mercadoPagoStatus}: ${
-          mercadoPagoResponseText ||
-          'Resposta vazia.'
-        }`
+        `Mercado Pago HTTP ${mercadoPagoStatus}: ${mercadoPagoMessage}`
+      );
+    }
+
+    if (!payment?.id) {
+      throw new Error(
+        'O Mercado Pago não retornou um pagamento válido.'
       );
     }
 
@@ -315,78 +331,89 @@ export async function onRequestPost({
       {
         paymentId:
           String(payment.id),
+
         userId,
+
         status:
           payment.status,
+
         normalizedStatus:
           state,
+
         plan:
           paymentData.planKey ||
           null,
-        months,
-        externalReference:
-          paymentData.externalReference
+
+        months
       }
     );
+
+    const sanitizedPayment =
+      sanitizePaymentPayload(payment);
 
     await supabaseAdmin(
       env,
       'payment_transactions?on_conflict=provider,provider_payment_id',
       {
-        method: 'POST',
+        method:
+          'POST',
+
         prefer:
           'resolution=merge-duplicates,return=representation',
-        body: JSON.stringify({
-          user_id:
-            userId,
 
-          provider:
-            'mercado_pago',
+        body:
+          JSON.stringify({
+            user_id:
+              userId,
 
-          provider_payment_id:
-            String(payment.id),
+            provider:
+              'mercado_pago',
 
-          preference_id:
-            payment.preference_id ||
-            null,
+            provider_payment_id:
+              String(payment.id),
 
-          status:
-            state,
+            preference_id:
+              payment.preference_id ||
+              null,
 
-          status_detail:
-            payment.status_detail ||
-            null,
+            status:
+              state,
 
-          amount:
-            payment.transaction_amount,
+            status_detail:
+              payment.status_detail ||
+              null,
 
-          currency:
-            payment.currency_id ||
-            'BRL',
+            amount:
+              payment.transaction_amount,
 
-          payment_method:
-            payment.payment_type_id ||
-            payment.payment_method_id ||
-            null,
+            currency:
+              payment.currency_id ||
+              'BRL',
 
-          payer_email:
-            payment.payer?.email ||
-            null,
+            payment_method:
+              payment.payment_type_id ||
+              payment.payment_method_id ||
+              null,
 
-          raw_payload:
-            payment,
+            payer_email:
+              payment.payer?.email ||
+              payment.metadata?.email ||
+              null,
 
-          paid_at:
-            payment.date_approved ||
-            null,
+            raw_payload:
+              sanitizedPayment,
 
-          expires_at:
-            payment.date_of_expiration ||
-            null,
+            paid_at:
+              payment.date_approved ||
+              null,
 
-          updated_at:
-            new Date().toISOString()
-        })
+            expires_at:
+              payment.date_of_expiration ||
+              null,
+
+            updated_at:
+              new Date().toISOString()
+          })
       }
     );
 
@@ -395,7 +422,9 @@ export async function onRequestPost({
       {
         paymentId:
           String(payment.id),
+
         userId,
+
         status:
           state
       }
@@ -405,20 +434,23 @@ export async function onRequestPost({
       env,
       'rpc/apply_payment_entitlement',
       {
-        method: 'POST',
-        body: JSON.stringify({
-          target_user:
-            userId,
+        method:
+          'POST',
 
-          payment_status:
-            state,
+        body:
+          JSON.stringify({
+            target_user:
+              userId,
 
-          access_months:
-            months,
+            payment_status:
+              state,
 
-          payment_reference:
-            String(payment.id)
-        })
+            access_months:
+              months,
+
+            payment_reference:
+              String(payment.id)
+          })
       }
     );
 
@@ -427,9 +459,12 @@ export async function onRequestPost({
       {
         paymentId:
           String(payment.id),
+
         userId,
+
         status:
           state,
+
         months
       }
     );
@@ -438,34 +473,40 @@ export async function onRequestPost({
       env,
       'payment',
       `payment_${state}`,
+
       state === 'approved'
         ? 'info'
         : 'warning',
+
       {
         payment_id:
-          payment.id,
+          String(payment.id),
 
         mercado_pago_status:
           payment.status,
 
         status_detail:
-          payment.status_detail,
+          payment.status_detail ||
+          null,
 
         plan:
           paymentData.planKey ||
           null,
 
-        months,
-
-        external_reference:
-          paymentData.externalReference
+        months
       },
+
       userId
     );
 
+    const payerEmail =
+      payment.payer?.email ||
+      payment.metadata?.email ||
+      null;
+
     if (
       state === 'approved' &&
-      payment.payer?.email
+      payerEmail
     ) {
       try {
         const site = (
@@ -477,7 +518,7 @@ export async function onRequestPost({
           env,
           {
             to:
-              payment.payer.email,
+              payerEmail,
 
             subject:
               'Seu Drone Hub Pro está ativo',
@@ -508,12 +549,15 @@ export async function onRequestPost({
           {
             paymentId:
               String(payment.id),
-            userId,
-            email:
-              payment.payer.email
+
+            userId
           }
         );
       } catch (emailError) {
+        const emailErrorMessage =
+          emailError?.message ||
+          'Falha no envio do e-mail.';
+
         console.error(
           'PAYMENT_CONFIRMATION_EMAIL_ERROR',
           {
@@ -523,12 +567,7 @@ export async function onRequestPost({
             userId,
 
             message:
-              emailError?.message ||
-              'Falha no envio do e-mail.',
-
-            stack:
-              emailError?.stack ||
-              null
+              emailErrorMessage
           }
         );
 
@@ -539,11 +578,10 @@ export async function onRequestPost({
           'warning',
           {
             payment_id:
-              payment.id,
+              String(payment.id),
 
             message:
-              emailError?.message ||
-              'Falha no envio do e-mail.'
+              emailErrorMessage
           },
           userId
         );
@@ -568,23 +606,6 @@ export async function onRequestPost({
       error?.message ||
       'Erro desconhecido ao processar o webhook.';
 
-    if (
-      !mercadoPagoTokenFingerprint &&
-      env.MERCADO_PAGO_ACCESS_TOKEN
-    ) {
-      try {
-        mercadoPagoTokenFingerprint =
-          await tokenFingerprint(
-            String(
-              env.MERCADO_PAGO_ACCESS_TOKEN
-            ).trim()
-          );
-      } catch {
-        mercadoPagoTokenFingerprint =
-          null;
-      }
-    }
-
     console.error(
       'MERCADO_PAGO_WEBHOOK_ERROR',
       {
@@ -595,40 +616,11 @@ export async function onRequestPost({
 
         userId,
 
-        message:
-          errorMessage,
-
-        stack:
-          error?.stack ||
-          null,
-
         mercadoPagoHttpStatus:
           mercadoPagoStatus,
 
-        mercadoPagoResponse:
-          mercadoPagoResponseText,
-
-        tokenConfigured:
-          Boolean(
-            env.MERCADO_PAGO_ACCESS_TOKEN
-          ),
-
-        tokenOriginalLength:
-          env.MERCADO_PAGO_ACCESS_TOKEN
-            ? String(
-                env.MERCADO_PAGO_ACCESS_TOKEN
-              ).length
-            : 0,
-
-        tokenTrimmedLength:
-          env.MERCADO_PAGO_ACCESS_TOKEN
-            ? String(
-                env.MERCADO_PAGO_ACCESS_TOKEN
-              ).trim().length
-            : 0,
-
-        tokenFingerprint:
-          mercadoPagoTokenFingerprint
+        message:
+          errorMessage
       }
     );
 
@@ -639,41 +631,18 @@ export async function onRequestPost({
       'error',
       {
         payment_id:
-          paymentId,
+          paymentId !== null
+            ? String(paymentId)
+            : null,
 
         user_id:
           userId,
 
-        message:
-          errorMessage,
-
         mercado_pago_http_status:
           mercadoPagoStatus,
 
-        mercado_pago_response:
-          mercadoPagoResponseText,
-
-        token_configured:
-          Boolean(
-            env.MERCADO_PAGO_ACCESS_TOKEN
-          ),
-
-        token_original_length:
-          env.MERCADO_PAGO_ACCESS_TOKEN
-            ? String(
-                env.MERCADO_PAGO_ACCESS_TOKEN
-              ).length
-            : 0,
-
-        token_trimmed_length:
-          env.MERCADO_PAGO_ACCESS_TOKEN
-            ? String(
-                env.MERCADO_PAGO_ACCESS_TOKEN
-              ).trim().length
-            : 0,
-
-        token_fingerprint:
-          mercadoPagoTokenFingerprint
+        message:
+          errorMessage
       },
       userId
     );
@@ -689,37 +658,7 @@ export async function onRequestPost({
             : null,
 
         error:
-          errorMessage,
-
-        diagnostic: {
-          mercado_pago_http_status:
-            mercadoPagoStatus,
-
-          mercado_pago_response:
-            mercadoPagoResponseText,
-
-          token_configured:
-            Boolean(
-              env.MERCADO_PAGO_ACCESS_TOKEN
-            ),
-
-          token_original_length:
-            env.MERCADO_PAGO_ACCESS_TOKEN
-              ? String(
-                  env.MERCADO_PAGO_ACCESS_TOKEN
-                ).length
-              : 0,
-
-          token_trimmed_length:
-            env.MERCADO_PAGO_ACCESS_TOKEN
-              ? String(
-                  env.MERCADO_PAGO_ACCESS_TOKEN
-                ).trim().length
-              : 0,
-
-          token_fingerprint:
-            mercadoPagoTokenFingerprint
-        }
+          errorMessage
       },
       500
     );
