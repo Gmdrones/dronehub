@@ -37,9 +37,7 @@ async function tokenFingerprint(token) {
     data
   );
 
-  return Array.from(
-    new Uint8Array(hash)
-  )
+  return Array.from(new Uint8Array(hash))
     .map(byte =>
       byte
         .toString(16)
@@ -112,19 +110,16 @@ async function safeLogIntegration(
       userId
     );
   } catch (logError) {
-    console.error(
-      'INTEGRATION_LOG_ERROR',
-      {
-        event,
-        userId,
-        message:
-          logError?.message ||
-          'Falha desconhecida ao gravar log.',
-        stack:
-          logError?.stack ||
-          null
-      }
-    );
+    console.error('INTEGRATION_LOG_ERROR', {
+      event,
+      userId,
+      message:
+        logError?.message ||
+        'Falha desconhecida ao gravar log.',
+      stack:
+        logError?.stack ||
+        null
+    });
   }
 }
 
@@ -135,6 +130,8 @@ export async function onRequestPost({
   let paymentId = null;
   let userId = null;
   let mercadoPagoTokenFingerprint = null;
+  let mercadoPagoStatus = null;
+  let mercadoPagoResponseText = null;
 
   try {
     if (!env.MERCADO_PAGO_ACCESS_TOKEN) {
@@ -143,17 +140,35 @@ export async function onRequestPost({
       );
     }
 
+    /*
+     * Remove espaços ou quebras de linha que possam
+     * ter sido inseridos ao salvar o token no Cloudflare.
+     */
+    const mercadoPagoAccessToken = String(
+      env.MERCADO_PAGO_ACCESS_TOKEN
+    ).trim();
+
+    if (!mercadoPagoAccessToken) {
+      throw new Error(
+        'MERCADO_PAGO_ACCESS_TOKEN está vazio.'
+      );
+    }
+
     mercadoPagoTokenFingerprint =
       await tokenFingerprint(
-        env.MERCADO_PAGO_ACCESS_TOKEN
+        mercadoPagoAccessToken
       );
 
     console.log(
       'MERCADO_PAGO_TOKEN_DIAGNOSTIC',
       {
         configured: true,
-        length:
-          env.MERCADO_PAGO_ACCESS_TOKEN.length,
+        originalLength:
+          String(
+            env.MERCADO_PAGO_ACCESS_TOKEN
+          ).length,
+        trimmedLength:
+          mercadoPagoAccessToken.length,
         fingerprint:
           mercadoPagoTokenFingerprint
       }
@@ -180,11 +195,12 @@ export async function onRequestPost({
       });
     }
 
+    paymentId = String(paymentId).trim();
+
     console.log(
       'MERCADO_PAGO_WEBHOOK_RECEIVED',
       {
-        paymentId:
-          String(paymentId),
+        paymentId,
         action:
           body?.action ||
           null,
@@ -197,35 +213,74 @@ export async function onRequestPost({
       }
     );
 
-    const mercadoPagoResponse =
-      await fetch(
-        `https://api.mercadopago.com/v1/payments/${encodeURIComponent(
-          String(paymentId)
-        )}`,
+    const mercadoPagoResponse = await fetch(
+      `https://api.mercadopago.com/v1/payments/${encodeURIComponent(
+        paymentId
+      )}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization:
+            `Bearer ${mercadoPagoAccessToken}`,
+          Accept:
+            'application/json'
+        }
+      }
+    );
+
+    mercadoPagoStatus =
+      mercadoPagoResponse.status;
+
+    /*
+     * Lê a resposta como texto para não esconder
+     * nenhuma mensagem retornada pelo Mercado Pago.
+     */
+    mercadoPagoResponseText =
+      await mercadoPagoResponse.text();
+
+    console.log(
+      'MP_STATUS',
+      mercadoPagoStatus
+    );
+
+    console.log(
+      'MP_HEADERS',
+      Object.fromEntries(
+        mercadoPagoResponse.headers.entries()
+      )
+    );
+
+    console.log(
+      'MP_RESPONSE',
+      mercadoPagoResponseText
+    );
+
+    let payment = {};
+
+    try {
+      payment = JSON.parse(
+        mercadoPagoResponseText
+      );
+    } catch (parseError) {
+      console.error(
+        'MP_JSON_PARSE_ERROR',
         {
-          method: 'GET',
-          headers: {
-            Authorization:
-              `Bearer ${env.MERCADO_PAGO_ACCESS_TOKEN}`,
-            Accept:
-              'application/json'
-          }
+          paymentId,
+          message:
+            parseError?.message ||
+            'A resposta do Mercado Pago não é um JSON válido.',
+          response:
+            mercadoPagoResponseText
         }
       );
-
-    const payment =
-      await mercadoPagoResponse
-        .json()
-        .catch(() => ({}));
+    }
 
     if (!mercadoPagoResponse.ok) {
-      const mercadoPagoMessage =
-        payment?.message ||
-        payment?.error ||
-        `Mercado Pago respondeu HTTP ${mercadoPagoResponse.status}.`;
-
       throw new Error(
-        `Falha ao validar pagamento no Mercado Pago: ${mercadoPagoMessage}`
+        `Mercado Pago HTTP ${mercadoPagoStatus}: ${
+          mercadoPagoResponseText ||
+          'Resposta vazia.'
+        }`
       );
     }
 
@@ -284,38 +339,51 @@ export async function onRequestPost({
         body: JSON.stringify({
           user_id:
             userId,
+
           provider:
             'mercado_pago',
+
           provider_payment_id:
             String(payment.id),
+
           preference_id:
             payment.preference_id ||
             null,
+
           status:
             state,
+
           status_detail:
             payment.status_detail ||
             null,
+
           amount:
             payment.transaction_amount,
+
           currency:
             payment.currency_id ||
             'BRL',
+
           payment_method:
             payment.payment_type_id ||
             payment.payment_method_id ||
             null,
+
           payer_email:
             payment.payer?.email ||
             null,
+
           raw_payload:
             payment,
+
           paid_at:
             payment.date_approved ||
             null,
+
           expires_at:
             payment.date_of_expiration ||
             null,
+
           updated_at:
             new Date().toISOString()
         })
@@ -341,10 +409,13 @@ export async function onRequestPost({
         body: JSON.stringify({
           target_user:
             userId,
+
           payment_status:
             state,
+
           access_months:
             months,
+
           payment_reference:
             String(payment.id)
         })
@@ -373,14 +444,19 @@ export async function onRequestPost({
       {
         payment_id:
           payment.id,
+
         mercado_pago_status:
           payment.status,
+
         status_detail:
           payment.status_detail,
+
         plan:
           paymentData.planKey ||
           null,
+
         months,
+
         external_reference:
           paymentData.externalReference
       },
@@ -402,8 +478,10 @@ export async function onRequestPost({
           {
             to:
               payment.payer.email,
+
             subject:
               'Seu Drone Hub Pro está ativo',
+
             html: `
               <h2>Pagamento aprovado</h2>
 
@@ -441,10 +519,13 @@ export async function onRequestPost({
           {
             paymentId:
               String(payment.id),
+
             userId,
+
             message:
               emailError?.message ||
               'Falha no envio do e-mail.',
+
             stack:
               emailError?.stack ||
               null
@@ -459,6 +540,7 @@ export async function onRequestPost({
           {
             payment_id:
               payment.id,
+
             message:
               emailError?.message ||
               'Falha no envio do e-mail.'
@@ -471,10 +553,13 @@ export async function onRequestPost({
     return json({
       received:
         true,
+
       payment_id:
         String(payment.id),
+
       status:
         state,
+
       entitlement_processed:
         true
     });
@@ -490,7 +575,9 @@ export async function onRequestPost({
       try {
         mercadoPagoTokenFingerprint =
           await tokenFingerprint(
-            env.MERCADO_PAGO_ACCESS_TOKEN
+            String(
+              env.MERCADO_PAGO_ACCESS_TOKEN
+            ).trim()
           );
       } catch {
         mercadoPagoTokenFingerprint =
@@ -505,20 +592,41 @@ export async function onRequestPost({
           paymentId !== null
             ? String(paymentId)
             : null,
+
         userId,
+
         message:
           errorMessage,
+
         stack:
           error?.stack ||
           null,
+
+        mercadoPagoHttpStatus:
+          mercadoPagoStatus,
+
+        mercadoPagoResponse:
+          mercadoPagoResponseText,
+
         tokenConfigured:
           Boolean(
             env.MERCADO_PAGO_ACCESS_TOKEN
           ),
-        tokenLength:
+
+        tokenOriginalLength:
           env.MERCADO_PAGO_ACCESS_TOKEN
-            ?.length ||
-          0,
+            ? String(
+                env.MERCADO_PAGO_ACCESS_TOKEN
+              ).length
+            : 0,
+
+        tokenTrimmedLength:
+          env.MERCADO_PAGO_ACCESS_TOKEN
+            ? String(
+                env.MERCADO_PAGO_ACCESS_TOKEN
+              ).trim().length
+            : 0,
+
         tokenFingerprint:
           mercadoPagoTokenFingerprint
       }
@@ -532,18 +640,38 @@ export async function onRequestPost({
       {
         payment_id:
           paymentId,
+
         user_id:
           userId,
+
         message:
           errorMessage,
+
+        mercado_pago_http_status:
+          mercadoPagoStatus,
+
+        mercado_pago_response:
+          mercadoPagoResponseText,
+
         token_configured:
           Boolean(
             env.MERCADO_PAGO_ACCESS_TOKEN
           ),
-        token_length:
+
+        token_original_length:
           env.MERCADO_PAGO_ACCESS_TOKEN
-            ?.length ||
-          0,
+            ? String(
+                env.MERCADO_PAGO_ACCESS_TOKEN
+              ).length
+            : 0,
+
+        token_trimmed_length:
+          env.MERCADO_PAGO_ACCESS_TOKEN
+            ? String(
+                env.MERCADO_PAGO_ACCESS_TOKEN
+              ).trim().length
+            : 0,
+
         token_fingerprint:
           mercadoPagoTokenFingerprint
       },
@@ -554,22 +682,41 @@ export async function onRequestPost({
       {
         received:
           false,
+
         payment_id:
           paymentId !== null
             ? String(paymentId)
             : null,
+
         error:
           errorMessage,
 
         diagnostic: {
+          mercado_pago_http_status:
+            mercadoPagoStatus,
+
+          mercado_pago_response:
+            mercadoPagoResponseText,
+
           token_configured:
             Boolean(
               env.MERCADO_PAGO_ACCESS_TOKEN
             ),
-          token_length:
+
+          token_original_length:
             env.MERCADO_PAGO_ACCESS_TOKEN
-              ?.length ||
-            0,
+              ? String(
+                  env.MERCADO_PAGO_ACCESS_TOKEN
+                ).length
+              : 0,
+
+          token_trimmed_length:
+            env.MERCADO_PAGO_ACCESS_TOKEN
+              ? String(
+                  env.MERCADO_PAGO_ACCESS_TOKEN
+                ).trim().length
+              : 0,
+
           token_fingerprint:
             mercadoPagoTokenFingerprint
         }
@@ -583,6 +730,7 @@ export async function onRequestGet() {
   return json({
     ok:
       true,
+
     service:
       'mercado-pago-webhook'
   });
