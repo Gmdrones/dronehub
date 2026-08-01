@@ -67,6 +67,23 @@
   function duration(seconds){if(seconds===null||seconds===undefined||Number.isNaN(Number(seconds)))return 'Indisponível';const mins=Math.round(Number(seconds)/60);return Math.floor(mins/60)+'h '+String(mins%60).padStart(2,'0')+'min';}
   function clock(v){if(!v)return 'Indisponível';const d=new Date(v);return Number.isNaN(d.getTime())?'Indisponível':d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
   function kpLabel(kp){if(kp===null||kp===undefined||Number.isNaN(Number(kp)))return 'Indisponível';const n=Number(kp);return value(n)+' · '+(n<4?'Baixa atividade':n<5?'Atividade elevada':'Tempestade geomagnética');}
+  async function enrichWeather(data){
+    try{
+      const lat=Number(data&&data.latitude),lon=Number(data&&data.longitude);
+      if(Number.isFinite(lat)&&Number.isFinite(lon)){
+        const params=new URLSearchParams({latitude:String(lat),longitude:String(lon),current:'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m',hourly:'temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,cloud_cover,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,is_day',daily:'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max',forecast_days:'4',timezone:'auto',wind_speed_unit:'kmh'});
+        const extra=await fetch('https://api.open-meteo.com/v1/forecast?'+params).then(r=>{if(!r.ok)throw Error('weather');return r.json();});
+        data={...data,...extra,current:{...(data.current||{}),...(extra.current||{})},hourly:extra.hourly||data.hourly,daily:extra.daily||data.daily};
+        if(data.current&&!Number.isFinite(Number(data.current.visibility))){const times=extra.hourly&&extra.hourly.time||[],idx=Math.max(0,times.indexOf(extra.current&&extra.current.time));data.current.visibility=extra.hourly&&extra.hourly.visibility&&extra.hourly.visibility[idx];}
+      }
+    }catch(_){}
+    if(!(data&&data.space_weather))try{
+      const rows=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json').then(r=>{if(!r.ok)throw Error('kp');return r.json();});
+      const last=Array.isArray(rows)?rows.slice(1).reverse().find(row=>Number.isFinite(Number(row&&row[1]))):null;
+      if(last)data.space_weather={kp:Number(last[1]),observed_at:last[0],source:'NOAA SWPC'};
+    }catch(_){}
+    return data;
+  }
   function renderForecast(){const grid=$('forecastGrid'); if(!grid||!weather)return; grid.innerHTML=weather.daily.time.map((day,i)=>{const gust=Math.round(weather.daily.wind_gusts_10m_max[i]),rain=Math.round(weather.daily.precipitation_probability_max[i]||0),risk=rain>=70||gust>=40?'risk-high':rain>=40||gust>=28?'risk-medium':'risk-low';return '<button type="button" class="weather-item forecast-card '+risk+'" data-day="'+day+'"><strong>'+new Date(day+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})+'</strong><span>Vento <b>'+Math.round(weather.daily.wind_speed_10m_max[i])+'</b> km/h</span><span>Rajadas <b>'+gust+'</b> km/h</span><span>Chuva <b>'+rain+'%</b></span></button>';}).join('');Array.from(grid.querySelectorAll('[data-day]')).forEach(btn=>btn.addEventListener('click',()=>{$('flightDate').value=btn.dataset.day;render();}));}
   function render(){
     if(!weather)return; const f=selectedForecast(), lim=windLimit(), forecastWind=weather.daily.wind_speed_10m_max[f.index], forecastGust=weather.daily.wind_gusts_10m_max[f.index], worst=Math.max(forecastWind,forecastGust), pct=lim?worst/lim:0, result=lim?state(pct):['amber','Selecione uma aeronave'];
@@ -96,7 +113,7 @@
   }
   function load(){
     $('weatherLoading').style.display='block';
-    fetch(operationsApi+'/weather?lat='+encodeURIComponent(place.lat)+'&lon='+encodeURIComponent(place.lon)).then(r=>r.json()).then(data=>{weather=data;window.DroneHubFlightWeather=data;render();window.dispatchEvent(new CustomEvent('dronehub:weather-ready',{detail:data}));}).catch(()=>{$('weatherLoading').textContent='Não foi possível atualizar o clima agora. Tente novamente em instantes.';});
+    fetch(operationsApi+'/weather?lat='+encodeURIComponent(place.lat)+'&lon='+encodeURIComponent(place.lon)).then(r=>r.json()).then(enrichWeather).then(data=>{weather=data;window.DroneHubFlightWeather=data;render();window.dispatchEvent(new CustomEvent('dronehub:weather-ready',{detail:data}));}).catch(()=>{$('weatherLoading').textContent='Não foi possível atualizar o clima agora. Tente novamente em instantes.';});
   }
   function geocode(){
     const query=$('flightLocation').value.trim(); if(!query)return;
