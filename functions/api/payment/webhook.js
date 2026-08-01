@@ -14,7 +14,7 @@ function normalizedState(status) {
     return status;
   }
 
-  if (['cancelled', 'rejected'].includes(status)) {
+  if (['cancelled', 'rejected', 'expired'].includes(status)) {
     return 'cancelled';
   }
 
@@ -521,13 +521,13 @@ export async function onRequestPost({
               payerEmail,
 
             subject:
-              'Seu Drone Hub Pro está ativo',
+              'Seu Drone Hub PRO está ativo',
 
             html: `
-              <h2>Pagamento aprovado</h2>
+              <h2>Pagamento confirmado!</h2>
 
               <p>
-                Seu acesso ao Drone Hub Pro já está ativo por
+                Seu acesso ao Drone Hub PRO já está ativo por
                 ${
                   months === 1
                     ? '30 dias'
@@ -537,7 +537,7 @@ export async function onRequestPost({
 
               <p>
                 <a href="${site}/dashboard">
-                  Acessar o painel
+                  Acessar Drone Hub
                 </a>
               </p>
             `
@@ -582,6 +582,38 @@ export async function onRequestPost({
 
             message:
               emailErrorMessage
+          },
+          userId
+        );
+      }
+    } else if (state === 'cancelled' && payerEmail) {
+      try {
+        const site = (env.SITE_URL || 'https://dronehub.app.br').replace(/\/$/, '');
+
+        await sendEmail(env, {
+          to: payerEmail,
+          subject: 'Pagamento não concluído',
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#102033">
+              <h1 style="color:#0b7fab">Pagamento não concluído</h1>
+              <p>Seu pagamento não foi confirmado.</p>
+              <p>Caso ainda deseje assinar o Drone Hub PRO, acesse novamente nossa página de planos e gere um novo pagamento.</p>
+              <p style="margin-top:28px">
+                <a href="${site}/precos" style="display:inline-block;padding:13px 22px;border-radius:10px;background:#18c8ff;color:#07111d;text-decoration:none;font-weight:700">Assinar agora</a>
+              </p>
+            </div>
+          `,
+          text: `Pagamento não concluído\n\nSeu pagamento não foi confirmado.\n\nCaso ainda deseje assinar o Drone Hub PRO, acesse novamente nossa página de planos e gere um novo pagamento.\n\nAssinar agora: ${site}/precos`
+        });
+      } catch (emailError) {
+        await safeLogIntegration(
+          env,
+          'payment',
+          'payment_not_completed_email_error',
+          'warning',
+          {
+            payment_id: String(payment.id),
+            message: String(emailError?.message || emailError)
           },
           userId
         );

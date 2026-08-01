@@ -191,6 +191,7 @@
     try { mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' }); } catch(e) {}
 
     document.getElementById('checkoutBtn').addEventListener('click', async function() {
+      var checkoutButton = this;
       msg.style.display = 'none';
       document.getElementById('wallet_container').innerHTML = '';
 
@@ -227,6 +228,21 @@
 })
 .then(function(data) {
 
+    var preferenceId = data.preference_id || data.id;
+    if (preferenceId) {
+        var pendingPayment = {
+            payment_pending: true,
+            preference_id: preferenceId,
+            created_at: Date.now(),
+            plan: currentPlan
+        };
+        if (typeof window.savePendingPayment === 'function') {
+            window.savePendingPayment(pendingPayment);
+        } else {
+            sessionStorage.setItem('payment_pending', JSON.stringify(pendingPayment));
+        }
+    }
+
     if (data.init_point) {
 
         msg.className = 'mp-msg info';
@@ -256,9 +272,9 @@
 
     }
 
-    this.classList.remove('loading');
+    checkoutButton.classList.remove('loading');
 
-}.bind(this))
+})
 .catch(function(err) {
 
     console.error('Falha no pagamento:', err);
@@ -269,9 +285,9 @@
       : 'Erro ao iniciar o pagamento. Tente novamente em alguns instantes.';
     msg.style.display = 'block';
 
-    this.classList.remove('loading');
+    checkoutButton.classList.remove('loading');
 
-}.bind(this));
+});
 
     });
 

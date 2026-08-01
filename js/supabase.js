@@ -51,6 +51,105 @@ async function syncCurrentEntitlement() {
     return getCurrentUser();
   }
 }
+window.syncCurrentEntitlement = syncCurrentEntitlement;
+
+// O navegador guarda somente o contexto temporario da tentativa de pagamento.
+// O plano continua sendo definido exclusivamente pelo entitlement do Supabase.
+const PAYMENT_PENDING_KEY = 'payment_pending';
+const PAYMENT_PENDING_TTL = 30 * 60 * 1000;
+const PAYMENT_POLL_INTERVAL = 5000;
+const PAYMENT_POLL_DURATION = 2 * 60 * 1000;
+let paymentPollTimer = null;
+let paymentPollStartedAt = 0;
+let paymentSuccessInProgress = false;
+
+function savePendingPayment(payment) {
+  if (!payment || !payment.preference_id) return;
+  sessionStorage.setItem(PAYMENT_PENDING_KEY, JSON.stringify(payment));
+}
+window.savePendingPayment = savePendingPayment;
+
+function getPendingPayment() {
+  try {
+    var pending = JSON.parse(sessionStorage.getItem(PAYMENT_PENDING_KEY) || 'null');
+    if (!pending || pending.payment_pending !== true || !pending.created_at) return null;
+    if (Date.now() - Number(pending.created_at) > PAYMENT_PENDING_TTL) {
+      sessionStorage.removeItem(PAYMENT_PENDING_KEY);
+      return null;
+    }
+    return pending;
+  } catch (e) {
+    sessionStorage.removeItem(PAYMENT_PENDING_KEY);
+    return null;
+  }
+}
+
+function ensurePaymentStatusStyles() {
+  if (document.getElementById('payment-status-styles')) return;
+  var style = document.createElement('style');
+  style.id = 'payment-status-styles';
+  style.textContent = '.payment-status-overlay{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:20px;background:rgba(3,7,13,.78);backdrop-filter:blur(10px)}.payment-status-card{width:min(460px,100%);padding:30px;border:1px solid rgba(24,200,255,.28);border-radius:20px;background:#111925;box-shadow:0 24px 80px rgba(0,0,0,.5);color:#f5f8fc;text-align:center;font-family:Inter,system-ui,sans-serif}.payment-status-icon{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 18px;border-radius:50%;background:rgba(24,200,255,.12);color:#18c8ff;font-size:28px}.payment-status-card.is-success .payment-status-icon{background:rgba(54,211,153,.15);color:#36d399}.payment-status-card h2{margin:0 0 10px;font-size:24px}.payment-status-card p{margin:0;color:#a7b3c5;line-height:1.6}.payment-status-card button{margin-top:22px;min-height:44px;padding:0 22px;border:0;border-radius:12px;background:#18c8ff;color:#071019;font-weight:750;cursor:pointer}.payment-status-card button:disabled{opacity:.65;cursor:wait}.payment-status-spinner{width:24px;height:24px;border:3px solid rgba(24,200,255,.25);border-top-color:#18c8ff;border-radius:50%;animation:payment-spin .8s linear infinite}@keyframes payment-spin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(style);
+}
+
+function showPendingPaymentNotice() {
+  ensurePaymentStatusStyles();
+  var overlay = document.getElementById('payment-status-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'payment-status-overlay';
+    overlay.className = 'payment-status-overlay';
+    overlay.innerHTML = '<section class="payment-status-card" role="dialog" aria-modal="true" aria-labelledby="payment-status-title"><div class="payment-status-icon"><span class="payment-status-spinner" aria-hidden="true"></span></div><h2 id="payment-status-title">Seu pagamento ainda está aguardando confirmação.</h2><p>Assim que o Mercado Pago confirmar,<br>seu plano será ativado automaticamente.</p><button type="button" id="payment-status-refresh">Atualizar status</button></section>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('#payment-status-refresh').addEventListener('click', async function () {
+      this.disabled = true;
+      await checkPendingPayment();
+      this.disabled = false;
+    });
+  }
+  overlay.hidden = false;
+}
+
+function showPaymentSuccess() {
+  if (paymentSuccessInProgress) return;
+  paymentSuccessInProgress = true;
+  if (paymentPollTimer) clearInterval(paymentPollTimer);
+  sessionStorage.removeItem(PAYMENT_PENDING_KEY);
+  ensurePaymentStatusStyles();
+  var overlay = document.getElementById('payment-status-overlay') || document.createElement('div');
+  overlay.id = 'payment-status-overlay';
+  overlay.className = 'payment-status-overlay';
+  overlay.hidden = false;
+  overlay.innerHTML = '<section class="payment-status-card is-success" role="status"><div class="payment-status-icon" aria-hidden="true">&#10003;</div><h2>Pagamento confirmado!</h2><p>Seu Drone Hub PRO foi ativado com sucesso.</p></section>';
+  if (!overlay.parentNode) document.body.appendChild(overlay);
+  setTimeout(function () { window.location.href = '/dashboard'; }, 2000);
+}
+
+async function checkPendingPayment() {
+  if (!getPendingPayment() || paymentSuccessInProgress) return null;
+  var user = await syncCurrentEntitlement();
+  if (user && (user.plan === 'pro' || user.role === 'admin')) {
+    showPaymentSuccess();
+  } else {
+    showPendingPaymentNotice();
+  }
+  return user;
+}
+window.checkPendingPayment = checkPendingPayment;
+
+function startPendingPaymentMonitor() {
+  if (!getPendingPayment()) return;
+  paymentPollStartedAt = Date.now();
+  checkPendingPayment();
+  paymentPollTimer = setInterval(function () {
+    if (!getPendingPayment() || Date.now() - paymentPollStartedAt >= PAYMENT_POLL_DURATION) {
+      clearInterval(paymentPollTimer);
+      paymentPollTimer = null;
+      return;
+    }
+    checkPendingPayment();
+  }, PAYMENT_POLL_INTERVAL);
+}
 
 // ===== AUTH =====
 async function signUpWithSupabase(email, password, name) {
@@ -394,15 +493,21 @@ async function refreshCurrentEntitlement() {
   const canonicalId = (updated && updated.id) || before.id;
   migrateLocalOwnerAliases(before.id, canonicalId, (updated && updated.email) || before.email);
   await syncCloudData(canonicalId);
-  if (updated && (updated.plan !== beforePlan || updated.role !== beforeRole)) {
+  if (getPendingPayment()) {
+    if (updated && (updated.plan === 'pro' || updated.role === 'admin')) showPaymentSuccess();
+  } else if (updated && (updated.plan !== beforePlan || updated.role !== beforeRole)) {
     window.location.reload();
   }
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', refreshCurrentEntitlement);
+  document.addEventListener('DOMContentLoaded', function () {
+    refreshCurrentEntitlement();
+    startPendingPaymentMonitor();
+  });
 } else {
   refreshCurrentEntitlement();
+  startPendingPaymentMonitor();
 }
 
 if (supabaseClient) {

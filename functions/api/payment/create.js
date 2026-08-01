@@ -1,7 +1,8 @@
 import {
   json,
   getUser,
-  logIntegration
+  logIntegration,
+  sendEmail
 } from '../../_lib/server.js';
 
 const PLANS = {
@@ -254,8 +255,35 @@ export async function onRequestPost({
       user.id
     );
 
+    try {
+      const plan = PLANS[planKey];
+      const value = Number(plan.amount).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      });
+
+      await sendEmail(env, {
+        to: user.email,
+        subject: 'Recebemos sua solicitação de assinatura do Drone Hub',
+        html: `
+          <h1>Solicitação recebida</h1>
+          <p>Você iniciou a assinatura do Drone Hub PRO.</p>
+          <p><strong>Plano:</strong> ${planKey === 'annual' ? 'Anual' : 'Mensal'}<br>
+          <strong>Valor:</strong> ${value}</p>
+          <p>O pagamento ainda não foi confirmado. Assim que o Mercado Pago confirmar, seu acesso será liberado automaticamente.</p>
+          <p>Você pode retornar ao Drone Hub a qualquer momento para acompanhar o status.</p>
+        `,
+        text: `Solicitação de assinatura recebida. Plano: ${planKey === 'annual' ? 'Anual' : 'Mensal'}. Valor: ${value}. O pagamento ainda não foi confirmado. O acesso será liberado automaticamente após a confirmação do Mercado Pago.`
+      });
+    } catch (emailError) {
+      await logIntegration(env, 'payment', 'checkout_started_email_error', 'warning', {
+        message: emailError?.message || 'Falha ao enviar e-mail de pagamento iniciado.'
+      }, user.id);
+    }
+
     return json({
       id: data.id,
+      preference_id: data.id,
       init_point: data.init_point,
 
       // Temporariamente útil para descobrir
