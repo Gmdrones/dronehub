@@ -62,11 +62,33 @@
   function selectedAircraftName(){const select=$('droneSelect'),option=select.options[select.selectedIndex];return option&&option.dataset.model||'';}
   function state(pct){return pct<=.6?['green','Condições favoráveis']:pct<=.8?['amber','Atenção: opere com cautela']:pct<=1?['orange','Alto risco operacional']:['red','Voo não recomendado'];}
   function selectedForecast(){const idx=weather.daily.time.indexOf($('flightDate').value); return {index:idx<0?0:idx, date:weather.daily.time[idx<0?0:idx]};}
+  function value(v,suffix){return v===null||v===undefined||Number.isNaN(Number(v))?'Indisponível':Math.round(Number(v)*10)/10+(suffix||'');}
+  function compass(deg){if(deg===null||deg===undefined||Number.isNaN(Number(deg)))return 'Indisponível';const names=['N','NE','L','SE','S','SO','O','NO'];return names[Math.round(Number(deg)/45)%8]+' · '+Math.round(Number(deg))+'°';}
+  function duration(seconds){if(seconds===null||seconds===undefined||Number.isNaN(Number(seconds)))return 'Indisponível';const mins=Math.round(Number(seconds)/60);return Math.floor(mins/60)+'h '+String(mins%60).padStart(2,'0')+'min';}
+  function clock(v){if(!v)return 'Indisponível';const d=new Date(v);return Number.isNaN(d.getTime())?'Indisponível':d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+  function kpLabel(kp){if(kp===null||kp===undefined||Number.isNaN(Number(kp)))return 'Indisponível';const n=Number(kp);return value(n)+' · '+(n<4?'Baixa atividade':n<5?'Atividade elevada':'Tempestade geomagnética');}
   function renderForecast(){const grid=$('forecastGrid'); if(!grid||!weather)return; grid.innerHTML=weather.daily.time.map((day,i)=>{const gust=Math.round(weather.daily.wind_gusts_10m_max[i]),rain=Math.round(weather.daily.precipitation_probability_max[i]||0),risk=rain>=70||gust>=40?'risk-high':rain>=40||gust>=28?'risk-medium':'risk-low';return '<button type="button" class="weather-item forecast-card '+risk+'" data-day="'+day+'"><strong>'+new Date(day+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})+'</strong><span>Vento <b>'+Math.round(weather.daily.wind_speed_10m_max[i])+'</b> km/h</span><span>Rajadas <b>'+gust+'</b> km/h</span><span>Chuva <b>'+rain+'%</b></span></button>';}).join('');Array.from(grid.querySelectorAll('[data-day]')).forEach(btn=>btn.addEventListener('click',()=>{$('flightDate').value=btn.dataset.day;render();}));}
   function render(){
     if(!weather)return; const f=selectedForecast(), lim=windLimit(), forecastWind=weather.daily.wind_speed_10m_max[f.index], forecastGust=weather.daily.wind_gusts_10m_max[f.index], worst=Math.max(forecastWind,forecastGust), pct=lim?worst/lim:0, result=lim?state(pct):['amber','Selecione uma aeronave'];
     $('weatherLoading').style.display='none'; $('weatherContent').style.display='block';
-    $('weatherGrid').innerHTML='<div class="weather-item"><div class="val">'+Math.round(weather.current.temperature_2m)+'°C</div><div class="lbl">Agora em '+place.name+'</div></div><div class="weather-item"><div class="val">'+Math.round(weather.current.wind_speed_10m)+' km/h</div><div class="lbl">Vento atual</div></div><div class="weather-item"><div class="val">'+Math.round(weather.current.wind_gusts_10m)+' km/h</div><div class="lbl">Rajada atual</div></div><div class="weather-item"><div class="val">'+weather.current.relative_humidity_2m+'%</div><div class="lbl">Umidade atual</div></div>';
+    const daily=weather.daily||{}, current=weather.current||{}, kp=weather.space_weather&&weather.space_weather.kp;
+    const metrics=[
+      [value(current.temperature_2m,'°C'),'Temperatura em '+place.name],
+      [value(current.apparent_temperature,'°C'),'Sensação térmica'],
+      [value(current.wind_speed_10m,' km/h'),'Vento atual'],
+      [value(current.wind_gusts_10m,' km/h'),'Rajada atual'],
+      [compass(current.wind_direction_10m),'Direção do vento'],
+      [value(current.relative_humidity_2m,'%'),'Umidade'],
+      [value(current.visibility===undefined?null:current.visibility/1000,' km'),'Visibilidade'],
+      [value(current.cloud_cover,'%'),'Cobertura de nuvens'],
+      [value(current.precipitation,' mm'),'Precipitação atual'],
+      [value(daily.uv_index_max&&daily.uv_index_max[f.index]),'Índice UV máximo'],
+      [clock(daily.sunrise&&daily.sunrise[f.index]),'Nascer do sol'],
+      [clock(daily.sunset&&daily.sunset[f.index]),'Pôr do sol'],
+      [duration(daily.daylight_duration&&daily.daylight_duration[f.index]),'Duração da luz do dia'],
+      [kpLabel(kp),'Índice Kp · NOAA SWPC']
+    ];
+    $('weatherGrid').innerHTML=metrics.map(item=>'<div class="weather-item"><div class="val">'+item[0]+'</div><div class="lbl">'+item[1]+'</div></div>').join('');
     const badge=$('statusBadge'); badge.className='status-badge '+result[0]; badge.textContent=result[1];
     const score=$('flightRiskScore'), label=$('flightRiskLabel'); if(score&&label){const value=lim?Math.min(100,Math.round(pct*100)):0;score.textContent=lim?value+'/100':'--';label.textContent=lim?(value<=60?'Janela favorável':value<=80?'Atenção operacional':'Condição crítica'):'Selecione uma aeronave';}
     $('avaliacaoTexto').textContent=lim?'Previsão para '+new Date(f.date+'T12:00:00').toLocaleDateString('pt-BR')+' em '+place.name+': vento máximo de '+Math.round(forecastWind)+' km/h e rajadas de '+Math.round(forecastGust)+' km/h. Para '+selectedAircraftName()+', o limite cadastrado é '+lim.toFixed(1).replace('.',',')+' km/h; a pior leitura prevista representa '+Math.round(pct*100)+'% desse limite.':'Escolha uma aeronave cadastrada ou informe o limite de vento do fabricante para receber a avaliação da data selecionada.';

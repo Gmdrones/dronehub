@@ -92,9 +92,9 @@ export default {
     const upstream = new URL('https://api.open-meteo.com/v1/forecast');
     upstream.searchParams.set('latitude', String(lat));
     upstream.searchParams.set('longitude', String(lon));
-    upstream.searchParams.set('current', 'temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,cloud_cover');
-    upstream.searchParams.set('hourly', 'temperature_2m,precipitation_probability,precipitation,cloud_cover,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m');
-    upstream.searchParams.set('daily', 'wind_speed_10m_max,wind_gusts_10m_max,precipitation_probability_max,sunrise,sunset');
+    upstream.searchParams.set('current', 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,is_day,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,cloud_cover');
+    upstream.searchParams.set('hourly', 'temperature_2m,precipitation_probability,precipitation,cloud_cover,visibility,uv_index,is_day,wind_speed_10m,wind_direction_10m,wind_gusts_10m,wind_speed_80m,wind_direction_80m,wind_speed_120m,wind_direction_120m');
+    upstream.searchParams.set('daily', 'wind_speed_10m_max,wind_gusts_10m_max,precipitation_probability_max,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max');
     upstream.searchParams.set('forecast_days', '4');
     upstream.searchParams.set('timezone', 'auto');
 
@@ -102,7 +102,17 @@ export default {
       const response = await fetch(upstream.toString(), { headers: { Accept: 'application/json' } });
       if (!response.ok) return reply({ error: 'Não foi possível consultar o provedor meteorológico.' }, 502, 'no-store');
       const weather = await response.json();
-      const output = reply({ source: 'Open-Meteo', refreshedAt: new Date().toISOString(), ...weather });
+      let spaceWeather = null;
+      try {
+        const kpResponse = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
+        if (kpResponse.ok) {
+          const rows = await kpResponse.json();
+          const latest = Array.isArray(rows) && rows.length > 1 ? rows[rows.length - 1] : null;
+          const kp = latest ? Number(latest[1]) : NaN;
+          if (Number.isFinite(kp)) spaceWeather = { kp, observed_at: latest[0], source: 'NOAA SWPC' };
+        }
+      } catch {}
+      const output = reply({ source: 'Open-Meteo', refreshedAt: new Date().toISOString(), space_weather: spaceWeather, ...weather });
       ctx.waitUntil(cache.put(cacheKey, output.clone()));
       return new Response(output.body, { headers: { ...Object.fromEntries(output.headers), 'X-DroneHub-Cache': 'MISS' } });
     } catch {
