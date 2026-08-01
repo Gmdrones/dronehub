@@ -172,7 +172,38 @@
     if(isPro){document.getElementById('planName').textContent='Pro';document.getElementById('planName').className='sidebar-foot-name pro';document.getElementById('planLink').textContent='Gerenciar';}
 
     function getMissoes(){return JSON.parse(localStorage.getItem('dronehub_missoes')||'[]').filter(function(m){return m.userId===uid;});}
-    function saveMissoes(list){var all=JSON.parse(localStorage.getItem('dronehub_missoes')||'[]');var others=all.filter(function(m){return m.userId!==uid;});localStorage.setItem('dronehub_missoes',JSON.stringify(others.concat(list)));setTimeout(function(){if(typeof window.refreshMissionMap==='function')window.refreshMissionMap();},0);}
+    var missionCloudSyncTimer=null;
+    var pendingMissionDeletes={};
+    function saveMissoes(list){
+      var all=JSON.parse(localStorage.getItem('dronehub_missoes')||'[]');
+      var previous=all.filter(function(m){return m.userId===uid;});
+      var currentIds={};
+      list.forEach(function(m){if(m&&m.id)currentIds[String(m.id)]=true;});
+      previous.forEach(function(m){if(m&&m.id&&!currentIds[String(m.id)])pendingMissionDeletes[String(m.id)]=true;});
+      var others=all.filter(function(m){return m.userId!==uid;});
+      localStorage.setItem('dronehub_missoes',JSON.stringify(others.concat(list)));
+
+      clearTimeout(missionCloudSyncTimer);
+      missionCloudSyncTimer=setTimeout(function(){
+        var latest=getMissoes();
+        var latestIds={};
+        latest.forEach(function(m){
+          if(m&&m.id)latestIds[String(m.id)]=true;
+          if(typeof window.saveMission==='function'){
+            try{window.saveMission(uid,m);}catch(error){console.error('Falha ao sincronizar missao:',error);}
+          }
+        });
+        if(typeof window.deleteMission==='function'){
+          Object.keys(pendingMissionDeletes).forEach(function(id){
+            if(latestIds[id])return;
+            try{window.deleteMission(uid,id);}catch(error){console.error('Falha ao excluir missao na nuvem:',error);}
+          });
+        }
+        pendingMissionDeletes={};
+      },120);
+
+      setTimeout(function(){if(typeof window.refreshMissionMap==='function')window.refreshMissionMap();},0);
+    }
 
     function criarMissao(){
       var titulo=document.getElementById('mTitulo').value.trim();
