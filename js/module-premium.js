@@ -3,7 +3,12 @@
   var titles={perfil:['Perfil do piloto','Sua identidade operacional, certificações e documentos em um único lugar.'],aeronaves:['Frota e aeronaves','Informações técnicas, homologação e prontidão do seu equipamento.'],missoes:['Planejamento de missões','Planeje cada operação com local, data, protocolo e rastreabilidade.'],documentos:['Documentos profissionais','Crie, organize e apresente documentos com padrão de operação premium.'],financeiro:['Controle financeiro','Acompanhe receitas, despesas e resultados da sua operação.'],fiscalizacao:['Modo fiscalização','Organize uma credencial temporária para apresentação segura de documentos.'],central:['Central inteligente de voo','Clima, aeronave e contexto operacional para decisões mais seguras.']};
   function key(){var path=location.pathname.split('/').pop().replace('.html','');return path==='central-voo'?'central':path;}
   function loadScript(id,src){if(document.getElementById(id))return;var script=document.createElement('script');script.id=id;script.src=src;script.defer=true;document.head.appendChild(script);}
-  function loadLiveLayers(){loadScript('flightLiveLayersScript','js/flight-live-layers.js?v=20260804-live2');loadScript('esriSatelliteViewScript','js/esri-satellite-view.js?v=20260804-esri2');loadScript('centralOperationalMapScript','js/central-operational-map.js?v=20260804-map1');}
+  function loadLiveLayers(){
+    loadScript('flightLiveLayersScript','js/flight-live-layers.js?v=20260804-live2');
+    loadScript('esriSatelliteViewScript','js/esri-satellite-view.js?v=20260804-esri2');
+    loadScript('leafletOperationalMapScript','js/leaflet-operational-map.js?v=20260804-map1');
+    loadScript('redemetLiveBriefingScript','js/redemet-live-briefing.js?v=20260804-redemet1');
+  }
   function centralLayout(main){
     main.classList.add('module-premium','flight-command-page');
     if(!document.getElementById('flightCommandCriticalLayout')){
