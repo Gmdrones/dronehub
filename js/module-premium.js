@@ -7,7 +7,7 @@
     loadScript('flightLiveLayersScript','js/flight-live-layers.js?v=20260804-live7');
     loadScript('centralOperationalMapScript','js/central-operational-map.js?v=20260804-map5');
     loadScript('redemetLiveBriefingScript','js/redemet-live-briefing.js?v=20260804-redemet5');
-    loadScript('centralUiStabilizerScript','js/central-ui-stabilizer.js?v=20260804-stable1');
+    loadScript('centralUiStabilizerScript','js/central-ui-stabilizer.js?v=20260804-stable2');
   }
   function centralLayout(main){
     main.classList.add('module-premium','flight-command-page');
