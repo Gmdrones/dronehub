@@ -2,6 +2,7 @@
   function ready(fn){document.readyState==='loading'?document.addEventListener('DOMContentLoaded',fn):fn();}
   var titles={perfil:['Perfil do piloto','Sua identidade operacional, certificações e documentos em um único lugar.'],aeronaves:['Frota e aeronaves','Informações técnicas, homologação e prontidão do seu equipamento.'],missoes:['Planejamento de missões','Planeje cada operação com local, data, protocolo e rastreabilidade.'],documentos:['Documentos profissionais','Crie, organize e apresente documentos com padrão de operação premium.'],financeiro:['Controle financeiro','Acompanhe receitas, despesas e resultados da sua operação.'],fiscalizacao:['Modo fiscalização','Organize uma credencial temporária para apresentação segura de documentos.'],central:['Central inteligente de voo','Clima, aeronave e contexto operacional para decisões mais seguras.']};
   function key(){var path=location.pathname.split('/').pop().replace('.html','');return path==='central-voo'?'central':path;}
+  function loadLiveLayers(){if(document.getElementById('flightLiveLayersScript'))return;var script=document.createElement('script');script.id='flightLiveLayersScript';script.src='js/flight-live-layers.js?v=20260804-live1';script.defer=true;document.head.appendChild(script);}
   function centralLayout(main){
     main.classList.add('module-premium','flight-command-page');
     if(!document.getElementById('flightCommandCriticalLayout')){
@@ -27,6 +28,7 @@
       document.head.appendChild(style);
     }
     Array.from(main.querySelectorAll('.module-hero')).forEach(function(hero){hero.remove();});
+    loadLiveLayers();
   }
   ready(function(){
     var main=document.querySelector('.main');
