@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mapa Operacional — Drone Hub</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/supabase.js?v=20260726-sarpas"></script>
+  <link rel="stylesheet" href="css/mapa-operacional.css?v=20260804-1">
+</head>
+<body>
+  <header class="op-header">
+    <div class="op-brand"><span>DH</span><strong>Drone<span>Hub</span></strong></div>
+    <div class="op-actions"><a href="central-voo.html">Central de Voo</a><a href="dashboard.html">Dashboard</a></div>
+  </header>
+  <main class="op-shell">
+    <aside class="op-sidebar">
+      <h1>Mapa Operacional</h1>
+      <p>Camadas meteorológicas e aeronáuticas da missão.</p>
+      <label for="missionSelect">Missão</label>
+      <select id="missionSelect"><option value="">Aguardando missão</option></select>
+      <div class="op-layer-list">
+        <label><input id="layerStreet" type="checkbox" checked> <i data-lucide="map"></i> Mapa base</label>
+        <label><input id="layerSatellite" type="checkbox"> <i data-lucide="satellite"></i> Satélite NASA</label>
+        <label><input id="layerRadar" type="checkbox"> <i data-lucide="radar"></i> Radar de chuva</label>
+        <label><input id="layerAirspace" type="checkbox" disabled> <i data-lucide="plane"></i> Espaço aéreo</label>
+        <label><input id="layerNotam" type="checkbox" disabled> <i data-lucide="triangle-alert"></i> NOTAM</label>
+      </div>
+      <section id="missionInfo" class="op-info"><strong>Aguardando missão</strong><span>Selecione ou cadastre uma missão para carregar as camadas da região.</span></section>
+      <section class="op-status-grid">
+        <article><i data-lucide="cloud-rain"></i><div><b>Radar</b><span id="radarStatus">Aguardando missão</span></div></article>
+        <article><i data-lucide="satellite"></i><div><b>Satélite</b><span id="satelliteStatus">Aguardando missão</span></div></article>
+        <article><i data-lucide="plane"></i><div><b>Espaço aéreo</b><span>Aguardando OPENAIP_API_KEY</span></div></article>
+        <article><i data-lucide="file-warning"></i><div><b>NOTAM</b><span>Aguardando AISWEB_API_KEY</span></div></article>
+      </section>
+    </aside>
+    <section class="op-map-wrap">
+      <div id="operationalMap"></div>
+      <div class="op-map-badge"><span></span> SISTEMA ATIVO</div>
+      <div id="radarTimeline" class="op-timeline" hidden>
+        <button id="radarPrev" aria-label="Anterior">‹</button>
+        <button id="radarPlay" aria-label="Reproduzir">▶</button>
+        <button id="radarNext" aria-label="Próximo">›</button>
+        <strong id="radarTime">Radar</strong>
+      </div>
+    </section>
+  </main>
+  <script src="js/mapa-operacional.js?v=20260804-1"></script>
+</body>
+</html>

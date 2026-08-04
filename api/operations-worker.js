@@ -18,6 +18,11 @@ function validCoordinate(value, maximum) {
   return Number.isFinite(number) && Math.abs(number) <= maximum ? number : null;
 }
 
+function validIcao(value) {
+  const icao = String(value || '').trim().toUpperCase();
+  return /^[A-Z]{4}$/.test(icao) ? icao : null;
+}
+
 async function requirePro(request, env) {
   const authorization = request.headers.get('Authorization') || '';
   const token = authorization.replace(/^Bearer\s+/i, '').trim();
@@ -34,13 +39,68 @@ async function requirePro(request, env) {
   return access && (access.role === 'admin' || access.plan === 'pro');
 }
 
+async function redemet(path, env) {
+  if (!env.REDEMET_API_KEY) {
+    return { ok: false, status: 503, data: { error: 'REDEMET_API_KEY não configurada no Worker.' } };
+  }
+  const response = await fetch(`https://api-redemet.decea.mil.br${path}`, {
+    headers: {
+      Accept: 'application/json',
+      'X-Api-Key': env.REDEMET_API_KEY
+    }
+  });
+  const text = await response.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  return { ok: response.ok, status: response.status, data };
+}
+
 export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
     const url = new URL(request.url);
     if (url.pathname === '/health') {
-      return reply({ ok: true, service: 'dronehub-operations', updatedAt: new Date().toISOString() }, 200, 'no-store');
+      return reply({ ok: true, service: 'dronehub-operations', redemet: Boolean(env.REDEMET_API_KEY), updatedAt: new Date().toISOString() }, 200, 'no-store');
+    }
+
+    if (url.pathname === '/aviation/aerodromes') {
+      try {
+        const result = await redemet('/aerodromos/', env);
+        return reply({ source: 'REDEMET/DECEA', fetchedAt: new Date().toISOString(), data: result.data }, result.ok ? 200 : result.status, result.ok ? 'public, max-age=86400' : 'no-store');
+      } catch (error) {
+        return reply({ error: 'Falha ao consultar aeródromos na REDEMET.', detail: String(error?.message || error) }, 502, 'no-store');
+      }
+    }
+
+    if (url.pathname === '/aviation/metar' || url.pathname === '/aviation/taf') {
+      const icao = validIcao(url.searchParams.get('icao'));
+      if (!icao) return reply({ error: 'Informe um código ICAO válido, por exemplo SBRJ.' }, 400, 'no-store');
+      const type = url.pathname.endsWith('/metar') ? 'metar' : 'taf';
+      try {
+        const result = await redemet(`/mensagens/${type}/${icao}`, env);
+        return reply({ source: 'REDEMET/DECEA', type: type.toUpperCase(), icao, fetchedAt: new Date().toISOString(), data: result.data }, result.ok ? 200 : result.status, result.ok ? 'public, max-age=300' : 'no-store');
+      } catch (error) {
+        return reply({ error: `Falha ao consultar ${type.toUpperCase()} na REDEMET.`, detail: String(error?.message || error) }, 502, 'no-store');
+      }
+    }
+
+    if (url.pathname === '/aviation/briefing') {
+      const icao = validIcao(url.searchParams.get('icao'));
+      if (!icao) return reply({ error: 'Informe um código ICAO válido, por exemplo SBRJ.' }, 400, 'no-store');
+      try {
+        const [metar, taf] = await Promise.all([
+          redemet(`/mensagens/metar/${icao}`, env),
+          redemet(`/mensagens/taf/${icao}`, env)
+        ]);
+        return reply({
+          source: 'REDEMET/DECEA', icao, fetchedAt: new Date().toISOString(),
+          metar: metar.data, taf: taf.data,
+          status: { metar: metar.status, taf: taf.status }
+        }, metar.ok || taf.ok ? 200 : 502, 'public, max-age=300');
+      } catch (error) {
+        return reply({ error: 'Falha ao consultar briefing aeronáutico.', detail: String(error?.message || error) }, 502, 'no-store');
+      }
     }
 
     if (url.pathname === '/ai/document') {
@@ -51,43 +111,31 @@ export default {
         const payload = await request.json();
         const prompt = String(payload.prompt || '').trim().slice(0, 12000);
         if (!prompt) return reply({ error: 'Informe os dados do documento.' }, 400, 'no-store');
-
         const result = await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct', {
           messages: [
-            {
-              role: 'system',
-              content: 'Você é um redator profissional brasileiro especializado em operações com drones. Redija em português do Brasil, com estrutura clara, títulos, cláusulas ou seções adequadas ao tipo de documento solicitado. Use apenas os dados recebidos. Não invente CNPJ, licenças, seguros, autorizações, valores, datas, garantias ou fatos. Nunca afirme que um voo foi autorizado por órgão oficial.'
-            },
+            { role: 'system', content: 'Você é um redator profissional brasileiro especializado em operações com drones. Redija em português do Brasil, com estrutura clara. Use apenas os dados recebidos e nunca invente autorizações ou fatos.' },
             { role: 'user', content: prompt }
           ],
           max_tokens: 1800
         });
-        return reply({
-          text: result.response || '',
-          provider: 'Cloudflare Workers AI',
-          generatedAt: new Date().toISOString()
-        }, 200, 'no-store');
+        return reply({ text: result.response || '', provider: 'Cloudflare Workers AI', generatedAt: new Date().toISOString() }, 200, 'no-store');
       } catch (error) {
-        return reply({ error: 'Não foi possível gerar o documento agora.', detail: String(error && error.message || error) }, 502, 'no-store');
+        return reply({ error: 'Não foi possível gerar o documento agora.', detail: String(error?.message || error) }, 502, 'no-store');
       }
     }
 
     if (url.pathname !== '/weather') {
-      return reply({ error: 'Use /weather?lat=-22.90&lon=-43.17' }, 404, 'no-store');
+      return reply({ error: 'Rota não encontrada.' }, 404, 'no-store');
     }
 
     const lat = validCoordinate(url.searchParams.get('lat'), 90);
     const lon = validCoordinate(url.searchParams.get('lon'), 180);
-    if (lat === null || lon === null) {
-      return reply({ error: 'Latitude e longitude válidas são obrigatórias.' }, 400, 'no-store');
-    }
+    if (lat === null || lon === null) return reply({ error: 'Latitude e longitude válidas são obrigatórias.' }, 400, 'no-store');
 
     const cacheKey = new Request(`${url.origin}/cache/weather?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`);
     const cache = caches.default;
     const cached = await cache.match(cacheKey);
-    if (cached) {
-      return new Response(cached.body, { headers: { ...Object.fromEntries(cached.headers), ...CORS, 'X-DroneHub-Cache': 'HIT' } });
-    }
+    if (cached) return new Response(cached.body, { headers: { ...Object.fromEntries(cached.headers), ...CORS, 'X-DroneHub-Cache': 'HIT' } });
 
     const upstream = new URL('https://api.open-meteo.com/v1/forecast');
     upstream.searchParams.set('latitude', String(lat));
@@ -121,13 +169,9 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    if (env.OPERATIONS_KV) {
-      ctx.waitUntil(env.OPERATIONS_KV.put('weather-service-heartbeat', JSON.stringify({ updatedAt: new Date().toISOString(), schedule: event.cron })));
-    }
+    if (env.OPERATIONS_KV) ctx.waitUntil(env.OPERATIONS_KV.put('weather-service-heartbeat', JSON.stringify({ updatedAt: new Date().toISOString(), schedule: event.cron })));
     if (env.SITE_URL && env.CRON_SECRET) {
-      ctx.waitUntil(fetch(`${env.SITE_URL.replace(/\/$/, '')}/api/cron/subscription-expiry`, {
-        headers: { Authorization: `Bearer ${env.CRON_SECRET}` }
-      }));
+      ctx.waitUntil(fetch(`${env.SITE_URL.replace(/\/$/, '')}/api/cron/subscription-expiry`, { headers: { Authorization: `Bearer ${env.CRON_SECRET}` } }));
     }
   }
 };
