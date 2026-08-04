@@ -1,0 +1,13 @@
+name = "dronehub-operations"
+main = "api/operations-worker.js"
+compatibility_date = "2026-08-04"
+workers_dev = true
+
+[observability]
+enabled = true
+
+# Secrets devem ser cadastrados no Cloudflare, nunca neste arquivo:
+# REDEMET_API_KEY
+# OPENWEATHER_API_KEY
+# SUPABASE_URL
+# SUPABASE_ANON_KEY
