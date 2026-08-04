@@ -4,10 +4,10 @@
   function key(){var path=location.pathname.split('/').pop().replace('.html','');return path==='central-voo'?'central':path;}
   function loadScript(id,src){if(document.getElementById(id))return;var script=document.createElement('script');script.id=id;script.src=src;script.defer=true;document.head.appendChild(script);}
   function loadLiveLayers(){
-    loadScript('flightLiveLayersScript','js/flight-live-layers.js?v=20260804-live2');
-    loadScript('esriSatelliteViewScript','js/esri-satellite-view.js?v=20260804-esri2');
-    loadScript('leafletOperationalMapScript','js/leaflet-operational-map.js?v=20260804-map1');
-    loadScript('redemetLiveBriefingScript','js/redemet-live-briefing.js?v=20260804-redemet1');
+    loadScript('flightLiveLayersScript','js/flight-live-layers.js?v=20260804-live3');
+    loadScript('esriSatelliteViewScript','js/esri-satellite-view.js?v=20260804-esri3');
+    loadScript('centralOperationalMapScript','js/central-operational-map.js?v=20260804-map2');
+    loadScript('redemetLiveBriefingScript','js/redemet-live-briefing.js?v=20260804-redemet2');
   }
   function centralLayout(main){
     main.classList.add('module-premium','flight-command-page');
