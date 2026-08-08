@@ -23,6 +23,86 @@ function validIcao(value) {
   return /^[A-Z]{4}$/.test(icao) ? icao : null;
 }
 
+function textValue(value) { return String(value == null ? '' : value).trim(); }
+function numberValue(...values) {
+  for (const value of values) {
+    if (value === null || value === undefined || String(value).trim() === '') continue;
+    const number = Number(String(value == null ? '' : value).replace(',', '.'));
+    if (Number.isFinite(number)) return number;
+  }
+  return null;
+}
+function distanceKm(lat1, lon1, lat2, lon2) {
+  const radius = 6371, p = Math.PI / 180;
+  const a = Math.sin((lat2 - lat1) * p / 2) ** 2 + Math.cos(lat1 * p) * Math.cos(lat2 * p) * Math.sin((lon2 - lon1) * p / 2) ** 2;
+  return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function findArrays(root, found = []) {
+  if (Array.isArray(root)) { found.push(root); for (const item of root) findArrays(item, found); }
+  else if (root && typeof root === 'object') for (const value of Object.values(root)) findArrays(value, found);
+  return found;
+}
+function normalizeAerodromes(payload) {
+  const arrays = findArrays(payload).sort((a, b) => b.length - a.length);
+  for (const list of arrays) {
+    const normalized = list.map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const icao = textValue(item.codigo_icao || item.icao || item.id_localidade || item.cod || item.code).toUpperCase();
+      const latitude = numberValue(item.latitude_decimal, item.lat_dec, item.latitude, item.lat, item.latitude_dec);
+      const longitude = numberValue(item.longitude_decimal, item.lon_dec, item.longitude, item.lon, item.lng, item.longitude_dec);
+      if (!/^[A-Z]{4}$/.test(icao) || latitude === null || longitude === null) return null;
+      const operations = textValue(item.operacao || item.tipo_operacao || item.regras_voo).toUpperCase();
+      return {
+        icao, name: textValue(item.nome || item.nome_aerodromo || item.name || icao),
+        city: textValue(item.cidade || item.municipio || item.localidade), state: textValue(item.uf || item.estado),
+        elevation_m: numberValue(item.altitude_m, item.altitude_metros, item.elevacao_m, item.altitude, item.elevation),
+        latitude, longitude, ifr: Boolean(item.ifr || operations.includes('IFR')),
+        vfr: Boolean(item.vfr || operations.includes('VFR'))
+      };
+    }).filter(Boolean);
+    if (normalized.length) return normalized;
+  }
+  return [];
+}
+
+function xmlDecode(value) {
+  return textValue(value).replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+}
+function xmlTag(block, names) {
+  for (const name of names) {
+    const match = block.match(new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`, 'i'));
+    if (match) return xmlDecode(match[1].replace(/<[^>]+>/g, ' '));
+  }
+  return '';
+}
+function normalizeNotams(xml, icao) {
+  const blocks = [...xml.matchAll(/<(?:notam|item|record|row)(?:\s[^>]*)?>([\s\S]*?)<\/(?:notam|item|record|row)>/gi)].map((match) => match[1]);
+  const source = blocks.length ? blocks : [xml];
+  return source.map((block) => {
+    const code = xmlTag(block, ['numero', 'number', 'notam', 'cod', 'codigo']);
+    // No formato ICAO, o conteúdo operacional do NOTAM é publicado no campo E.
+    const text = xmlTag(block, ['e', 'item_e', 'notam_text', 'texto_original', 'texto', 'text', 'descricao', 'description', 'mens', 'msg']);
+    if (!code && !text) return null;
+    const validFrom = xmlTag(block, ['dtInicio', 'inicio', 'valid_from', 'start', 'b']);
+    const validTo = xmlTag(block, ['dtFim', 'fim', 'valid_to', 'end', 'c']);
+    return { code: code || 'NOTAM', subject: xmlTag(block, ['assunto', 'subject', 'qcode', 'q']) || `Aviso para ${icao}`, text, valid_from: validFrom || null, valid_to: validTo || null, status: xmlTag(block, ['status', 'situacao']) || 'Em vigor', active: true };
+  }).filter(Boolean);
+}
+
+async function aiswebNotams(icao, env) {
+  if (!env.AISWEB_API_KEY || !env.AISWEB_API_PASS) throw new Error('Credenciais AISWEB não configuradas.');
+  const upstream = new URL('https://api.decea.mil.br/aisweb/');
+  upstream.searchParams.set('apiKey', env.AISWEB_API_KEY);
+  upstream.searchParams.set('apiPass', env.AISWEB_API_PASS);
+  upstream.searchParams.set('area', 'notam');
+  upstream.searchParams.set('icaocode', icao);
+  const response = await fetch(upstream, { headers: { Accept: 'application/xml,text/xml' } });
+  const xml = await response.text();
+  if (!response.ok) throw new Error(`AISWEB respondeu HTTP ${response.status}.`);
+  if (/erro|invalid|negad|unauthor/i.test(xml) && !/<(?:notam|item|record|row)/i.test(xml)) throw new Error('AISWEB recusou a consulta.');
+  return normalizeNotams(xml, icao);
+}
+
 async function requirePro(request, env) {
   const authorization = request.headers.get('Authorization') || '';
   const token = authorization.replace(/^Bearer\s+/i, '').trim();
@@ -61,7 +141,33 @@ export default {
 
     const url = new URL(request.url);
     if (url.pathname === '/health') {
-      return reply({ ok: true, service: 'dronehub-operations', redemet: Boolean(env.REDEMET_API_KEY), updatedAt: new Date().toISOString() }, 200, 'no-store');
+      return reply({ ok: true, service: 'dronehub-operations', redemet: Boolean(env.REDEMET_API_KEY), aisweb: Boolean(env.AISWEB_API_KEY && env.AISWEB_API_PASS), updatedAt: new Date().toISOString() }, 200, 'no-store');
+    }
+
+    if (url.pathname === '/geocode') {
+      const query = textValue(url.searchParams.get('q')).slice(0, 180);
+      if (query.length < 2) return reply({ error: 'Informe uma cidade ou endereço.' }, 400, 'no-store');
+      try {
+        const upstream = new URL('https://nominatim.openstreetmap.org/search');
+        upstream.searchParams.set('q', query); upstream.searchParams.set('format', 'jsonv2'); upstream.searchParams.set('addressdetails', '1'); upstream.searchParams.set('countrycodes', 'br'); upstream.searchParams.set('limit', '6');
+        const response = await fetch(upstream, { headers: { Accept: 'application/json', 'User-Agent': 'DroneHub/1.0 (operations@dronehub.app.br)' } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const rows = await response.json();
+        const results = rows.map((item) => ({ latitude: Number(item.lat), longitude: Number(item.lon), name: item.display_name, city: item.address?.city || item.address?.town || item.address?.municipality || item.address?.village || '', state: item.address?.state || '' })).filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude));
+        return reply({ source: 'OpenStreetMap Nominatim', results }, 200, 'public, max-age=86400');
+      } catch (error) { return reply({ error: 'Não foi possível pesquisar a localização.', detail: String(error?.message || error) }, 502, 'no-store'); }
+    }
+
+    if (url.pathname === '/reverse-geocode') {
+      const lat = validCoordinate(url.searchParams.get('lat'), 90), lon = validCoordinate(url.searchParams.get('lon'), 180);
+      if (lat === null || lon === null) return reply({ error: 'Coordenadas inválidas.' }, 400, 'no-store');
+      try {
+        const upstream = new URL('https://nominatim.openstreetmap.org/reverse');
+        upstream.searchParams.set('lat', String(lat)); upstream.searchParams.set('lon', String(lon)); upstream.searchParams.set('format', 'jsonv2'); upstream.searchParams.set('zoom', '16');
+        const response = await fetch(upstream, { headers: { Accept: 'application/json', 'User-Agent': 'DroneHub/1.0 (operations@dronehub.app.br)' } });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`); const data = await response.json();
+        return reply({ source: 'OpenStreetMap Nominatim', name: data.display_name || `${lat}, ${lon}` }, 200, 'public, max-age=86400');
+      } catch (error) { return reply({ error: 'Não foi possível identificar a localização.', detail: String(error?.message || error) }, 502, 'no-store'); }
     }
 
     if (url.pathname === '/aviation/aerodromes') {
@@ -71,6 +177,41 @@ export default {
       } catch (error) {
         return reply({ error: 'Falha ao consultar aeródromos na REDEMET.', detail: String(error?.message || error) }, 502, 'no-store');
       }
+    }
+
+    if (url.pathname === '/aviation/nearest') {
+      const lat = validCoordinate(url.searchParams.get('lat'), 90), lon = validCoordinate(url.searchParams.get('lon'), 180);
+      if (lat === null || lon === null) return reply({ error: 'Coordenadas válidas são obrigatórias.' }, 400, 'no-store');
+      try {
+        const result = await redemet('/aerodromos/', env);
+        if (!result.ok) return reply({ error: 'REDEMET não retornou os aeródromos.' }, result.status, 'no-store');
+        const aerodromes = normalizeAerodromes(result.data).map((item) => ({ ...item, distance_km: distanceKm(lat, lon, item.latitude, item.longitude) })).sort((a, b) => a.distance_km - b.distance_km).slice(0, 8);
+        return reply({ source: 'REDEMET/DECEA', fetchedAt: new Date().toISOString(), aerodromes }, 200, 'public, max-age=3600');
+      } catch (error) { return reply({ error: 'Falha ao localizar aeródromos próximos.', detail: String(error?.message || error) }, 502, 'no-store'); }
+    }
+
+    if (url.pathname === '/aviation/notams') {
+      const icao = validIcao(url.searchParams.get('icao'));
+      if (!icao) return reply({ error: 'Informe um código ICAO válido.' }, 400, 'no-store');
+      try { const notams = await aiswebNotams(icao, env); return reply({ source: 'AISWEB/DECEA', icao, fetchedAt: new Date().toISOString(), notams }, 200, 'public, max-age=300'); }
+      catch (error) { return reply({ error: 'Falha ao consultar NOTAM na AISWEB.', detail: String(error?.message || error) }, 502, 'no-store'); }
+    }
+
+    if (url.pathname === '/radar/frames') {
+      try {
+        const response = await fetch('https://api.rainviewer.com/public/weather-maps.json'); if (!response.ok) throw new Error(`HTTP ${response.status}`); const data = await response.json();
+        const observed = (data.radar?.past || []).slice(-8).map((frame) => ({ time: frame.time, type: 'observed', tile_url: `${url.origin}/radar/tile?path=${encodeURIComponent(frame.path)}&z={z}&x={x}&y={y}` }));
+        const forecast = (data.radar?.nowcast || []).slice(0, 6).map((frame) => ({ time: frame.time, type: 'forecast', tile_url: `${url.origin}/radar/tile?path=${encodeURIComponent(frame.path)}&z={z}&x={x}&y={y}` }));
+        const frames = observed.concat(forecast);
+        return reply({ source: 'RainViewer', fetchedAt: new Date().toISOString(), mode: forecast.length ? 'observed-and-forecast' : 'observed-only', frames }, 200, 'public, max-age=120');
+      } catch (error) { return reply({ error: 'Radar indisponível.', detail: String(error?.message || error) }, 502, 'no-store'); }
+    }
+
+    if (url.pathname === '/radar/tile') {
+      const path = textValue(url.searchParams.get('path')), z = textValue(url.searchParams.get('z')), x = textValue(url.searchParams.get('x')), y = textValue(url.searchParams.get('y'));
+      if (!/^\/v2\/radar\/[A-Za-z0-9_-]+$/.test(path) || !/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y) || Number(z) > 7) return new Response('Invalid tile', { status: 400, headers: CORS });
+      const response = await fetch(`https://tilecache.rainviewer.com${path}/256/${z}/${x}/${y}/2/1_1.png`);
+      return new Response(response.body, { status: response.status, headers: { 'Content-Type': response.headers.get('Content-Type') || 'image/png', 'Cache-Control': 'public, max-age=300', ...CORS } });
     }
 
     if (url.pathname === '/aviation/metar' || url.pathname === '/aviation/taf') {
@@ -155,9 +296,10 @@ export default {
         const kpResponse = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
         if (kpResponse.ok) {
           const rows = await kpResponse.json();
-          const latest = Array.isArray(rows) && rows.length > 1 ? rows[rows.length - 1] : null;
-          const kp = latest ? Number(latest[1]) : NaN;
-          if (Number.isFinite(kp)) spaceWeather = { kp, observed_at: latest[0], source: 'NOAA SWPC' };
+          const dataRows = Array.isArray(rows) ? rows.filter((row) => row && (Array.isArray(row) ? row[0] !== 'time_tag' : row.time_tag)) : [];
+          const hourly = dataRows.slice(-24).map((row) => ({ observed_at: Array.isArray(row) ? row[0] : row.time_tag, kp: Number(Array.isArray(row) ? row[1] : (row.Kp ?? row.kp_index)) })).filter((row) => Number.isFinite(row.kp));
+          const latest = hourly[hourly.length - 1];
+          if (latest) spaceWeather = { kp: latest.kp, observed_at: latest.observed_at, source: 'NOAA SWPC', hourly };
         }
       } catch {}
       const output = reply({ source: 'Open-Meteo', refreshedAt: new Date().toISOString(), space_weather: spaceWeather, ...weather });

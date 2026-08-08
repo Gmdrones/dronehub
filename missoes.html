@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase.js?v=20260725-auth-email"></script>
+  <script src="js/supabase.js?v=20260808-missions-auto"></script>
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js?v=20260726-free-lock"></script>
   <link rel="stylesheet" href="css/mission-operations.css">
@@ -82,7 +82,26 @@
     .tab { flex:1; padding:10px; text-align:center; border-radius:8px; font-size:0.8rem; font-weight:600; color:var(--text3); cursor:pointer; transition:all 0.2s; border:none; background:transparent; font-family:var(--title); }
     .tab:hover { color:var(--text); }
     .tab.active { background:var(--bg2); color:var(--cyan); box-shadow:0 0 0 1px rgba(0,210,255,0.1); }
+    .mission-dialog { width:min(680px,calc(100% - 28px)); padding:0; border:1px solid rgba(0,210,255,.3); border-radius:18px; background:var(--bg2); color:var(--text); box-shadow:0 30px 90px rgba(0,0,0,.7); }
+    .mission-dialog::backdrop { background:rgba(2,6,12,.78); backdrop-filter:blur(8px); }
+    .mission-dialog form { padding:24px; }
+    .mission-dialog header { display:flex; justify-content:space-between; align-items:start; margin-bottom:20px; }
+    .mission-dialog h2 { font-family:var(--title); font-size:1.2rem; }
+    .mission-dialog header p { margin-top:4px; color:var(--text3); font-size:.78rem; }
+    .dialog-close { width:34px; height:34px; border:1px solid var(--border); border-radius:9px; background:var(--bg); color:var(--text2); cursor:pointer; }
+    .mission-dialog label { display:block; margin-bottom:6px; color:var(--text3); font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+    .mission-dialog input,.mission-dialog textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font:inherit; }
+    .status-options { grid-column:1/-1; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .status-options>span { grid-column:1/-1; color:var(--text3); font-size:.7rem; font-weight:600; letter-spacing:.05em; }
+    .status-choice { position:relative; cursor:pointer; }
+    .status-choice input { position:absolute; opacity:0; pointer-events:none; }
+    .status-choice span { min-height:58px; display:flex; align-items:center; justify-content:center; gap:8px; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text2); font-weight:600; transition:.2s; }
+    .status-choice span:before { content:''; width:9px; height:9px; border-radius:50%; background:var(--text3); }
+    .status-choice input:checked+span { border-color:var(--cyan); color:var(--cyan); background:var(--cyan-subtle); box-shadow:0 0 22px var(--cyan-glow); }
+    .status-choice.agendada input:checked+span:before { background:var(--amber); }.status-choice.andamento input:checked+span:before { background:var(--cyan); }.status-choice.concluida input:checked+span:before { background:var(--green); }
+    .dialog-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
     @media (max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .grid-2 { grid-template-columns:1fr; } }
+    @media (max-width:560px) { .status-options { grid-template-columns:1fr; }.status-options>span{grid-column:auto}.mission-dialog form{padding:18px}.dialog-actions .btn{flex:1;justify-content:center} }
   </style>
   <link rel="stylesheet" href="css/saas.css">
   <link rel="stylesheet" href="css/layout-v4.css?v=20260726-1">
@@ -165,6 +184,27 @@
     </main>
   </div>
 
+  <dialog id="editMissionDialog" class="mission-dialog">
+    <form method="dialog" onsubmit="salvarEdicao(event)">
+      <header><div><h2>Editar missão</h2><p>Atualize os dados e selecione a situação atual.</p></div><button class="dialog-close" type="button" onclick="fecharEdicao()" aria-label="Fechar">×</button></header>
+      <input type="hidden" id="editMissionId">
+      <div class="grid-2">
+        <div><label for="editTitulo">Título</label><input id="editTitulo" required></div>
+        <div><label for="editCliente">Cliente / Projeto</label><input id="editCliente"></div>
+        <div><label for="editData">Data</label><input id="editData" type="date"></div>
+        <div><label for="editHorario">Horário</label><input id="editHorario" type="time"></div>
+        <div style="grid-column:1/-1"><label for="editLocal">Local</label><input id="editLocal"></div>
+        <div class="status-options"><span>STATUS DA MISSÃO</span>
+          <label class="status-choice agendada"><input type="radio" name="editStatus" value="agendada"><span>Agendada</span></label>
+          <label class="status-choice andamento"><input type="radio" name="editStatus" value="em_andamento"><span>Em andamento</span></label>
+          <label class="status-choice concluida"><input type="radio" name="editStatus" value="concluida"><span>Concluída</span></label>
+        </div>
+        <div style="grid-column:1/-1"><label for="editDescricao">Descrição / Objetivo</label><textarea id="editDescricao" rows="3"></textarea></div>
+      </div>
+      <div class="dialog-actions"><button type="button" class="btn btn-secondary" onclick="fecharEdicao()">Cancelar</button><button type="submit" class="btn btn-primary">Salvar alterações</button></div>
+    </form>
+  </dialog>
+
   <script>
     document.getElementById('avatarInitial').textContent = (user.name||'U').charAt(0).toUpperCase();
     document.getElementById('userNameHeader').textContent = user.name||'Usuario';
@@ -211,6 +251,7 @@
       var list=getMissoes();
       list.push({id:Date.now().toString(),userId:uid,createdAt:new Date().toISOString(),titulo:titulo,cliente:document.getElementById('mCliente').value.trim(),data:document.getElementById('mData').value,horario:document.getElementById('mHorario').value,local:document.getElementById('mLocal').value.trim(),status:document.getElementById('mStatus').value,descricao:document.getElementById('mDesc').value.trim()});
       saveMissoes(list);
+      concluirMissoesVencidas();
       document.getElementById('mTitulo').value='';document.getElementById('mCliente').value='';document.getElementById('mData').value='';document.getElementById('mHorario').value='';document.getElementById('mLocal').value='';document.getElementById('mDesc').value='';
       render();
     }
@@ -230,10 +271,15 @@
 
     function editar(id){
       var list=getMissoes();var m=list.find(function(x){return x.id===id;});if(!m){alert('Missao nao encontrada');return;}
-      var t=prompt('Titulo:',m.titulo);if(t===null)return;
-      m.titulo=t||m.titulo;m.cliente=prompt('Cliente:',m.cliente)||m.cliente;m.data=prompt('Data (AAAA-MM-DD):',m.data)||m.data;m.horario=prompt('Horario:',m.horario)||m.horario;m.local=prompt('Local:',m.local)||m.local;m.status=prompt('Status (agendada/em_andamento/concluida):',m.status)||m.status;m.descricao=prompt('Descricao:',m.descricao)||m.descricao;
-      saveMissoes(list);render();
+      document.getElementById('editMissionId').value=m.id;document.getElementById('editTitulo').value=m.titulo||'';document.getElementById('editCliente').value=m.cliente||'';document.getElementById('editData').value=m.data||'';document.getElementById('editHorario').value=m.horario||'';document.getElementById('editLocal').value=m.local||'';document.getElementById('editDescricao').value=m.descricao||'';
+      var status=document.querySelector('input[name="editStatus"][value="'+(m.status||'agendada')+'"]');if(status)status.checked=true;
+      document.getElementById('editMissionDialog').showModal();
     }
+
+    function fecharEdicao(){document.getElementById('editMissionDialog').close();}
+    function salvarEdicao(event){event.preventDefault();var id=document.getElementById('editMissionId').value,list=getMissoes(),m=list.find(function(x){return x.id===id;});if(!m)return fecharEdicao();var selected=document.querySelector('input[name="editStatus"]:checked');m.titulo=document.getElementById('editTitulo').value.trim()||m.titulo;m.cliente=document.getElementById('editCliente').value.trim();m.data=document.getElementById('editData').value;m.horario=document.getElementById('editHorario').value;m.local=document.getElementById('editLocal').value.trim();m.status=selected?selected.value:'agendada';m.descricao=document.getElementById('editDescricao').value.trim();m.updatedAt=new Date().toISOString();saveMissoes(list);concluirMissoesVencidas();fecharEdicao();render();}
+
+    function concluirMissoesVencidas(){var list=getMissoes(),hoje=new Date(),today=[hoje.getFullYear(),String(hoje.getMonth()+1).padStart(2,'0'),String(hoje.getDate()).padStart(2,'0')].join('-'),changed=false;list.forEach(function(m){if(m.status==='agendada'&&m.data&&m.data<today){m.status='concluida';m.completedAutomaticallyAt=new Date().toISOString();m.updatedAt=m.completedAutomaticallyAt;changed=true;}});if(changed)saveMissoes(list);return changed;}
 
     function excluir(id){
       var list=getMissoes();var m=list.find(function(x){return x.id===id;});
@@ -241,7 +287,9 @@
       if(!confirm('Excluir missao "'+(m.titulo||'')+'"?'))return;
       saveMissoes(list.filter(function(x){return x.id!==id;}));render();
     }
-    render();
+    concluirMissoesVencidas();render();
+    setInterval(function(){if(concluirMissoesVencidas())render();},15*60*1000);
+    window.addEventListener('dronehub:missions-updated', function(){ concluirMissoesVencidas();render(); });
     if(typeof lucide!=='undefined'){lucide.createIcons();}
   </script>
 </body>
