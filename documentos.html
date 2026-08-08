@@ -89,6 +89,7 @@
   <script src="js/module-premium.js?v=20260724" defer></script>
 <link rel="stylesheet" href="css/mobile-nav.css?v=20260724-responsive">
 <script src="js/mobile-nav.js?v=20260724-mobilefix" defer></script>
+<link rel="stylesheet" href="css/ui-fixes.css?v=20260808-2">
 </head>
 <body>
   <script>
@@ -457,7 +458,7 @@
       var list = document.getElementById('docList');
       if (docs.length === 0) { list.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;">Nenhum documento cadastrado.</p>'; return; }
       list.innerHTML = docs.map(function(d){
-        return '<div class="row"><div class="row-info"><strong>'+(d.name||d.type||'Documento')+'</strong><span>'+(d.type||'')+(d.expiry?' · Validade: '+new Date(d.expiry).toLocaleDateString('pt-BR'):'')+(d.fileName?' · PDF anexado':'')+'</span></div><div class="row-actions">'+(d.filePath?'<button class="action-btn edit" onclick="openDocFile(\''+d.id+'\')">Visualizar arquivo</button>':'')+'<button class="action-btn edit" onclick="verDoc(\''+d.id+'\')">Ver</button><button class="action-btn delete" onclick="delDoc(\''+d.id+'\')">Excluir</button></div></div>';
+        return '<div class="row document-record"><div class="row-info"><strong>'+(d.name||d.type||'Documento')+'</strong><span>'+(d.type||'')+(d.expiry?' · Validade: '+new Date(d.expiry+'T12:00:00').toLocaleDateString('pt-BR'):'')+(d.fileName?' · Arquivo anexado':'')+'</span></div><div class="row-actions">'+(d.filePath?'<button class="action-btn edit" onclick="openDocFile(\''+d.id+'\')">Visualizar arquivo</button>':'')+'<button class="action-btn edit" onclick="verDoc(\''+d.id+'\')">Editar</button><button class="action-btn delete" onclick="delDoc(\''+d.id+'\')">Excluir</button></div></div>';
       }).join('');
     }
 

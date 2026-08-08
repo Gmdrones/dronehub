@@ -278,6 +278,39 @@ async function syncCloudData(userId) {
     setCloudSyncStatus('ok'); return true;
   } catch (e) { setCloudSyncStatus('error'); return false; }
 }
+
+let userRecordsRealtimeChannel = null;
+function applyCloudRecordChange(payload, userId) {
+  const row = payload.new && payload.new.user_id ? payload.new : payload.old;
+  if (!row || row.user_id !== userId || !CLOUD_COLLECTIONS[row.collection]) return;
+  const key = CLOUD_COLLECTIONS[row.collection];
+  if (row.collection === 'profile') {
+    const profiles = JSON.parse(localStorage.getItem(key) || '{}');
+    if (payload.eventType === 'DELETE') delete profiles[userId];
+    else profiles[userId] = row.payload || {};
+    localStorage.setItem(key, JSON.stringify(profiles));
+  } else {
+    let records = JSON.parse(localStorage.getItem(key) || '[]');
+    records = records.filter(function (item) { return !(item.userId === userId && String(item.id) === String(row.record_id)); });
+    if (payload.eventType !== 'DELETE') records.push(Object.assign({}, row.payload || {}, { id: row.record_id, userId: userId }));
+    localStorage.setItem(key, JSON.stringify(records));
+  }
+  window.dispatchEvent(new CustomEvent('dronehub:cloud-record-change', { detail: { collection: row.collection, eventType: payload.eventType, recordId: row.record_id } }));
+  if (row.collection === 'missions') window.dispatchEvent(new CustomEvent('dronehub:missions-updated'));
+}
+function startCloudRealtime(userId) {
+  if (!supabaseClient || !userId) return;
+  if (userRecordsRealtimeChannel) supabaseClient.removeChannel(userRecordsRealtimeChannel);
+  userRecordsRealtimeChannel = supabaseClient.channel('user-records-' + userId)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'user_records', filter: 'user_id=eq.' + userId }, function (payload) {
+      applyCloudRecordChange(payload, userId);
+    })
+    .subscribe(function (status) {
+      if (status === 'SUBSCRIBED') setCloudSyncStatus('ok');
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setCloudSyncStatus('error');
+    });
+}
+window.startCloudRealtime = startCloudRealtime;
 async function migrateLocalDataToCloud(userId) {
   if (!userId || !supabaseClient) return;
   const writes = [];
@@ -344,7 +377,26 @@ function saveMission(userId, data) {
   persistCloudRecord('missions', userId, data);
   return data;
 }
-function getMissions(userId) { return JSON.parse(localStorage.getItem('dronehub_missoes') || '[]').filter(m => m.userId === userId); }
+function getMissions(userId) {
+  const all = JSON.parse(localStorage.getItem('dronehub_missoes') || '[]');
+  const now = new Date();
+  const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+  let changed = false;
+  all.forEach(function (mission) {
+    if (mission.userId === userId && mission.status === 'agendada' && mission.data && mission.data < today) {
+      mission.status = 'concluida';
+      mission.completedAutomaticallyAt = new Date().toISOString();
+      mission.updatedAt = mission.completedAutomaticallyAt;
+      changed = true;
+      persistCloudRecord('missions', userId, mission);
+    }
+  });
+  if (changed) {
+    localStorage.setItem('dronehub_missoes', JSON.stringify(all));
+    window.dispatchEvent(new CustomEvent('dronehub:missions-updated', { detail: { source: 'automatic-completion' } }));
+  }
+  return all.filter(m => m.userId === userId);
+}
 function deleteMission(userId, id) {
   const m = JSON.parse(localStorage.getItem('dronehub_missoes') || '[]').filter(x => !(x.userId === userId && x.id === id));
   localStorage.setItem('dronehub_missoes', JSON.stringify(m));
@@ -493,6 +545,7 @@ async function refreshCurrentEntitlement() {
   const canonicalId = (updated && updated.id) || before.id;
   migrateLocalOwnerAliases(before.id, canonicalId, (updated && updated.email) || before.email);
   await syncCloudData(canonicalId);
+  startCloudRealtime(canonicalId);
   if (getPendingPayment()) {
     if (updated && (updated.plan === 'pro' || updated.role === 'admin')) showPaymentSuccess();
   } else if (updated && (updated.plan !== beforePlan || updated.role !== beforeRole)) {

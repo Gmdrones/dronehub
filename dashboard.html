@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase.js?v=20260726-fleet-unified"></script>
+  <script src="js/supabase.js?v=20260808-dashboard-sync"></script>
   <link rel="stylesheet" href="css/plan-access.css">
   <script src="js/plan-access.js?v=20260726-free-lock"></script>
   <style>
@@ -162,10 +162,11 @@
   <link rel="stylesheet" href="css/dashboard-cards-final.css?v=20260728-progress-row">
   <script src="js/main.js?v=20260725-admin-sync" defer></script>
   <script src="js/pro-operations.js" defer></script>
-  <script src="js/intelligent-alerts.js" defer></script>
-  <script src="js/dashboard-v3.js?v=20260728-aircraft-flow" defer></script>
+  <script src="js/intelligent-alerts.js?v=20260808-alert-merge" defer></script>
+  <script src="js/dashboard-v3.js?v=20260808-worker-weather" defer></script>
   <script src="js/dashboard-flightdeck.js?v=20260724-flightdeck" defer></script>
-  <script src="js/dashboard-v11.js?v=20260726-2" defer></script>
+  <script src="js/dashboard-v11.js?v=20260808-operational-sync" defer></script>
+  <link rel="stylesheet" href="css/ui-fixes.css?v=20260808-2">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
   <script src="js/mission-airspace-map.js?v=20260728-dashboard-data-sync" defer></script>
@@ -186,7 +187,10 @@
     var uid = user.id || user.email || 'default';
     if (typeof syncCurrentEntitlement === 'function') {
       syncCurrentEntitlement().then(function(freshUser) {
-        if (freshUser && (freshUser.plan !== user.plan || freshUser.role !== user.role)) window.location.reload();
+        if (freshUser && (freshUser.plan !== user.plan || freshUser.role !== user.role)) {
+          user=freshUser;isPro=user.plan==='pro'||user.role==='admin';localStorage.setItem('dronehub_user',JSON.stringify(user));
+          window.dispatchEvent(new CustomEvent('dronehub:dashboard-data-updated',{detail:{source:'entitlement'}}));
+        }
       });
     }
     if (window.location.search.includes('upgrade=true')) {
@@ -202,8 +206,8 @@
     var clients = getClients(uid);
     var batteries = getBatteries(uid);
     window.addEventListener('dronehub:cloud-ready', function(){
-      var key='dronehub_dashboard_cloud_refresh_'+uid,last=Number(sessionStorage.getItem(key)||0);
-      if(Date.now()-last>15000){sessionStorage.setItem(key,String(Date.now()));window.location.reload();}
+      aircraft=getAircraft(uid);missions=getMissions(uid);docs=getDocuments(uid);txns=getTransactions(uid);clients=getClients(uid);batteries=getBatteries(uid);
+      window.dispatchEvent(new CustomEvent('dronehub:dashboard-data-updated'));
     });
   </script>
 
@@ -316,7 +320,7 @@
                   <div class="weather-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/></svg><span class="wd-l">Vento</span><span class="wd-v" id="wVento">--</span></div>
                   <div class="weather-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/></svg><span class="wd-l">Rajadas</span><span class="wd-v" id="wRajada">--</span></div>
                   <div class="weather-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/></svg><span class="wd-l">Umidade</span><span class="wd-v" id="wUmi">--</span></div>
-                  <div class="weather-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/></svg><span class="wd-l">Satélites</span><span class="wd-v" id="wSat">--</span></div>
+                  <div class="weather-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="wd-l">Índice KP</span><span class="wd-v" id="wSat">--</span></div>
                 </div>
               </div>
             </div>
@@ -442,7 +446,7 @@
     // DOCUMENTOS REAIS
     if (docs.length > 0) {
       document.getElementById('docList').innerHTML = docs.slice(0,3).map(function(d){
-        return '<div style="padding:6px 0;font-size:0.8rem;border-bottom:1px solid var(--border);">' + d.name + '<span style="color:var(--text3);float:right;">' + (d.expiry?'Val: '+new Date(d.expiry).toLocaleDateString('pt-BR'):'') + '</span></div>';
+        return '<div class="dashboard-doc-row"><strong>'+(d.name||d.type||'Documento')+'</strong>'+(d.expiry?'<span>Validade: '+new Date(d.expiry+'T12:00:00').toLocaleDateString('pt-BR')+'</span>':'')+'</div>';
       }).join('');
     }
 
@@ -492,31 +496,39 @@
       }).join('');
     }
 
-    // CLIMA REAL
-    (function fetchWeather() {
-      var lat = -22.9068; var lon = -43.1729;
-      fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m&timezone=America/Sao_Paulo')
+    // MESMA LOCALIZAÇÃO, FONTE E REGRA OPERACIONAL DA CENTRAL DE VOO
+    window.refreshDashboardOperational = function refreshDashboardOperational() {
+      var locationData;try{locationData=JSON.parse(localStorage.getItem('dronehub_operation_location')||'null')}catch(_){}
+      var lat=Number(locationData&&locationData.lat),lon=Number(locationData&&locationData.lon);if(!Number.isFinite(lat)||!Number.isFinite(lon)){lat=-22.9068;lon=-43.1729;}
+      fetch('https://dronehub-operations.primesecureconsultoria.workers.dev/weather?lat='+lat+'&lon='+lon)
         .then(function(r){return r.json();})
         .then(function(data){
           if (!data.current) throw new Error('Sem dados');
-          var c = data.current;
+          var c=data.current,d=data.daily||{},gust=Number(d.wind_gusts_10m_max&&d.wind_gusts_10m_max[0])||0,rain=Number(d.precipitation_probability_max&&d.precipitation_probability_max[0])||0,kp=Number(data.space_weather&&data.space_weather.kp)||0;
+          var score=Math.max(0,Math.min(100,Math.round(100-Math.min(45,gust*.75)-Math.min(25,rain*.25)-Math.max(0,kp-3)*7)));
+          var label=score>=80?'Condições favoráveis':score>=65?'Atenção operacional':score>=45?'Risco elevado':'Voo não recomendado',tone=score>=80?'green':score>=65?'amber':'red';
           document.getElementById('weatherLoading').style.display = 'none';
           document.getElementById('weatherContent').style.display = 'block';
-          document.getElementById('wTemp').textContent = Math.round(c.temperature_2m) + 'C';
-          document.getElementById('wCond').textContent = 'Atualizado';
+          document.getElementById('wTemp').textContent = Math.round(c.temperature_2m) + '°C';
+          document.getElementById('wCond').textContent = (locationData&&locationData.name)||'Local da operação';
           document.getElementById('wVento').textContent = Math.round(c.wind_speed_10m) + ' km/h';
           document.getElementById('wRajada').textContent = Math.round(c.wind_gusts_10m) + ' km/h';
           document.getElementById('wUmi').textContent = c.relative_humidity_2m + '%';
-          document.getElementById('wSat').textContent = Math.floor(Math.random()*6)+12 + ' sat';
-          var status = document.getElementById('wStatus');
-          if (c.wind_speed_10m < 15) { status.className = 'wm-status green'; status.textContent = '🟢 Condicoes ideais'; }
-          else if (c.wind_speed_10m < 25) { status.className = 'wm-status amber'; status.textContent = '🟡 Atencao'; }
-          else { status.className = 'wm-status red'; status.textContent = '🔴 Nao recomendado'; }
+          document.getElementById('wSat').textContent = kp.toFixed(1);
+          var status=document.getElementById('wStatus');status.className='wm-status '+tone;status.textContent=label+' · '+score+'/100';
+          var operationalAlerts=[];
+          if(gust>=35)operationalAlerts.push({tipo:'red',texto:'Rajadas elevadas: '+(Math.round(gust*10)/10)+' km/h'});
+          if(rain>=40)operationalAlerts.push({tipo:'amber',texto:'Probabilidade de chuva: '+Math.round(rain)+'%'});
+          if(kp>=4)operationalAlerts.push({tipo:kp>=5?'red':'amber',texto:'Atividade geomagnética elevada: KP '+(Math.round(kp*10)/10)});
+          window.DroneHubOperationalAlerts=operationalAlerts;
+          if(typeof window.renderDroneHubAlerts==='function')window.renderDroneHubAlerts();
+          var snapshot={location:locationData||{lat:lat,lon:lon},score:score,label:label,tone:tone,weather:data,updatedAt:new Date().toISOString()};localStorage.setItem('dronehub_operational_snapshot',JSON.stringify(snapshot));window.dispatchEvent(new CustomEvent('dronehub:operational-updated',{detail:snapshot}));
         })
         .catch(function(){
-          document.getElementById('weatherLoading').textContent = 'Clima indisponivel no momento';
+          document.getElementById('weatherLoading').textContent = 'Clima indisponível no momento';
         });
-    })();
+    };
+    refreshDashboardOperational();
 
     // PLANO
     if (isPro) {
