@@ -1,7 +1,61 @@
-(function(){
-  function ready(fn){document.readyState==='loading'?document.addEventListener('DOMContentLoaded',fn):fn();}
-  var menuIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="17" y2="17"/></svg>';
-  var closeIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
-  var homeIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-7h6v7"/></svg>';
-  ready(function(){var sidebar=document.querySelector('.sidebar'),header=document.querySelector('.header');if(!sidebar||!header||document.getElementById('mobileNavTrigger'))return;var nav=sidebar.querySelector('nav');if(!nav)return;var trigger=document.createElement('button');trigger.id='mobileNavTrigger';trigger.className='mobile-nav-trigger';trigger.type='button';trigger.setAttribute('aria-label','Abrir menu');trigger.setAttribute('aria-expanded','false');trigger.innerHTML=menuIcon;var drawer=document.createElement('aside');drawer.className='mobile-nav-drawer';drawer.setAttribute('aria-label','Menu de navegação');drawer.innerHTML='<button class="mobile-nav-close" type="button" aria-label="Fechar menu">'+closeIcon+'</button><div class="mobile-nav-brand"><span>DH</span>Drone<span style="color:#16c6ff;width:auto;height:auto;background:none;display:inline">Hub</span></div><a class="mobile-nav-home" href="index.html">'+homeIcon+'Página inicial</a><nav class="mobile-nav-links">'+nav.innerHTML+'</nav>';var backdrop=document.createElement('div');backdrop.className='mobile-nav-backdrop';document.body.appendChild(backdrop);document.body.appendChild(drawer);header.appendChild(trigger);function close(){drawer.classList.remove('open');backdrop.classList.remove('open');trigger.setAttribute('aria-expanded','false');}function open(){drawer.classList.add('open');backdrop.classList.add('open');trigger.setAttribute('aria-expanded','true');}trigger.addEventListener('click',function(){drawer.classList.contains('open')?close():open();});drawer.querySelector('.mobile-nav-close').addEventListener('click',close);backdrop.addEventListener('click',close);drawer.querySelectorAll('a').forEach(function(link){link.addEventListener('click',close);});});
+(function () {
+  'use strict';
+
+  function ready(fn) {
+    document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', fn) : fn();
+  }
+
+  var menuIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="4" x2="20" y1="7" y2="7"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="17" y2="17"/></svg>';
+  var closeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  var homeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-7h6v7"/></svg>';
+
+  ready(function () {
+    var sidebar = document.querySelector('.sidebar');
+    var header = document.querySelector('.header, .topbar');
+    if (!sidebar || !header || document.getElementById('mobileNavTrigger')) return;
+
+    var nav = sidebar.querySelector('nav');
+    if (!nav) return;
+
+    var trigger = document.createElement('button');
+    trigger.id = 'mobileNavTrigger';
+    trigger.className = 'mobile-nav-trigger';
+    trigger.type = 'button';
+    trigger.setAttribute('aria-label', 'Abrir menu');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.setAttribute('aria-controls', 'mobileNavDrawer');
+    trigger.innerHTML = menuIcon;
+
+    var drawer = document.createElement('aside');
+    drawer.id = 'mobileNavDrawer';
+    drawer.className = 'mobile-nav-drawer';
+    drawer.setAttribute('aria-label', 'Menu de navegação');
+    drawer.innerHTML = '<button class="mobile-nav-close" type="button" aria-label="Fechar menu">' + closeIcon + '</button><div class="mobile-nav-brand"><span>DH</span>Drone<span style="color:#16c6ff;width:auto;height:auto;background:none;display:inline">Hub</span></div><a class="mobile-nav-home" href="index.html">' + homeIcon + 'Página inicial</a><nav class="mobile-nav-links">' + nav.innerHTML + '</nav>';
+
+    var backdrop = document.createElement('div');
+    backdrop.className = 'mobile-nav-backdrop';
+    document.body.appendChild(backdrop);
+    document.body.appendChild(drawer);
+    header.prepend(trigger);
+
+    function close() {
+      drawer.classList.remove('open');
+      backdrop.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('mobile-nav-open');
+    }
+
+    function open() {
+      drawer.classList.add('open');
+      backdrop.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('mobile-nav-open');
+    }
+
+    trigger.addEventListener('click', function () { drawer.classList.contains('open') ? close() : open(); });
+    drawer.querySelector('.mobile-nav-close').addEventListener('click', close);
+    backdrop.addEventListener('click', close);
+    drawer.querySelectorAll('a').forEach(function (link) { link.addEventListener('click', close); });
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape') close(); });
+  });
 }());
