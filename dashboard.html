@@ -439,7 +439,7 @@
       missionContainer.innerHTML = missions.slice(0,5).map(function(m){
         var dot = m.status==='concluida'?'green':m.status==='em_andamento'?'blue':'amber';
         var label = m.status==='concluida'?'done':m.status==='em_andamento'?'progress':'plan';
-        return '<div class="mission-item"><span class="mission-dot '+dot+'"></span><div class="mission-info"><div class="mi-title">'+(m.titulo||m.cliente||'Missao')+'</div><div class="mi-sub">'+(m.data?new Date(m.data).toLocaleDateString('pt-BR'):'')+'</div></div><span class="mission-status '+label+'">'+m.status.replace('_',' ')+'</span></div>';
+        return '<div class="mission-item"><span class="mission-dot '+dot+'"></span><div class="mission-info"><div class="mi-title">'+(m.titulo||m.cliente||'Missao')+'</div><div class="mi-sub">'+(m.data?formatLocalCalendarDate(m.data):'')+'</div></div><span class="mission-status '+label+'">'+m.status.replace('_',' ')+'</span></div>';
       }).join('');
     }
 

@@ -37,6 +37,7 @@ async function syncCurrentEntitlement() {
       var isExpired = access.courtesy_expires_at && new Date(access.courtesy_expires_at).getTime() < Date.now();
       localUser.plan = access.status === 'active' && !isExpired && access.plan === 'pro' ? 'pro' : 'free';
       localUser.role = access.role === 'admin' ? 'admin' : 'pilot';
+      localUser.planExpiresAt = access.courtesy_expires_at || null;
       localUser.courtesyExpiresAt = access.courtesy_expires_at || null;
     } else {
       // A conta fundadora mantém acesso administrativo mesmo durante uma falha de leitura da tabela de planos.
@@ -52,6 +53,14 @@ async function syncCurrentEntitlement() {
   }
 }
 window.syncCurrentEntitlement = syncCurrentEntitlement;
+
+function formatLocalCalendarDate(value) {
+  var match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) return match[3] + '/' + match[2] + '/' + match[1];
+  var parsed = new Date(value);
+  return isNaN(parsed.getTime()) ? '' : parsed.toLocaleDateString('pt-BR');
+}
+window.formatLocalCalendarDate = formatLocalCalendarDate;
 
 // O navegador guarda somente o contexto temporario da tentativa de pagamento.
 // O plano continua sendo definido exclusivamente pelo entitlement do Supabase.

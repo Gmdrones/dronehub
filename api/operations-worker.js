@@ -144,6 +144,12 @@ export default {
       return reply({ ok: true, service: 'dronehub-operations', redemet: Boolean(env.REDEMET_API_KEY), aisweb: Boolean(env.AISWEB_API_KEY && env.AISWEB_API_PASS), updatedAt: new Date().toISOString() }, 200, 'no-store');
     }
 
+    // Toda a Central de Voo é Pro. A autorização é validada no servidor em
+    // cada chamada; alterar o estado local do navegador não libera os dados.
+    if (!(await requirePro(request, env))) {
+      return reply({ error: 'A Central de Voo é exclusiva do plano Pro.' }, 403, 'no-store');
+    }
+
     if (url.pathname === '/geocode') {
       const query = textValue(url.searchParams.get('q')).slice(0, 180);
       if (query.length < 2) return reply({ error: 'Informe uma cidade ou endereço.' }, 400, 'no-store');
@@ -246,7 +252,6 @@ export default {
 
     if (url.pathname === '/ai/document') {
       if (request.method !== 'POST') return reply({ error: 'Use POST para gerar um documento.' }, 405, 'no-store');
-      if (!(await requirePro(request, env))) return reply({ error: 'Este recurso exige um plano Pro ativo.' }, 403, 'no-store');
       if (!env.AI) return reply({ error: 'A IA ainda não foi ativada neste ambiente.' }, 503, 'no-store');
       try {
         const payload = await request.json();

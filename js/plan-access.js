@@ -1,6 +1,6 @@
 /* Controle de acesso visual. A fonte de verdade do plano vem do Supabase. */
 (function () {
-  var PRO_PAGES = ['documentos.html', 'missoes.html', 'fiscalizacao.html', 'financeiro.html', 'admin.html'];
+  var PRO_PAGES = ['central-voo.html', 'documentos.html', 'missoes.html', 'fiscalizacao.html', 'financeiro.html', 'admin.html'];
   var currentFile = (location.pathname.split('/').pop() || '').toLowerCase();
   // Cloudflare Pages atende tanto /documentos quanto /documentos.html.
   // Normalize as rotas limpas antes de aplicar as regras dos planos.
@@ -45,7 +45,7 @@
       return;
     }
     if (isPremiumPage() && !isPro()) {
-      renderLockedScreen('Operação avançada,<br><em>sem limites.</em>', 'Este recurso faz parte do Drone Hub Pro. No Free, você mantém o perfil do piloto, uma aeronave e a Central de Voo.');
+      renderLockedScreen('Operação avançada,<br><em>sem limites.</em>', 'Este recurso faz parte do Drone Hub Pro. No Free, você mantém o perfil do piloto e uma aeronave cadastrada.');
     }
   }
 
@@ -96,7 +96,20 @@
   }
 
 
-  function initializeInterface() { addAdminLink(); addLogoutButton(); lockNavigation(); }
+  function showRenewalReminder() {
+    var account = user();
+    if (!isPro() || isAdmin() || !account.planExpiresAt || document.querySelector('.plan-renewal-reminder')) return;
+    var remaining = new Date(account.planExpiresAt).getTime() - Date.now();
+    if (remaining <= 0 || remaining > 7 * 86400000) return;
+    var days = Math.max(1, Math.ceil(remaining / 86400000));
+    var banner = document.createElement('aside');
+    banner.className = 'plan-renewal-reminder'; banner.setAttribute('role', 'status');
+    banner.innerHTML = '<strong>Seu Pro vence em '+days+(days===1?' dia.':' dias.')+'</strong> Renove para manter os recursos Pro. <a href="precos.html">Renovar agora</a><button type="button" aria-label="Fechar aviso">×</button>';
+    banner.querySelector('button').onclick = function(){ banner.remove(); };
+    document.body.appendChild(banner);
+  }
+
+  function initializeInterface() { addAdminLink(); addLogoutButton(); lockNavigation(); showRenewalReminder(); }
 
 
 
@@ -105,6 +118,7 @@
     document.querySelectorAll('.sidebar-nav a.plan-nav-lock').forEach(function (link) {
       var label = (link.textContent || '').toLowerCase();
       var page = label.indexOf('document') >= 0 ? 'documentos.html'
+        : label.indexOf('central') >= 0 ? 'central-voo.html'
         : label.indexOf('miss') >= 0 ? 'missoes.html'
         : label.indexOf('fiscal') >= 0 ? 'fiscalizacao.html'
         : label.indexOf('finance') >= 0 ? 'financeiro.html' : '';

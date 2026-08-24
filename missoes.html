@@ -265,7 +265,7 @@
       if(list.length===0){container.innerHTML='<p style="color:var(--text3);font-size:0.85rem;">Nenhuma missao encontrada.</p>';return;}
       container.innerHTML=list.map(function(m){
         var badgeClass=m.status==='concluida'?'badge-green':m.status==='em_andamento'?'badge-cyan':'badge-amber';
-        return '<div class="row"><div class="row-info"><strong>'+(m.titulo||m.cliente||'Missao')+'</strong><span>'+(m.cliente?'Cliente: '+m.cliente+' | ':'')+(m.data?new Date(m.data).toLocaleDateString('pt-BR'):'')+(m.horario?' '+m.horario:'')+(m.local?' | '+m.local:'')+'</span></div><span class="badge '+badgeClass+'">'+m.status.replace('_',' ')+'</span><div class="row-actions"><button class="action-btn edit" onclick="editar(\''+m.id+'\')">Editar</button><button class="action-btn delete" onclick="excluir(\''+m.id+'\')">Excluir</button></div></div>';
+        return '<div class="row"><div class="row-info"><strong>'+(m.titulo||m.cliente||'Missao')+'</strong><span>'+(m.cliente?'Cliente: '+m.cliente+' | ':'')+(m.data?formatLocalCalendarDate(m.data):'')+(m.horario?' '+m.horario:'')+(m.local?' | '+m.local:'')+'</span></div><span class="badge '+badgeClass+'">'+m.status.replace('_',' ')+'</span><div class="row-actions"><button class="action-btn edit" onclick="editar(\''+m.id+'\')">Editar</button><button class="action-btn delete" onclick="excluir(\''+m.id+'\')">Excluir</button></div></div>';
       }).join('');
     }
 
