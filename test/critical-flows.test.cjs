@@ -41,3 +41,13 @@ test('Fiscalização permanece disponível no Free', () => {
   assert.match(mobileNav, /aircraftLink\.insertAdjacentElement\('afterend', inspectionLink\)/);
   assert.match(features, /Modo fiscalização[\s\S]*?tag free/);
 });
+
+test('menu Free bloqueia recursos Pro no desktop e no celular', () => {
+  const access = fs.readFileSync(path.join(__dirname, '../js/plan-access.js'), 'utf8');
+  const accessCss = fs.readFileSync(path.join(__dirname, '../css/plan-access.css'), 'utf8');
+  const central = fs.readFileSync(path.join(__dirname, '../central-voo.html'), 'utf8');
+  assert.match(access, /\.sidebar nav a, \.sidebar-nav a, \.mobile-nav-links a/);
+  assert.match(access, /plan-nav-lock-icon/);
+  assert.match(accessCss, /\.mobile-nav-links a\.plan-nav-lock/);
+  assert.match(central, /css\/plan-access\.css/);
+});

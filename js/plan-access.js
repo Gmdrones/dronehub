@@ -79,7 +79,7 @@
 
   function lockNavigation() {
     if (isPro()) return;
-    document.querySelectorAll('.sidebar-nav a').forEach(function (link) {
+    document.querySelectorAll('.sidebar nav a, .sidebar-nav a, .mobile-nav-links a').forEach(function (link) {
       var href = (link.getAttribute('href') || '').toLowerCase();
       if (PRO_PAGES.some(function (page) { return href.indexOf(page) !== -1; })) {
         link.classList.add('plan-nav-lock');
@@ -88,7 +88,8 @@
         link.setAttribute('href', 'precos.html');
         if (!link.querySelector('.plan-nav-lock-icon')) {
           var lock = document.createElement('span');
-          lock.className = 'plan-nav-lock-icon'; lock.setAttribute('aria-hidden', 'true'); lock.textContent = '⌕';
+          lock.className = 'plan-nav-lock-icon'; lock.setAttribute('aria-hidden', 'true');
+          lock.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
           link.appendChild(lock);
         }
       }
@@ -125,7 +126,7 @@
 
   function restorePremiumNavigation() {
     if (!isPro()) return;
-    document.querySelectorAll('.sidebar-nav a.plan-nav-lock').forEach(function (link) {
+    document.querySelectorAll('.sidebar nav a.plan-nav-lock, .sidebar-nav a.plan-nav-lock, .mobile-nav-links a.plan-nav-lock').forEach(function (link) {
       var label = (link.textContent || '').toLowerCase();
       var page = label.indexOf('document') >= 0 ? 'documentos.html'
         : label.indexOf('central') >= 0 ? 'central-voo.html'
