@@ -17,6 +17,12 @@
     var nav = sidebar.querySelector('nav');
     if (!nav) return;
 
+    var aircraftLink = nav.querySelector('a[href*="aeronaves.html"]');
+    var inspectionLink = nav.querySelector('a[href*="fiscalizacao.html"]');
+    if (aircraftLink && inspectionLink && aircraftLink.nextElementSibling !== inspectionLink) {
+      aircraftLink.insertAdjacentElement('afterend', inspectionLink);
+    }
+
     var trigger = document.createElement('button');
     trigger.id = 'mobileNavTrigger';
     trigger.className = 'mobile-nav-trigger';

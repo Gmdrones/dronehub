@@ -34,7 +34,10 @@ test('upload aceita PDF/JPEG/PNG até 10 MB', () => {
 
 test('Fiscalização permanece disponível no Free', () => {
   const access = fs.readFileSync(path.join(__dirname, '../js/plan-access.js'), 'utf8');
+  const mobileNav = fs.readFileSync(path.join(__dirname, '../js/mobile-nav.js'), 'utf8');
   const features = fs.readFileSync(path.join(__dirname, '../funcionalidades.html'), 'utf8');
   assert.doesNotMatch(access.match(/PRO_PAGES\s*=\s*\[[^\]]+\]/)?.[0] || '', /fiscalizacao\.html/);
+  assert.match(access, /aircraft\.insertAdjacentElement\('afterend', inspection\)/);
+  assert.match(mobileNav, /aircraftLink\.insertAdjacentElement\('afterend', inspectionLink\)/);
   assert.match(features, /Modo fiscalização[\s\S]*?tag free/);
 });

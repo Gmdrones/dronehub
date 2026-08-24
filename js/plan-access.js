@@ -109,7 +109,17 @@
     document.body.appendChild(banner);
   }
 
-  function initializeInterface() { addAdminLink(); addLogoutButton(); lockNavigation(); showRenewalReminder(); }
+  function groupFreeNavigation() {
+    document.querySelectorAll('.sidebar nav, .sidebar-nav').forEach(function (nav) {
+      var aircraft = nav.querySelector('a[href*="aeronaves.html"]');
+      var inspection = nav.querySelector('a[href*="fiscalizacao.html"]');
+      if (aircraft && inspection && aircraft.nextElementSibling !== inspection) {
+        aircraft.insertAdjacentElement('afterend', inspection);
+      }
+    });
+  }
+
+  function initializeInterface() { groupFreeNavigation(); addAdminLink(); addLogoutButton(); lockNavigation(); showRenewalReminder(); }
 
 
 
