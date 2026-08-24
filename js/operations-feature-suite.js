@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function () {
     'Mapa de operações com histórico de missões',
     'Diário automático de missão e evidências',
     'Saúde da frota: baterias, seguro, firmware e manutenção',
-    'Modo fiscalização com QR Code temporário',
     'Gerador de propostas, contratos, recibos e relatórios',
     'Relatórios pós-voo para o cliente, PDF, Excel e CSV',
     'Financeiro, assistente IA e backup de dados'

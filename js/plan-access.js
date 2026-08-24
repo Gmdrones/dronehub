@@ -1,6 +1,6 @@
 /* Controle de acesso visual. A fonte de verdade do plano vem do Supabase. */
 (function () {
-  var PRO_PAGES = ['central-voo.html', 'documentos.html', 'missoes.html', 'fiscalizacao.html', 'financeiro.html', 'admin.html'];
+  var PRO_PAGES = ['central-voo.html', 'documentos.html', 'missoes.html', 'financeiro.html', 'admin.html'];
   var currentFile = (location.pathname.split('/').pop() || '').toLowerCase();
   // Cloudflare Pages atende tanto /documentos quanto /documentos.html.
   // Normalize as rotas limpas antes de aplicar as regras dos planos.
@@ -31,7 +31,7 @@
         + '<h1>' + title + '</h1>'
         + '<p>' + copy + '</p>'
         + '<div class="plan-lock-actions"><a class="plan-lock-primary" href="precos.html">Conhecer o Pro</a><a class="plan-lock-secondary" href="dashboard.html">Voltar ao painel</a></div>'
-        + '<ul><li>Documentos e relatórios profissionais</li><li>Missões, checklist e diário operacional</li><li>Fiscalização por QR Code, financeiro e frota</li></ul>'
+        + '<ul><li>Central de Voo e análise operacional</li><li>Documentos, missões e relatórios profissionais</li><li>Financeiro e gestão avançada da frota</li></ul>'
         + '</section></main>';
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render, { once:true });
@@ -120,7 +120,6 @@
       var page = label.indexOf('document') >= 0 ? 'documentos.html'
         : label.indexOf('central') >= 0 ? 'central-voo.html'
         : label.indexOf('miss') >= 0 ? 'missoes.html'
-        : label.indexOf('fiscal') >= 0 ? 'fiscalizacao.html'
         : label.indexOf('finance') >= 0 ? 'financeiro.html' : '';
       if (page) link.setAttribute('href', page);
       link.classList.remove('plan-nav-lock');

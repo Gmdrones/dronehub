@@ -1,6 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { paymentState, effectiveAccess, canWriteCollection, validUpload } = require('../lib/domain.cjs');
 
 test('pagamentos aprovados, pendentes e estornados são normalizados', () => {
@@ -28,4 +30,11 @@ test('upload aceita PDF/JPEG/PNG até 10 MB', () => {
   assert.equal(validUpload({ type:'application/pdf', size:1024 }), true);
   assert.equal(validUpload({ type:'text/html', size:1024 }), false);
   assert.equal(validUpload({ type:'application/pdf', size:11*1024*1024 }), false);
+});
+
+test('Fiscalização permanece disponível no Free', () => {
+  const access = fs.readFileSync(path.join(__dirname, '../js/plan-access.js'), 'utf8');
+  const features = fs.readFileSync(path.join(__dirname, '../funcionalidades.html'), 'utf8');
+  assert.doesNotMatch(access.match(/PRO_PAGES\s*=\s*\[[^\]]+\]/)?.[0] || '', /fiscalizacao\.html/);
+  assert.match(features, /Modo fiscalização[\s\S]*?tag free/);
 });
