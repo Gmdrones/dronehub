@@ -167,6 +167,8 @@
   <script src="js/dashboard-flightdeck.js?v=20260724-flightdeck" defer></script>
   <script src="js/dashboard-v11.js?v=20260808-operational-sync" defer></script>
   <link rel="stylesheet" href="css/ui-fixes.css?v=20260808-2">
+  <link rel="stylesheet" href="css/dashboard-calendar-notifications.css?v=20260830-1">
+  <script src="js/dashboard-calendar-notifications.js?v=20260830-1" defer></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
   <script src="js/mission-airspace-map.js?v=20260728-dashboard-data-sync" defer></script>
@@ -371,7 +373,7 @@
           </div>
           <div class="upgrade-card" id="upgradeCard">
             <h3>Desbloqueie o Pro</h3>
-            <p>Ate 20 aeronaves, Documentos, Missoes, Fiscalizacao, IA e Financeiro.</p>
+            <p>Até 20 aeronaves, Central de Voo, documentos, missões, IA, relatórios e financeiro.</p>
             <a href="precos.html" class="btn btn-primary" style="padding:12px 36px;">Assinar Pro — R$29,90/mes</a>
           </div>
         </div>
@@ -381,19 +383,21 @@
 
   <!-- MODAL NOTIFICACOES -->
   <div class="modal-overlay" id="notifModal">
-    <div class="modal">
+    <div class="modal dashboard-tools-modal" role="dialog" aria-modal="true" aria-labelledby="notifTitle">
       <button class="modal-close" onclick="fecharNotificacoes()">✕</button>
-      <h3>Notificacoes</h3>
+      <h3 id="notifTitle">Notificações</h3>
+      <p class="dashboard-tools-subtitle">Missões, documentos, seguros, baterias e condições operacionais.</p>
       <div id="notifList"><p style="color:var(--text3);font-size:0.85rem;">Nenhuma notificacao.</p></div>
     </div>
   </div>
 
   <!-- MODAL CALENDARIO -->
   <div class="modal-overlay" id="calModal">
-    <div class="modal">
+    <div class="modal dashboard-tools-modal" role="dialog" aria-modal="true" aria-labelledby="calendarTitle">
       <button class="modal-close" onclick="fecharCalendario()">✕</button>
-      <h3>Calendario</h3>
-      <div id="calContent"><p style="color:var(--text3);font-size:0.85rem;">Selecione uma data para ver missoes.</p></div>
+      <h3 id="calendarTitle">Calendário de missões</h3>
+      <p class="dashboard-tools-subtitle">Selecione uma data para consultar as operações agendadas.</p>
+      <div id="calContent"><p style="color:var(--text3);font-size:0.85rem;">Carregando calendário...</p></div>
     </div>
   </div>
 
@@ -525,7 +529,8 @@
           var snapshot={location:locationData||{lat:lat,lon:lon},score:score,label:label,tone:tone,weather:data,updatedAt:new Date().toISOString()};localStorage.setItem('dronehub_operational_snapshot',JSON.stringify(snapshot));window.dispatchEvent(new CustomEvent('dronehub:operational-updated',{detail:snapshot}));
         })
         .catch(function(){
-          document.getElementById('weatherLoading').textContent = 'Clima indisponível no momento';
+          var weatherLoading = document.getElementById('weatherLoading');
+          if (weatherLoading) weatherLoading.textContent = 'Clima indisponível no momento';
         });
     };
     refreshDashboardOperational();

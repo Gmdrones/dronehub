@@ -51,3 +51,16 @@ test('menu Free bloqueia recursos Pro no desktop e no celular', () => {
   assert.match(accessCss, /\.mobile-nav-links a\.plan-nav-lock/);
   assert.match(central, /css\/plan-access\.css/);
 });
+
+test('dashboard possui calendário funcional e notificações integradas', () => {
+  const dashboard = fs.readFileSync(path.join(__dirname, '../dashboard.html'), 'utf8');
+  const tools = fs.readFileSync(path.join(__dirname, '../js/dashboard-calendar-notifications.js'), 'utf8');
+  assert.match(dashboard, /dashboard-calendar-notifications\.js/);
+  assert.match(tools, /function renderCalendar\(\)/);
+  assert.match(tools, /data-calendar-date/);
+  assert.match(tools, /function renderNotifications\(\)/);
+  assert.match(tools, /dronehub:cloud-ready/);
+  assert.match(tools, /getMissions/);
+  assert.match(tools, /getDocuments/);
+  assert.match(dashboard, /if \(weatherLoading\) weatherLoading\.textContent/);
+});
