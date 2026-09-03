@@ -5,6 +5,7 @@
   function message(id,text,error){el(id).textContent=text;el(id).className=error?'error':'success'}
   async function loadAccount(){
     el('accountRetry').hidden=true;el('accountLogin').hidden=true;el('passwordFields').disabled=true;
+    el('accountNameFields').disabled=true;
     message('accountStatus','Verificando sua conta…',false);
     try {
       if(!supabaseClient) throw Error('Serviço de conta indisponível. Tente novamente.');
@@ -19,6 +20,7 @@
       el('accountName').value=name;el('accountEmail').value=authenticatedUser.email||'';
       el('accountHeaderName').textContent=name;el('accountAvatar').textContent=name.charAt(0).toUpperCase();
       el('passwordFields').disabled=false;
+      el('accountNameFields').disabled=false;
       var access=await supabaseClient.rpc('get_my_entitlement');
       if(access.error) throw Error('Dados da conta carregados, mas não foi possível consultar o plano. Tente novamente.');
       var entitlement=Array.isArray(access.data)?access.data[0]:access.data;
@@ -37,6 +39,39 @@
   }
   el('accountRetry').onclick=loadAccount;
   el('accountLogout').onclick=function(){logoutUser()};
+  el('accountNameForm').addEventListener('submit',async function(event){
+    event.preventDefault();
+    if(!authenticatedUser || el('accountNameFields').disabled) return;
+    var name=el('accountName').value.trim().replace(/\s+/g,' ');
+    if(!name || name.length>120){
+      message('accountNameStatus','Informe seu nome, com até 120 caracteres.',true);return;
+    }
+    el('accountNameFields').disabled=true;
+    message('accountNameStatus','Salvando nome…',false);
+    try{
+      var current=await supabaseClient.auth.getUser();
+      if(current.error || !current.data.user || current.data.user.id!==authenticatedUser.id)
+        throw Error('Sua sessão mudou ou expirou. Entre novamente antes de salvar.');
+      var result=await supabaseClient.auth.updateUser({data:{full_name:name}});
+      if(result.error || !result.data || !result.data.user)
+        throw Error('Não foi possível salvar o nome. Tente novamente.');
+      authenticatedUser=result.data.user;
+      var savedName=(authenticatedUser.user_metadata||{}).full_name;
+      if(!savedName) throw Error('Não foi possível confirmar o nome salvo. Atualize a página.');
+      el('accountName').value=savedName;
+      el('accountHeaderName').textContent=savedName;
+      el('accountAvatar').textContent=savedName.charAt(0).toUpperCase();
+      // Update only the same account's display cache, never access or identity fields.
+      try{
+        var cached=JSON.parse(localStorage.getItem('dronehub_user')||'null');
+        if(cached && cached.id===authenticatedUser.id){
+          cached.name=savedName;localStorage.setItem('dronehub_user',JSON.stringify(cached));
+        }
+      }catch(ignore){}
+      message('accountNameStatus','Nome atualizado com sucesso.',false);
+    }catch(error){message('accountNameStatus',error.message||'Não foi possível salvar o nome.',true)}
+    finally{el('accountNameFields').disabled=false}
+  });
   el('passwordForm').addEventListener('submit',async function(event){
     event.preventDefault();
     if(!authenticatedUser || el('passwordFields').disabled) return;

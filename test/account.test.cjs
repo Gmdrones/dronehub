@@ -7,11 +7,11 @@ async function harness(mode){
   const context={document:{getElementById:el},window:{DroneHubPlanExpiry:expiry},logoutUser(){},supabaseClient:{
     auth:{getUser:async()=>mode==='unauth'?{error:{},data:{user:null}}:{data:{user:account}},
       signInWithPassword:async input=>{signins.push(input);return mode==='wrong'?{error:{},data:{}}:{data:{user:account}}},
-      updateUser:async input=>{updates.push(input);return mode==='update-error'?{error:{code:'weak_password'}}:{data:{user:account}}}},
+      updateUser:async input=>{updates.push(input);return mode==='update-error'?{error:{code:'weak_password'}}:{data:{user:input.data?{...account,user_metadata:{...account.user_metadata,...input.data}}:account}}}},
     rpc:async()=>mode==='plan-error'?{error:{}}:{data:[{plan:'pro',role:'member',status:'active',courtesy_expires_at:'2099-01-01T12:00:00Z'}]}}};
   vm.runInNewContext(fs.readFileSync(require.resolve('../js/account.js'),'utf8'),context);
   await new Promise(r=>setImmediate(r));
-  return {nodes,updates,signins,submit:async(current='old-secret',next='new-secret',confirm=next)=>{
+  return {nodes,updates,signins,saveName:async(name)=>{el('accountName').value=name;await el('accountNameForm').submit({preventDefault(){}})},submit:async(current='old-secret',next='new-secret',confirm=next)=>{
     el('currentPassword').value=current;el('newPassword').value=next;el('confirmPassword').value=confirm;
     await el('passwordForm').submit({preventDefault(){}});
   }};
@@ -59,4 +59,28 @@ test('all operating pages load account navigation; profile stays separate',()=>{
   const page=fs.readFileSync(require.resolve('../conta.html'),'utf8');
   assert.match(page,/id="accountEmail"[^>]*readonly/);
   assert.match(page,/href="perfil.html"/);assert.match(page,/href="precos.html"/);
+});
+test('name editing saves only full_name and immediately updates header',async()=>{
+  const h=await harness();await h.saveName('  Maria   Silva  ');
+  assert.equal(h.updates.length,1);
+  assert.deepEqual(Object.keys(h.updates[0]),['data']);
+  assert.deepEqual(Object.keys(h.updates[0].data),['full_name']);
+  assert.equal(h.updates[0].data.full_name,'Maria Silva');
+  assert.equal(h.nodes.accountHeaderName.textContent,'Maria Silva');
+  assert.equal(h.nodes.accountEmail.value,'account@example.test');
+  assert.equal(h.nodes.accountNameFields.disabled,false);
+});
+test('empty or overlong names never reach updateUser',async()=>{
+  const h=await harness();await h.saveName('   ');await h.saveName('x'.repeat(121));
+  assert.equal(h.updates.length,0);
+});
+test('name save failure keeps previous header and permits retry',async()=>{
+  const h=await harness('update-error');await h.saveName('Novo nome');
+  assert.equal(h.nodes.accountHeaderName.textContent,'Nome do cadastro');
+  assert.equal(h.nodes.accountNameFields.disabled,false);
+  assert.match(h.nodes.accountNameStatus.textContent,/Não foi possível/);
+});
+test('unverified session cannot save a name',async()=>{
+  const h=await harness('unauth');await h.saveName('Novo nome');
+  assert.equal(h.updates.length,0);
 });
