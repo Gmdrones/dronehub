@@ -13,7 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="stylesheet" href="css/plan-access.css?v=20260824-free-menu-fix">
-  <script src="js/plan-access.js?v=20260824-free-menu-fix"></script>
+  <script src="js/plan-access.js?v=20260903-account"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -465,7 +465,7 @@
     function verDoc(id) {
       var docs = getDocuments(uid); var d = docs.find(function(x){return x.id===id;});
       if (!d) return;
-      if (d.content) { ultimoDocumentoGerado = d.content; ultimoDocumentoHtml = d.html || '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><body style="padding:40px;font:15px Arial;white-space:pre-wrap">'+htmlSeguro(d.content)+'</body></html>'; mostrarPreviaDocumento(ultimoDocumentoHtml); }
+      if (d.content) { ultimoDocumentoGerado = d.content; ultimoDocumentoHtml = d.html || '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><body style="padding:40px;font:15px Arial;white-space:pre-wrap">'+htmlSeguro(d.content)+'<script src="js/account-nav.js?v=20260903" defer></script></body></html>'; mostrarPreviaDocumento(ultimoDocumentoHtml); }
       else { alert('Documento: ' + (d.name||d.type)); }
     }
 

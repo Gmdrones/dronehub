@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow"><title>Minha conta — Drone Hub</title>
+  <link rel="stylesheet" href="css/account.css?v=20260903">
+  <link rel="stylesheet" href="css/mobile-nav.css?v=20260808-central-menu">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="js/supabase.js?v=20260808-missions-auto" defer></script>
+  <script src="js/mobile-nav.js?v=20260824-free-menu" defer></script>
+  <script src="js/account-nav.js?v=20260903" defer></script>
+  <script src="js/admin-plan-expiry.js?v=20260903" defer></script>
+  <script src="js/account.js?v=20260903" defer></script>
+</head>
+<body class="account-page">
+  <header class="header"><a class="header-profile" href="conta.html" aria-label="Minha conta"><span class="account-avatar" id="accountAvatar">DH</span><span><b id="accountHeaderName">Minha conta</b><small id="accountHeaderPlan">Drone Hub</small></span></a><a class="button quiet dashboard-link" href="dashboard.html">Dashboard</a><button class="button quiet" id="accountLogout" type="button">Sair</button></header>
+  <aside class="sidebar"><a class="brand" href="dashboard.html"><b>DH</b> Drone<span>Hub</span></a><nav class="sidebar-nav"><a href="dashboard.html">Dashboard</a><a href="perfil.html">Perfil do piloto</a><a href="aeronaves.html">Aeronaves</a><a href="fiscalizacao.html">Fiscalização</a><a href="central-voo.html">Central de Voo</a><a href="documentos.html">Documentos</a><a href="missoes.html">Missões</a><a href="financeiro.html">Financeiro</a><a class="active" href="conta.html" aria-current="page">Minha conta</a></nav><div class="sidebar-foot"><small>CONTA E ASSINATURA</small><a href="conta.html">Minha conta</a></div></aside>
+  <main class="account-main">
+    <section class="account-hero"><small>DRONE HUB · CONTA E SEGURANÇA</small><h1>Minha conta</h1><p>Seus dados de acesso e sua assinatura, em um só lugar.</p></section>
+    <p id="accountStatus" role="status" aria-live="polite">Verificando sua conta…</p>
+    <button id="accountRetry" class="button quiet" type="button" hidden>Tentar novamente</button>
+    <a id="accountLogin" class="button quiet" href="login.html" hidden>Entrar novamente</a>
+    <div class="account-grid">
+      <section class="account-card"><small>IDENTIFICAÇÃO</small><h2>Dados da conta</h2><label for="accountName">Nome do titular</label><input id="accountName" readonly aria-describedby="nameHelp" value="Carregando…"><p id="nameHelp">Nome do cadastro usado no cabeçalho. Os dados operacionais do piloto ficam no perfil.</p><label for="accountEmail">E-mail de acesso</label><input id="accountEmail" type="email" readonly autocomplete="username" aria-describedby="emailHelp"><p id="emailHelp">O e-mail não pode ser alterado por esta página.</p><a class="text-link" href="perfil.html">Abrir perfil do piloto →</a></section>
+      <section class="account-card"><small>ASSINATURA</small><h2 id="accountPlan">Consultando plano…</h2><dl><dt>Vencimento do Pro</dt><dd id="accountExpiry">Consultando…</dd></dl><p id="accountExpiryDetail">A validade será consultada no servidor.</p><a class="button primary" href="precos.html" id="accountPurchase">Comprar / renovar Pro</a><p>Mesmo durante uma cortesia, você pode comprar. Após aprovação, o período comprado é somado à validade restante.</p></section>
+      <section class="account-card account-security"><small>SEGURANÇA</small><h2>Alterar senha</h2><p>Confirme sua senha atual e escolha uma nova senha com pelo menos 8 caracteres.</p><form id="passwordForm"><fieldset id="passwordFields" disabled><div class="password-grid"><div><label for="currentPassword">Senha atual</label><input id="currentPassword" type="password" autocomplete="current-password" required></div><div><label for="newPassword">Nova senha</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" required></div><div><label for="confirmPassword">Confirmar nova senha</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></div></div><button class="button primary" type="submit" id="passwordSubmit">Salvar nova senha</button></fieldset><p id="passwordStatus" role="status" aria-live="polite"></p></form></section>
+    </div>
+  </main>
+</body></html>

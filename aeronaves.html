@@ -10,7 +10,7 @@
   <script src="js/supabase.js?v=20260726-fleet-unified"></script>
   <script src="js/dji-flight-log.js?v=20260726-native-txt"></script>
   <link rel="stylesheet" href="css/plan-access.css?v=20260824-free-menu-fix">
-  <script src="js/plan-access.js?v=20260824-free-menu-fix"></script>
+  <script src="js/plan-access.js?v=20260903-account"></script>
   <link rel="stylesheet" href="css/fleet-health.css?v=20260726-sync">
   <script src="js/fleet-health.js?v=20260726-fleet-score-v3" defer></script>
   <style>
@@ -383,5 +383,5 @@
     window.addEventListener('dronehub:cloud-ready', function(){ var syncedUser=getCurrentUser();if(syncedUser&&syncedUser.id&&syncedUser.id!==uid){uid=syncedUser.id;window.dronehubFleetUserId=uid;}backfillKnownWindLimits();render();window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated')); });
     if (typeof lucide !== 'undefined') { lucide.createIcons(); }
   </script>
-</body>
+<script src="js/account-nav.js?v=20260903" defer></script></body>
 </html>

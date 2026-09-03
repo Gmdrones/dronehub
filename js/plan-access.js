@@ -157,8 +157,8 @@
     }
     var planLink = document.getElementById('planLink');
     if (planLink && !isAdmin()) {
-      planLink.href = 'precos.html';
-      planLink.textContent = premium ? 'Comprar / renovar Pro' : 'Conhecer o Pro';
+      planLink.href = 'conta.html';
+      planLink.textContent = 'Minha conta';
       planLink.style.display = '';
       planLink.hidden = false;
     }

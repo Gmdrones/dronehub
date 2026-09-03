@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var current=null;try{current=JSON.parse(localStorage.getItem('dronehub_user')||'null');}catch(e){}
   document.querySelectorAll('#planLink').forEach(function(link){
     if(current&&current.role==='admin'){link.href='admin.html';link.textContent='Gerenciar usuários';}
-    else if(current&&current.plan==='pro'){link.href='precos.html';link.textContent='Comprar / renovar Pro';}
+    else if(current){link.href='conta.html';link.textContent='Minha conta';}
   });
 });
 
