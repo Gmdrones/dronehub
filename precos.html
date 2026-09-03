@@ -144,7 +144,8 @@
         <li><span class="check">✓</span> Assistente IA</li>
         <li><span class="check">✓</span> Backup e exportação de dados</li>
       </ul>
-      <button class="btn btn-primary" id="checkoutBtn">Assinar Pro · <span id="btnPrice">12x de R$ 29,90</span></button>
+      <button class="btn btn-primary" id="checkoutBtn">Comprar / renovar Pro · <span id="btnPrice">12x de R$ 29,90</span></button>
+      <p style="font-size:.85rem;line-height:1.6;margin:14px 0;color:var(--text2)">Já tem Pro, inclusive por cortesia? Você pode comprar agora. Após a aprovação do pagamento, o período comprado será somado à validade restante do seu Pro.</p>
       <div id="wallet_container"></div>
       <p style="text-align:center;font-size:0.7rem;color:var(--text3);margin-top:16px;">Pagamento processado pelo Mercado Pago · 100% seguro</p>
     </div>
@@ -197,16 +198,17 @@
 
       var user = JSON.parse(localStorage.getItem('dronehub_user') || 'null');
       if (!user) { msg.className='mp-msg err'; msg.textContent='Faça login ou crie sua conta gratuita antes de assinar.'; msg.style.display='block'; return; }
-      if (user.plan === 'pro') { msg.className='mp-msg info'; msg.textContent='Você já é assinante Pro!'; msg.style.display='block'; return; }
 
+      if (this.classList.contains('loading')) return;
       this.classList.add('loading');
+      try {
       var planName = currentPlan === 'annual' ? 'Anual' : 'Mensal';
       var totalAmount = PLANOS[currentPlan].total;
 
       var sessionResult = supabaseClient ? await supabaseClient.auth.getSession() : null;
       var accessToken = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
-      if (!accessToken) { msg.className='mp-msg err'; msg.textContent='Sua sessao expirou. Entre novamente antes de assinar.'; msg.style.display='block'; this.classList.remove('loading'); return; }
-      fetch('/api/payment/create', {
+      if (!accessToken) { msg.className='mp-msg err'; msg.textContent='Sua sessão expirou. Entre novamente antes de assinar.'; msg.style.display='block'; this.classList.remove('loading'); return; }
+      await fetch('/api/payment/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
         body: JSON.stringify({
@@ -288,6 +290,13 @@
     checkoutButton.classList.remove('loading');
 
 });
+      } catch (error) {
+        msg.className='mp-msg err';
+        msg.textContent='Não foi possível verificar sua sessão. Entre novamente e tente comprar.';
+        msg.style.display='block';
+      } finally {
+        checkoutButton.classList.remove('loading');
+      }
 
     });
 

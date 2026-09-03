@@ -155,6 +155,13 @@
       planName.textContent = isAdmin() ? 'Admin' : (premium ? 'Pro' : 'Free');
       planName.className = 'sidebar-foot-name ' + (premium ? 'pro' : 'free');
     }
+    var planLink = document.getElementById('planLink');
+    if (planLink && !isAdmin()) {
+      planLink.href = 'precos.html';
+      planLink.textContent = premium ? 'Comprar / renovar Pro' : 'Conhecer o Pro';
+      planLink.style.display = '';
+      planLink.hidden = false;
+    }
     if (userBadge) userBadge.textContent = (current.name || 'Usuário') + ' ' + label;
     document.querySelectorAll('.header-profile .plan').forEach(function (el) {
       el.textContent = label;
