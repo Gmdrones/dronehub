@@ -1,0 +1,26 @@
+/* Shared mobile header for public pages; desktop headers remain unchanged. */
+.public-mobile-header { display:none; }
+@media(max-width:800px) {
+  html body > header.header, html body > header.site-header, html body > header.content-header { display:none!important; }
+  html body > .public-mobile-header { display:block;position:sticky;top:0;z-index:1000;height:116px;padding:0 16px;background:rgba(7,11,18,.97);border-bottom:1px solid rgba(255,255,255,.1);backdrop-filter:blur(18px);font-family:Inter,Arial,sans-serif; }
+  .public-mobile-top { height:68px;display:flex;align-items:center;justify-content:space-between;gap:10px; }
+  .public-mobile-brand { display:flex;align-items:center;gap:7px;text-decoration:none;color:#f4f8fb;font-size:13px;font-weight:700;white-space:nowrap; }
+  .public-mobile-brand > span { width:32px;height:32px;display:grid;place-items:center;border-radius:9px;background:linear-gradient(135deg,#44dbff,#087ea4);color:#06121b;font-size:10px; }
+  .public-mobile-brand b { color:#16c6ff; }
+  .public-mobile-actions { display:flex;gap:7px; }
+  .public-mobile-actions a { display:flex;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border:1px solid rgba(255,255,255,.16);border-radius:9px;color:#f4f8fb;text-decoration:none;font-size:12px;font-weight:600; }
+  .public-mobile-actions a:last-child { background:#16c6ff;color:#041018;border-color:#16c6ff; }
+  html body .public-mobile-header > nav { display:flex!important;position:static;flex-direction:row;align-items:stretch;justify-content:space-between;gap:8px!important;height:48px;padding:0;margin:0;border:0;border-top:1px solid rgba(255,255,255,.08);background:none; }
+  html body .public-mobile-header > nav a { display:flex!important;align-items:center;min-height:44px;font-size:12px!important;font-weight:400;line-height:1;text-decoration:none;color:#a4b2c4;white-space:nowrap; }
+  html body .public-mobile-header > nav a[aria-current="page"] { color:#16c6ff; }
+  .public-mobile-header a:focus-visible { outline:2px solid #16c6ff;outline-offset:2px;border-radius:4px; }
+  .public-mobile-header ~ .reading-progress,.reading-progress { top:116px; }
+  .article-page .article h2 { scroll-margin-top:140px; }
+  html body:has(> .site-header) .hero { padding-top:44px; }
+}
+@media(max-width:380px) {
+  html body > .public-mobile-header { padding-inline:12px; }
+  .public-mobile-brand { font-size:12px;gap:5px; }
+  .public-mobile-actions a { font-size:11px;padding-inline:9px; }
+  html body .public-mobile-header > nav a { font-size:11px!important; }
+}
