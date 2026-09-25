@@ -12,27 +12,65 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/content-hub.css">
-  <style>
-    .blog-hero{max-width:1120px;margin:auto;padding:90px 24px 52px}.blog-hero h1{font:700 clamp(44px,7vw,72px)/1 var(--title);letter-spacing:-3px;margin:18px 0}.blog-hero p{font-size:20px;color:var(--muted);max-width:680px}.blog-grid{max-width:1120px;margin:auto;padding:0 24px 90px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.blog-card{display:flex;flex-direction:column;min-height:340px;border:1px solid var(--line);border-radius:18px;padding:25px;background:linear-gradient(145deg,rgba(32,201,243,.07),var(--panel));text-decoration:none;transition:.2s}.blog-card:hover{transform:translateY(-4px);border-color:rgba(32,201,243,.4)}.blog-card small{color:var(--cyan);font-weight:800;letter-spacing:.08em}.blog-card h2{font:700 23px/1.2 var(--title);margin:18px 0 12px}.blog-card p{color:var(--muted);margin:0}.blog-card b{margin-top:auto;color:var(--cyan)}@media(max-width:850px){.blog-grid{grid-template-columns:1fr 1fr}}@media(max-width:560px){.blog-grid{grid-template-columns:1fr}}
-  </style>
+
   <script src="js/public-content-nav.js" defer></script>
-</head>
-<body>
+<link rel="stylesheet" href="css/blog-editorial.css">
+<script src="js/blog-editorial.js" defer></script></head>
+<body class="editorial blog-page"><a class="skip-link" href="#blog-content">Pular para os guias</a>
   <header class="content-header">
     <a class="content-brand" href="/"><span class="content-mark">DH</span>DRONE<b>HUB</b></a>
     <nav class="content-nav"><a href="/">Home</a><a href="funcionalidades">Funcionalidades</a><a href="precos">Preços</a><a href="sobre">Sobre</a><a href="blog">Blog</a><a href="login.html">Entrar</a><a class="nav-cta" href="login.html?signup=true&utm_source=blog&utm_medium=organic">Cadastrar grátis</a></nav>
   </header>
-  <main>
-    <section class="blog-hero"><span class="breadcrumb">CONHECIMENTO PARA VOAR MELHOR</span><h1>Guias para uma operação mais profissional.</h1><p>Conteúdo direto ao ponto para planejar missões, organizar documentos e transformar voo em negócio.</p></section>
-    <section class="blog-grid">
-      <a class="blog-card" href="documentos-obrigatorios-piloto-drone"><small>REGULAMENTAÇÃO</small><h2>Documentos obrigatórios para pilotar drone no Brasil</h2><p>Um roteiro prático sobre ANAC, DECEA, ANATEL, seguro e avaliação de risco.</p><b>Ler guia completo →</b></a>
-      <a class="blog-card" href="avaliacao-risco-operacional-drone"><small>SEGURANÇA</small><h2>Como fazer uma avaliação de risco operacional</h2><p>Identifique perigos, classifique riscos e registre medidas mitigadoras antes da missão.</p><b>Ler guia completo →</b></a>
-      <a class="blog-card" href="modelo-orcamento-servico-drone"><small>COMERCIAL</small><h2>Modelo de orçamento para serviço com drone</h2><p>O que incluir para transmitir confiança e proteger sua margem.</p><b>Ler guia completo →</b></a>
-      <a class="blog-card" href="calcular-preco-filmagem-drone"><small>PRECIFICAÇÃO</small><h2>Como calcular o preço de uma filmagem com drone</h2><p>Uma fórmula simples para cobrir custos, risco, trabalho e lucro.</p><b>Ler guia completo →</b></a>
-      <a class="blog-card" href="checklist-pre-voo-drone"><small>OPERAÇÃO</small><h2>Checklist pré-voo de drone</h2><p>Aeronave, baterias, clima, espaço aéreo, equipe e plano de emergência.</p><b>Ler guia completo →</b></a>
-      <a class="blog-card" href="controle-manutencao-drones"><small>MANUTENÇÃO</small><h2>Controle de manutenção de drones</h2><p>Como registrar horas, ciclos, ocorrências e intervenções da frota.</p><b>Ler guia completo →</b></a>
-    </section>
-  </main>
+  <main id="blog-content">
+<section class="blog-hero">
+<div class="hero-copy"><span class="eyebrow">DRONEHUB · CENTRAL DE CONHECIMENTO</span>
+<h1>Informação para voar,<br>operar e <em>vender melhor.</em></h1>
+<p>Guias práticos sobre regulamentação, planejamento, segurança, precificação e gestão de operações com drones.</p></div>
+<div class="hero-index" aria-hidden="true"><span>CONHECIMENTO EM CAMPO</span><b>01 — 06</b><span>DO PLANEJAMENTO À OPERAÇÃO</span></div></section>
+<section class="library-controls" aria-label="Encontrar artigos" hidden><label class="search-box"><span aria-hidden="true">⌕</span><span class="sr-only">Buscar artigos</span><input type="search" id="article-search" placeholder="Buscar no DroneHub Blog…" autocomplete="off"><kbd aria-hidden="true">BUSCAR</kbd></label>
+<div class="category-filters" role="group" aria-label="Filtrar por categoria"><button type="button" data-filter="" aria-pressed="true">Todos os guias</button><button type="button" data-filter="REGULAMENTAÇÃO" aria-pressed="false">Regulamentação</button><button type="button" data-filter="OPERAÇÃO" aria-pressed="false">Operação</button><button type="button" data-filter="SEGURANÇA" aria-pressed="false">Segurança</button><button type="button" data-filter="COMERCIAL" aria-pressed="false">Comercial</button><button type="button" data-filter="PRECIFICAÇÃO" aria-pressed="false">Precificação</button><button type="button" data-filter="MANUTENÇÃO" aria-pressed="false">Manutenção</button></div></section>
+<section class="featured-section">
+<div class="section-heading">
+<h2>Em destaque</h2><span>LEITURA ESSENCIAL</span></div><a class="featured-card" href="documentos-obrigatorios-piloto-drone" data-category="REGULAMENTAÇÃO"><img src="assets/blog/documentos-obrigatorios-piloto-drone.svg" width="800" height="450" alt="" fetchpriority="high">
+<div class="card-copy">
+<div class="card-meta"><span>REGULAMENTAÇÃO</span><span>7 min de leitura</span></div>
+<h3>Documentos obrigatórios para pilotar drone no Brasil</h3>
+<p>Um roteiro prático sobre ANAC, DECEA, ANATEL, seguro e avaliação de risco.</p><span class="card-link">Ler artigo <span aria-hidden="true">↗</span></span></div></a></section>
+<section class="recent-section">
+<div class="section-heading">
+<h2>Guias recentes</h2><span id="results-count" role="status" aria-live="polite">6 guias para explorar</span></div>
+<div class="guides-grid"><a class="guide-card" href="documentos-obrigatorios-piloto-drone" data-category="REGULAMENTAÇÃO"><img src="assets/blog/documentos-obrigatorios-piloto-drone.svg" width="800" height="450" alt="" loading="lazy">
+<div class="card-copy">
+<div class="card-meta"><span>REGULAMENTAÇÃO</span><span>7 min de leitura</span></div>
+<h3>Documentos obrigatórios para pilotar drone no Brasil</h3>
+<p>Um roteiro prático sobre ANAC, DECEA, ANATEL, seguro e avaliação de risco.</p><span class="card-link">Ler artigo <span aria-hidden="true">↗</span></span></div></a><a class="guide-card" href="avaliacao-risco-operacional-drone" data-category="SEGURANÇA"><img src="assets/blog/avaliacao-risco-operacional-drone.svg" width="800" height="450" alt="" loading="lazy">
+<div class="card-copy">
+<div class="card-meta"><span>SEGURANÇA</span><span>6 min de leitura</span></div>
+<h3>Como fazer uma avaliação de risco operacional</h3>
+<p>Identifique perigos, classifique riscos e registre medidas mitigadoras antes da missão.</p><span class="card-link">Ler artigo <span aria-hidden="true">↗</span></span></div></a><a class="guide-card" href="modelo-orcamento-servico-drone" data-category="COMERCIAL"><img src="assets/blog/modelo-orcamento-servico-drone.svg" width="800" height="450" alt="" loading="lazy">
+<div class="card-copy">
+<div class="card-meta"><span>COMERCIAL</span><span>5 min de leitura</span></div>
+<h3>Modelo de orçamento para serviço com drone</h3>
+<p>O que incluir para transmitir confiança e proteger sua margem.</p><span class="card-link">Ler artigo <span aria-hidden="true">↗</span></span></div></a><a class="guide-card" href="calcular-preco-filmagem-drone" data-category="PRECIFICAÇÃO"><img src="assets/blog/calcular-preco-filmagem-drone.svg" width="800" height="450" alt="" loading="lazy">
+<div class="card-copy">
+<div class="card-meta"><span>PRECIFICAÇÃO</span><span>6 min de leitura</span></div>
+<h3>Como calcular o preço de uma filmagem com drone</h3>
+<p>Uma fórmula simples para cobrir custos, risco, trabalho e lucro.</p><span class="card-link">Ler artigo <span aria-hidden="true">↗</span></span></div></a><a class="guide-card" href="checklist-pre-voo-drone" data-category="OPERAÇÃO"><img src="assets/blog/checklist-pre-voo-drone.svg" width="800" height="450" alt="" loading="lazy">
+<div class="card-copy">
+<div class="card-meta"><span>OPERAÇÃO</span><span>7 min de leitura</span></div>
+<h3>Checklist pré-voo de drone</h3>
+<p>Aeronave, baterias, clima, espaço aéreo, equipe e plano de emergência.</p><span class="card-link">Ler artigo <span aria-hidden="true">↗</span></span></div></a><a class="guide-card" href="controle-manutencao-drones" data-category="MANUTENÇÃO"><img src="assets/blog/controle-manutencao-drones.svg" width="800" height="450" alt="" loading="lazy">
+<div class="card-copy">
+<div class="card-meta"><span>MANUTENÇÃO</span><span>6 min de leitura</span></div>
+<h3>Controle de manutenção de drones</h3>
+<p>Como registrar horas, ciclos, ocorrências e intervenções da frota.</p><span class="card-link">Ler artigo <span aria-hidden="true">↗</span></span></div></a></div>
+<div class="empty-results" hidden>
+<h3>Nenhum guia encontrado</h3>
+<p>Tente outro termo ou explore todas as categorias.</p><button type="button" id="clear-filters">Limpar busca e filtros</button></div></section>
+<section class="blog-outro">
+<div><span class="eyebrow">DO CONHECIMENTO À PRÁTICA</span>
+<h2>Sua próxima operação começa aqui.</h2>
+<p>Conheça as ferramentas que acompanham você em cada etapa.</p></div><a href="funcionalidades">Explorar funcionalidades <span aria-hidden="true">↗</span></a></section></main>
   <footer class="content-footer">© 2026 Drone Hub · Voe. Planeje. Registre. Evolua.</footer>
 </body>
 </html>
