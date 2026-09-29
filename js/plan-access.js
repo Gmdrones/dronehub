@@ -98,16 +98,36 @@
 
 
   function showRenewalReminder() {
+    // Reappear on every dashboard visit; no persistent dismissal flag.
     var account = user();
-    if (!isPro() || isAdmin() || !account.planExpiresAt || document.querySelector('.plan-renewal-reminder')) return;
-    var remaining = new Date(account.planExpiresAt).getTime() - Date.now();
-    if (remaining <= 0 || remaining > 7 * 86400000) return;
-    var days = Math.max(1, Math.ceil(remaining / 86400000));
-    var banner = document.createElement('aside');
-    banner.className = 'plan-renewal-reminder'; banner.setAttribute('role', 'status');
-    banner.innerHTML = '<strong>Seu Pro vence em '+days+(days===1?' dia.':' dias.')+'</strong> Renove para manter os recursos Pro. <a href="precos.html">Renovar agora</a><button type="button" aria-label="Fechar aviso">×</button>';
-    banner.querySelector('button').onclick = function(){ banner.remove(); };
-    document.body.appendChild(banner);
+    if (currentFile !== 'dashboard.html' || !account.id || !isPro() || isAdmin() ||
+        !account.planExpiresAt || document.querySelector('.plan-expiry-dialog')) return;
+    var expires = new Date(account.planExpiresAt);
+    var remaining = expires.getTime() - Date.now();
+    if (!Number.isFinite(remaining) || remaining <= 0 || remaining > 7 * 86400000) return;
+    var days = Math.ceil(remaining / 86400000);
+    var today = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    var expiryDate = expires.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    var title = expiryDate === today ? 'Seu plano Pro vence hoje' :
+      'Seu plano Pro vence em ' + days + (days === 1 ? ' dia' : ' dias');
+    var dialog = document.createElement('dialog');
+    dialog.className = 'plan-expiry-dialog';
+    dialog.setAttribute('aria-labelledby', 'plan-expiry-title');
+    dialog.setAttribute('aria-describedby', 'plan-expiry-description');
+    dialog.innerHTML = '<span class="plan-expiry-eyebrow">VENCIMENTO DO PLANO</span>' +
+      '<button class="plan-expiry-close" type="button" aria-label="Fechar aviso">×</button>' +
+      '<h2 id="plan-expiry-title"></h2><p id="plan-expiry-description"></p>' +
+      '<div class="plan-expiry-actions"><a href="precos.html">Renovar meu Pro</a>' +
+      '<button type="button" autofocus>Continuar no painel</button></div>';
+    dialog.querySelector('h2').textContent = title;
+    dialog.querySelector('p').textContent = 'Vencimento em ' + expiryDate +
+      '. Renove seu plano para continuar utilizando os recursos Pro do DroneHub.';
+    dialog.querySelectorAll('button').forEach(function (button) {
+      button.addEventListener('click', function () { dialog.close(); });
+    });
+    dialog.addEventListener('close', function () { dialog.remove(); }, { once: true });
+    document.body.appendChild(dialog);
+    dialog.showModal();
   }
 
   function groupFreeNavigation() {
@@ -182,6 +202,7 @@
     }
     enforce();
     refreshAccessUI();
+    showRenewalReminder();
     window.dispatchEvent(new CustomEvent('dronehub:access-ready', { detail: user() }));
   }
 
