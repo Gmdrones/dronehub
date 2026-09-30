@@ -1,0 +1,9 @@
+name = "dronehub-renewal-scheduler"
+main = "api/renewal-scheduler.js"
+compatibility_date = "2026-09-30"
+
+[triggers]
+crons = ["0 12 * * *"]
+
+[vars]
+SITE_URL = "https://dronehub.app.br"
