@@ -4,6 +4,8 @@ A rotina POST /api/cron/subscription-expiry envia lembretes para Pro ativo com v
 
 Cada combinação usuário + vencimento + faixa é reservada atomicamente em renewal_email_deliveries. Não há repetição automática de uma tentativa, inclusive em caso de timeout. Estados failed, claimed e uncertain exigem conferência no Brevo antes de qualquer recuperação manual. accepted significa aceitação pelo provedor, não entrega na caixa de entrada.
 
+O papel de serviço do Supabase também precisa de leitura em `account_entitlements` para que a rota protegida de teste confirme que quem a acionou é administrador. Essa permissão é exclusiva do servidor e não é exposta ao navegador.
+
 ## Configuração
 
 Pages: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, BREVO_API_KEY, EMAIL_FROM, CRON_SECRET e RENEWAL_EMAILS_ENABLED=true. Sem a última variável, envios reais permanecem desativados. Nunca coloque segredos no repositório.

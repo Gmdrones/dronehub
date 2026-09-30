@@ -13,4 +13,7 @@ create table public.renewal_email_deliveries (
 alter table public.renewal_email_deliveries enable row level security;
 revoke all on public.renewal_email_deliveries from public, anon, authenticated;
 grant select, insert, update on public.renewal_email_deliveries to service_role;
+-- The protected test endpoint validates the current administrator's entitlement
+-- using the server-only Supabase role. This never grants access to browsers.
+grant select on table public.account_entitlements to service_role;
 comment on table public.renewal_email_deliveries is 'At most one provider attempt per expiry/stage. Accepted is not inbox delivery. Reconcile claimed/uncertain before retry.';
