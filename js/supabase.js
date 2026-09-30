@@ -190,6 +190,7 @@ async function signInWithSupabase(email, password) {
       const userData = { id: data.user.id, email: data.user.email, name: data.user.user_metadata?.full_name || email.split('@')[0], plan: 'free', role: 'pilot', createdAt: data.user.created_at };
       localStorage.setItem('dronehub_user', JSON.stringify(userData));
       await syncCurrentEntitlement();
+      try { await fetch('/api/email/welcome', { method:'POST', headers:{ Authorization:'Bearer '+data.session.access_token } }); } catch (_) {}
     }
     return data;
   }

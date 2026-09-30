@@ -516,3 +516,9 @@ document.addEventListener('DOMContentLoaded', function () {
     footer.appendChild(legal);
   }
 });
+
+// Canal único de suporte, disponível em todas as telas que carregam main.js.
+document.addEventListener('DOMContentLoaded', function () {
+  if (document.getElementById('dronehubSupport')) return;
+  var link=document.createElement('a');link.id='dronehubSupport';link.href='mailto:appdronehub@gmail.com?subject=Suporte%20DroneHub';link.setAttribute('aria-label','Falar com o suporte do DroneHub');link.innerHTML='<span aria-hidden="true">?</span><b>Suporte</b>';document.body.appendChild(link);
+});
