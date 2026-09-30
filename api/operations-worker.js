@@ -318,7 +318,12 @@ export default {
   async scheduled(event, env, ctx) {
     if (env.OPERATIONS_KV) ctx.waitUntil(env.OPERATIONS_KV.put('weather-service-heartbeat', JSON.stringify({ updatedAt: new Date().toISOString(), schedule: event.cron })));
     if (env.SITE_URL && env.CRON_SECRET) {
-      ctx.waitUntil(fetch(`${env.SITE_URL.replace(/\/$/, '')}/api/cron/subscription-expiry`, { headers: { Authorization: `Bearer ${env.CRON_SECRET}` } }));
+      ctx.waitUntil(fetch(`${env.SITE_URL.replace(/\/$/, '')}/api/cron/subscription-expiry`, {
+        method: 'POST', headers: { Authorization: `Bearer ${env.CRON_SECRET}` }
+      }).then(async response => {
+        if (!response.ok) throw new Error(`Falha na rotina de renovação: HTTP ${response.status}`);
+        await response.text();
+      }));
     }
   }
 };

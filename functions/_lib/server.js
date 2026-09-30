@@ -41,7 +41,7 @@ async function logIntegration(env, service, event, level, details = {}, userId =
 }
 
 async function sendEmail(env, message) {
-  if (!env.BREVO_API_KEY) return false;
+  if (!env.BREVO_API_KEY) throw new Error('BREVO_API_KEY não configurada.');
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': env.BREVO_API_KEY, 'Content-Type': 'application/json' },
@@ -49,11 +49,20 @@ async function sendEmail(env, message) {
       sender: { name: 'Drone Hub', email: env.EMAIL_FROM || 'contato@dronehub.app.br' },
       to: [{ email: message.to, name: message.name || message.to }],
       subject: message.subject,
-      htmlContent: message.html
-    })
+      htmlContent: message.html,
+      ...(message.text ? { textContent: message.text } : {})
+    }),
+    signal: AbortSignal.timeout(15000)
   });
-  if (!response.ok) throw new Error(`Brevo ${response.status}: ${await response.text()}`);
-  return true;
+  if (!response.ok) {
+    const error = new Error(`Brevo recusou o envio (${response.status}).`);
+    error.code = `brevo_${response.status}`;
+    error.definitelyRejected = response.status >= 400 && response.status < 500;
+    throw error;
+  }
+  const receipt = await response.json();
+  if (!receipt.messageId) throw new Error('Brevo não retornou comprovante de aceitação.');
+  return receipt;
 }
 
 export { json, getUser, supabaseAdmin, logIntegration, sendEmail };
