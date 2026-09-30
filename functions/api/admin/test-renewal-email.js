@@ -13,6 +13,7 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: true, recipient });
   } catch (error) {
     await logIntegration(env, 'email', 'renewal_test', 'error', { code: error.code || 'renewal_test_failed' });
-    return json({ error: 'Não foi possível enviar o teste de renovação.', code: error.code || 'renewal_test_failed' }, 500);
+    const detail = error instanceof Error ? error.message.slice(0, 140) : 'Erro desconhecido.';
+    return json({ error: 'Não foi possível enviar o teste de renovação.', code: error.code || 'renewal_test_failed', detail }, 500);
   }
 }
