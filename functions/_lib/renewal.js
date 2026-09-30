@@ -6,13 +6,14 @@ export function renewalStage(a, now = Date.now()) {
   return remaining <= DAY ? 1 : remaining <= 3 * DAY ? 3 : 7;
 }
 const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function renewalMessage(profile, expiry) {
+export function renewalMessage(profile, expiry, test = false) {
   const name = String(profile.user_metadata?.full_name || profile.user_metadata?.name || 'piloto').trim().slice(0,100) || 'piloto';
   const date = new Date(expiry).toLocaleString('pt-BR', { timeZone:'America/Sao_Paulo', dateStyle:'short', timeStyle:'short' });
   const url = 'https://dronehub.app.br/precos?utm_source=email&utm_medium=renewal';
-  return { to:profile.email, name, subject:'Seu DroneHub Pro está próximo do vencimento',
-    text:`Olá, ${name}! Seu Pro vence em ${date} (Brasília). Renove para continuar utilizando os recursos Pro: ${url}. Se acabou de renovar, confira a validade na sua conta.`,
-    html:`<div style="background:#080c12;padding:32px 16px;font-family:Arial,sans-serif;color:#f4f8fb"><div style="max-width:540px;margin:auto;padding:28px;background:#101824;border:1px solid #253547;border-radius:16px"><p style="color:#20c9f3;font-size:12px">DRONEHUB · SEU PLANO</p><h1 style="font-size:27px">Continue suas operações com o Pro.</h1><p>Olá, ${escapeHTML(name)}!</p><p style="color:#bdcbd9;line-height:1.7">Seu plano Pro vence em <strong>${escapeHTML(date)} (Brasília)</strong>. Renove para continuar utilizando os recursos Pro do DroneHub.</p><p style="margin:28px 0"><a href="${url}" style="display:inline-block;background:#20c9f3;color:#06111c;padding:14px 22px;border-radius:8px;font-weight:bold;text-decoration:none">Renovar meu Pro</a></p><p style="color:#9aaec1;font-size:13px">Se você acabou de renovar, confira a nova validade na sua conta.</p></div></div>` };
+  const testNote = test ? ' Este é um teste de entrega; nenhum plano será alterado.' : '';
+  return { to:profile.email, name, subject:`${test ? '[Teste] ' : ''}Seu DroneHub Pro está próximo do vencimento`,
+    text:`Olá, ${name}! Seu Pro vence em ${date} (Brasília). Renove para continuar utilizando os recursos Pro: ${url}. Se acabou de renovar, confira a validade na sua conta.${testNote}`,
+    html:`<div style="background:#080c12;padding:32px 16px;font-family:Arial,sans-serif;color:#f4f8fb"><div style="max-width:540px;margin:auto;padding:28px;background:#101824;border:1px solid #253547;border-radius:16px"><p style="color:#20c9f3;font-size:12px">DRONEHUB · SEU PLANO</p><h1 style="font-size:27px">Continue suas operações com o Pro.</h1>${test ? '<p style="padding:10px 12px;border-radius:8px;background:#193049;color:#9eeaff;font-size:13px">Teste de entrega — nenhum plano será alterado.</p>' : ''}<p>Olá, ${escapeHTML(name)}!</p><p style="color:#bdcbd9;line-height:1.7">Seu plano Pro vence em <strong>${escapeHTML(date)} (Brasília)</strong>. Renove para continuar utilizando os recursos Pro do DroneHub.</p><p style="margin:28px 0"><a href="${url}" style="display:inline-block;background:#20c9f3;color:#06111c;padding:14px 22px;border-radius:8px;font-weight:bold;text-decoration:none">Renovar meu Pro</a></p><p style="color:#9aaec1;font-size:13px">Se você acabou de renovar, confira a nova validade na sua conta.</p></div></div>` };
 }
 function contactable(p, now) { return p?.email && p.email_confirmed_at && !(p.banned_until && new Date(p.banned_until).getTime() > now); }
 export async function runRenewals({ db, getProfile, send, now = () => Date.now() }, dryRun = false) {

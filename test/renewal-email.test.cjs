@@ -47,6 +47,11 @@ test('email escapes user metadata and uses Brasília expiry and renewal link',as
   const {renewalMessage}=await modulePromise;const m=renewalMessage({email:'test@example.test',user_metadata:{full_name:'<img src=x>'}},'2026-10-03T01:00:00Z');
   assert(m.html.includes('&lt;img'));assert(!m.html.includes('<img'));assert(m.html.includes('02/10/2026'));assert(m.html.includes('https://dronehub.app.br/precos?'));assert(m.text);
 });
+test('test email is visibly marked and does not alter the regular message',async()=>{
+  const {renewalMessage}=await modulePromise;
+  const message=renewalMessage({email:'test@example.test',user_metadata:{}},'2026-10-03T01:00:00Z',true);
+  assert.match(message.subject,/^\[Teste\]/);assert.match(message.html,/Teste de entrega/);assert.match(message.text,/nenhum plano será alterado/);
+});
 test('missing Brevo key fails rather than reporting a sent email',async()=>{
   const {sendEmail}=await load('functions/_lib/server.js');await assert.rejects(()=>sendEmail({},{}),/BREVO_API_KEY/);
 });
