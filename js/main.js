@@ -517,29 +517,39 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-// Canal único de suporte. Oferece Gmail, aplicativo de e-mail e cópia do
-// endereço para funcionar mesmo quando o aparelho não tem cliente configurado.
+// Canal único de suporte. A mensagem é enviada pelo próprio DroneHub.
 document.addEventListener('DOMContentLoaded', function () {
   if (document.getElementById('dronehubSupport')) return;
-  var address = 'appdronehub@gmail.com';
-  var mailto = 'mailto:' + address + '?subject=Suporte%20DroneHub';
-  var gmail = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(address) + '&su=Suporte%20DroneHub';
   var link = document.createElement('button');
   link.id = 'dronehubSupport'; link.type = 'button';
   link.setAttribute('aria-label', 'Falar com o suporte do DroneHub');
   link.innerHTML = '<span aria-hidden="true">?</span><b>Suporte</b>';
   var dialog = document.createElement('div');
   dialog.id = 'dronehubSupportDialog'; dialog.hidden = true;
-  dialog.innerHTML = '<div class="dronehub-support-backdrop" data-support-close></div><section class="dronehub-support-card" role="dialog" aria-modal="true" aria-labelledby="dronehubSupportTitle"><button class="dronehub-support-close" type="button" aria-label="Fechar" data-support-close>×</button><p class="dronehub-support-label">SUPORTE DRONEHUB</p><h2 id="dronehubSupportTitle">Como podemos ajudar?</h2><p>Envie sua mensagem para nossa equipe. Escolha a forma que funciona melhor no seu aparelho.</p><a class="dronehub-support-primary" href="' + gmail + '" target="_blank" rel="noopener">Escrever pelo Gmail</a><a class="dronehub-support-secondary" href="' + mailto + '">Usar aplicativo de e-mail</a><button class="dronehub-support-copy" type="button" data-support-copy>Copiar ' + address + '</button></section>';
+  dialog.innerHTML = '<div class="dronehub-support-backdrop" data-support-close></div><section class="dronehub-support-card" role="dialog" aria-modal="true" aria-labelledby="dronehubSupportTitle"><button class="dronehub-support-close" type="button" aria-label="Fechar" data-support-close>×</button><p class="dronehub-support-label">SUPORTE DRONEHUB</p><h2 id="dronehubSupportTitle">Como podemos ajudar?</h2><p>Envie sua mensagem sem sair do DroneHub. Nossa equipe responderá pelo e-mail cadastrado na sua conta.</p><form data-support-form><label for="dronehubSupportTopic">Assunto</label><input id="dronehubSupportTopic" name="topic" maxlength="100" minlength="3" required placeholder="Ex.: Não consigo acessar minha conta"><label for="dronehubSupportPhone">Telefone para contato <small>(opcional)</small></label><input id="dronehubSupportPhone" name="phone" inputmode="tel" maxlength="40" placeholder="(00) 00000-0000"><label for="dronehubSupportMessage">Mensagem</label><textarea id="dronehubSupportMessage" name="message" rows="5" maxlength="4000" minlength="10" required placeholder="Conte para a gente como podemos ajudar."></textarea><p class="dronehub-support-feedback" aria-live="polite" data-support-feedback></p><button class="dronehub-support-primary" type="submit" data-support-submit>Enviar mensagem</button></form></section>';
   document.body.appendChild(link); document.body.appendChild(dialog);
   function closeSupport() { dialog.hidden = true; link.focus(); }
-  link.addEventListener('click', function () { dialog.hidden = false; dialog.querySelector('.dronehub-support-close').focus(); });
+  link.addEventListener('click', function () { dialog.hidden = false; dialog.querySelector('#dronehubSupportMessage').focus(); });
   dialog.querySelectorAll('[data-support-close]').forEach(function (button) { button.addEventListener('click', closeSupport); });
-  dialog.querySelector('[data-support-copy]').addEventListener('click', function (event) {
-    var button = event.currentTarget;
-    function done() { button.textContent = 'E-mail copiado'; }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(address).then(done).catch(function () { window.prompt('Copie o e-mail de suporte:', address); });
-    else window.prompt('Copie o e-mail de suporte:', address);
+  dialog.querySelector('[data-support-form]').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var form = event.currentTarget, message = form.message.value.trim(), topic = form.topic.value.trim(), phone = form.phone.value.trim();
+    var feedback = dialog.querySelector('[data-support-feedback]'), submit = dialog.querySelector('[data-support-submit]');
+    if (topic.length < 3) { feedback.textContent = 'Informe o assunto da sua mensagem.'; return; }
+    if (message.length < 10) { feedback.textContent = 'Escreva pelo menos 10 caracteres para enviar.'; return; }
+    try {
+      if (!window.supabaseClient) throw new Error('Faça login para enviar uma mensagem ao suporte.');
+      var sessionResult = await window.supabaseClient.auth.getSession();
+      var token = sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+      if (!token) throw new Error('Faça login para enviar uma mensagem ao suporte.');
+      submit.disabled = true; submit.textContent = 'Enviando…'; feedback.textContent = '';
+      var response = await fetch('/api/support', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ topic: topic, phone: phone, message: message }) });
+      var result = await response.json().catch(function () { return {}; });
+      if (!response.ok) throw new Error(result.error || 'Não foi possível enviar sua mensagem agora.');
+      form.reset(); feedback.textContent = 'Mensagem enviada. Vamos responder pelo e-mail da sua conta.'; submit.textContent = 'Mensagem enviada';
+    } catch (error) {
+      feedback.textContent = error.message || 'Não foi possível enviar sua mensagem agora.'; submit.disabled = false; submit.textContent = 'Enviar mensagem';
+    }
   });
   document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !dialog.hidden) closeSupport(); });
 });

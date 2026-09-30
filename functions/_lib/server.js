@@ -50,6 +50,7 @@ async function sendEmail(env, message) {
       to: [{ email: message.to, name: message.name || message.to }],
       subject: message.subject,
       htmlContent: message.html,
+      ...(message.replyTo ? { replyTo: message.replyTo } : {}),
       ...(message.text ? { textContent: message.text } : {})
     }),
     signal: AbortSignal.timeout(15000)
