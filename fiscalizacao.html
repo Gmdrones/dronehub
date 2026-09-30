@@ -189,7 +189,8 @@
     }
 
     async function gerarQR(token,minutes){
-      token=token||(crypto&&crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2));minutes=Number(minutes||15);
+      if(!token&&!(window.crypto&&crypto.randomUUID)){alert('Este navegador não oferece geração segura de credenciais. Atualize-o para continuar.');return false;}
+      token=token||crypto.randomUUID();minutes=Number(minutes||15);
       var expiresAt=new Date(Date.now()+minutes*60000).toISOString(),profile=getProfile(uid),aircraft=getAircraft(uid),docs=getDocuments(uid);
       var visibleDocs=docs.filter(function(d){return typeof isInspectionDocument==='function'&&isInspectionDocument(d);});
       var sharedDocs=await Promise.all(visibleDocs.map(async function(d){return{name:d.name||d.type||'Documento',type:d.type||'',expiry:d.expiry||'',isSarpas:typeof isSarpasDocument==='function'&&isSarpasDocument(d),fileName:d.fileName||'',fileUrl:d.filePath?await signedDocumentUrl(d,minutes*60):''};}));
