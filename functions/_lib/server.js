@@ -54,13 +54,16 @@ async function sendEmail(env, message) {
     }),
     signal: AbortSignal.timeout(15000)
   });
+  const body = await response.text();
+  let receipt = null;
+  try { receipt = body ? JSON.parse(body) : null; } catch (_) {}
   if (!response.ok) {
-    const error = new Error(`Brevo recusou o envio (${response.status}).`);
+    const providerDetail = String(receipt?.message || receipt?.code || body || '').replace(/\s+/g, ' ').slice(0, 220);
+    const error = new Error(`Brevo recusou o envio (${response.status})${providerDetail ? `: ${providerDetail}` : '.'}`);
     error.code = `brevo_${response.status}`;
     error.definitelyRejected = response.status >= 400 && response.status < 500;
     throw error;
   }
-  const receipt = await response.json();
   if (!receipt.messageId) throw new Error('Brevo não retornou comprovante de aceitação.');
   return receipt;
 }
