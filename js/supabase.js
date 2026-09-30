@@ -244,13 +244,22 @@ function setCloudSyncStatus(state) {
 function queueCloudWrite(item) {
   var queue = JSON.parse(localStorage.getItem('dronehub_sync_queue') || '[]');
   queue = queue.filter(function (x) { return !(x.collection === item.collection && x.userId === item.userId && x.recordId === item.recordId); });
-  queue.push(item); localStorage.setItem('dronehub_sync_queue', JSON.stringify(queue));
+  queue.push(Object.assign({ operation: 'upsert' }, item)); localStorage.setItem('dronehub_sync_queue', JSON.stringify(queue));
+}
+function getCloudQueue() { return JSON.parse(localStorage.getItem('dronehub_sync_queue') || '[]'); }
+function hasQueuedCloudMutation(collection, userId, recordId) {
+  return getCloudQueue().some(function (item) {
+    return item.collection === collection && item.userId === userId && String(item.recordId) === String(recordId);
+  });
 }
 async function retryCloudQueue() {
-  var queue = JSON.parse(localStorage.getItem('dronehub_sync_queue') || '[]');
+  var queue = getCloudQueue();
   if (!queue.length) return setCloudSyncStatus('ok');
   localStorage.removeItem('dronehub_sync_queue');
-  for (var i = 0; i < queue.length; i++) await persistCloudRecord(queue[i].collection, queue[i].userId, queue[i].data, queue[i].recordId);
+  for (var i = 0; i < queue.length; i++) {
+    if (queue[i].operation === 'delete') await removeCloudRecord(queue[i].collection, queue[i].userId, queue[i].recordId);
+    else await persistCloudRecord(queue[i].collection, queue[i].userId, queue[i].data, queue[i].recordId);
+  }
 }
 function persistCloudRecord(collection, userId, data, fallbackId) {
   if (!supabaseClient || !userId || !CLOUD_COLLECTIONS[collection]) return Promise.resolve(false);
@@ -264,28 +273,50 @@ function persistCloudRecord(collection, userId, data, fallbackId) {
   }).catch(function () { queueCloudWrite({ collection: collection, userId: userId, recordId: recordId, data: data || {} }); setCloudSyncStatus('error'); return false; });
 }
 function removeCloudRecord(collection, userId, id) {
-  if (!supabaseClient || !userId) return;
-  supabaseClient.from('user_records').delete().eq('user_id', userId).eq('collection', collection).eq('record_id', String(id)).then(function () {});
+  if (!supabaseClient || !userId || !CLOUD_COLLECTIONS[collection]) return Promise.resolve(false);
+  const recordId = String(id);
+  setCloudSyncStatus('syncing');
+  return supabaseClient.from('user_records').delete().eq('user_id', userId).eq('collection', collection).eq('record_id', recordId).then(function (result) {
+    if (result && result.error) { queueCloudWrite({ operation: 'delete', collection: collection, userId: userId, recordId: recordId }); setCloudSyncStatus('error'); return false; }
+    setCloudSyncStatus('ok'); return true;
+  }).catch(function () { queueCloudWrite({ operation: 'delete', collection: collection, userId: userId, recordId: recordId }); setCloudSyncStatus('error'); return false; });
 }
 async function syncCloudData(userId) {
   if (!supabaseClient || !userId) return false;
   try {
-    const result = await supabaseClient.from('user_records').select('collection,record_id,payload,updated_at').eq('user_id', userId);
+    let result = await supabaseClient.from('user_records').select('collection,record_id,payload,updated_at').eq('user_id', userId);
     if (result.error || !result.data) return false;
+    // Dados antigos que ainda existem somente neste aparelho entram na nuvem
+    // antes da primeira restauração. Nas próximas aberturas, a nuvem é a cópia
+    // comum entre aparelhos, sem apagar alterações que estejam na fila local.
+    if (!result.data.length) {
+      await migrateLocalDataToCloud(userId);
+      result = await supabaseClient.from('user_records').select('collection,record_id,payload,updated_at').eq('user_id', userId);
+      if (result.error || !result.data) return false;
+    }
+    const pending = getCloudQueue().filter(function (item) { return item.userId === userId; });
     const grouped = result.data.reduce(function (acc, row) { (acc[row.collection] || (acc[row.collection] = [])).push(row); return acc; }, {});
     if (grouped.profile && grouped.profile[0]) {
       const profiles = JSON.parse(localStorage.getItem(CLOUD_COLLECTIONS.profile) || '{}');
-      profiles[userId] = grouped.profile[0].payload || {};
+      const profilePending = pending.find(function (item) { return item.collection === 'profile' && item.recordId === 'primary'; });
+      if (profilePending && profilePending.operation === 'upsert') profiles[userId] = profilePending.data || profiles[userId] || {};
+      else profiles[userId] = grouped.profile[0].payload || {};
       localStorage.setItem(CLOUD_COLLECTIONS.profile, JSON.stringify(profiles));
     }
     ['aircraft','missions','documents','transactions','clients','batteries'].forEach(function (collection) {
       const key = CLOUD_COLLECTIONS[collection];
       const others = JSON.parse(localStorage.getItem(key) || '[]').filter(function (item) { return item.userId !== userId; });
-      const current = (grouped[collection] || []).map(function (row) { return Object.assign({}, row.payload || {}, { id: row.record_id, userId: userId }); });
-      localStorage.setItem(key, JSON.stringify(others.concat(current)));
+      const current = (grouped[collection] || []).reduce(function (records, row) {
+        records[String(row.record_id)] = Object.assign({}, row.payload || {}, { id: row.record_id, userId: userId }); return records;
+      }, {});
+      pending.filter(function (item) { return item.collection === collection; }).forEach(function (item) {
+        if (item.operation === 'delete') delete current[String(item.recordId)];
+        else current[String(item.recordId)] = Object.assign({}, item.data || {}, { id: item.recordId, userId: userId });
+      });
+      localStorage.setItem(key, JSON.stringify(others.concat(Object.keys(current).map(function (id) { return current[id]; }))));
     });
     window.dispatchEvent(new CustomEvent('dronehub:cloud-ready'));
-    setCloudSyncStatus('ok'); return true;
+    setCloudSyncStatus(getCloudQueue().length ? 'error' : 'ok'); return true;
   } catch (e) { setCloudSyncStatus('error'); return false; }
 }
 
@@ -293,6 +324,9 @@ let userRecordsRealtimeChannel = null;
 function applyCloudRecordChange(payload, userId) {
   const row = payload.new && payload.new.user_id ? payload.new : payload.old;
   if (!row || row.user_id !== userId || !CLOUD_COLLECTIONS[row.collection]) return;
+  // Uma confirmação em tempo real nunca pode substituir uma edição que ainda
+  // está aguardando envio deste navegador.
+  if (hasQueuedCloudMutation(row.collection, userId, row.record_id)) return;
   const key = CLOUD_COLLECTIONS[row.collection];
   if (row.collection === 'profile') {
     const profiles = JSON.parse(localStorage.getItem(key) || '{}');
@@ -336,7 +370,7 @@ async function migrateLocalDataToCloud(userId) {
 // ===== PROFILES =====
 function saveProfile(userId, data) {
   const p = JSON.parse(localStorage.getItem('dronehub_profiles') || '{}');
-  p[userId] = { ...p[userId], ...data };
+  p[userId] = { ...p[userId], ...data, updatedAt: new Date().toISOString() };
   localStorage.setItem('dronehub_profiles', JSON.stringify(p));
   persistCloudRecord('profile', userId, p[userId], 'primary');
   return p[userId];
@@ -352,7 +386,7 @@ function saveAircraft(userId, data) {
   }
   if (!data.id) data.id = Date.now().toString();
   data.userId = userId;
-  data.createdAt = data.createdAt || new Date().toISOString();
+  data.createdAt = data.createdAt || new Date().toISOString(); data.updatedAt = new Date().toISOString();
   const a = JSON.parse(localStorage.getItem('dronehub_aircraft') || '[]');
   const idx = a.findIndex(x => x.id === data.id && x.userId === userId);
   if (idx >= 0) { a[idx] = data; } else { a.push(data); }
@@ -378,7 +412,7 @@ function requireProCapability(feature) {
 function saveMission(userId, data) {
   requireProCapability('Salvar missões e checklists');
   if (!data.id) data.id = Date.now().toString();
-  data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString();
+  data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString(); data.updatedAt = new Date().toISOString();
   data.status = data.status || 'agendada';
   const m = JSON.parse(localStorage.getItem('dronehub_missoes') || '[]');
   const idx = m.findIndex(x => x.id === data.id && x.userId === userId);
@@ -459,7 +493,7 @@ function migrateLocalOwnerAliases(oldId, newId, email) {
 function saveDocument(userId, data) {
   requireProCapability('Gerar e salvar documentos');
   if (!data.id) data.id = Date.now().toString();
-  data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString();
+  data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString(); data.updatedAt = new Date().toISOString();
   let d = JSON.parse(localStorage.getItem('dronehub_docs') || '[]');
   if (isSarpasDocument(data)) {
     const superseded = d.filter(x =>
@@ -492,7 +526,7 @@ function deleteDocument(userId, id) {
 function saveTransaction(userId, data) {
   requireProCapability('O módulo financeiro');
   if (!data.id) data.id = Date.now().toString();
-  data.userId = userId; data.date = data.date || new Date().toISOString().split('T')[0];
+  data.userId = userId; data.date = data.date || new Date().toISOString().split('T')[0]; data.updatedAt = new Date().toISOString();
   const t = JSON.parse(localStorage.getItem('dronehub_transactions') || '[]');
   const idx = t.findIndex(x => x.id === data.id && x.userId === userId);
   if (idx >= 0) { t[idx] = data; } else { t.push(data); }
@@ -510,7 +544,7 @@ function deleteTransaction(userId, id) {
 // ===== CLIENTS =====
 function saveClient(userId, data) {
   requireProCapability('O cadastro de clientes');
-  if (!data.id) data.id = Date.now().toString(); data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString();
+  if (!data.id) data.id = Date.now().toString(); data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString(); data.updatedAt = new Date().toISOString();
   const c = JSON.parse(localStorage.getItem('dronehub_clientes') || '[]');
   const idx = c.findIndex(x => x.id === data.id && x.userId === userId);
   if (idx >= 0) { c[idx] = data; } else { c.push(data); }
@@ -528,7 +562,7 @@ function deleteClient(userId, id) {
 // ===== BATTERIES =====
 function saveBattery(userId, data) {
   requireProCapability('A gestão de baterias');
-  if (!data.id) data.id = Date.now().toString(); data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString();
+  if (!data.id) data.id = Date.now().toString(); data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString(); data.updatedAt = new Date().toISOString();
   const b = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]');
   const idx = b.findIndex(x => x.id === data.id && x.userId === userId);
   if (idx >= 0) { b[idx] = data; } else { b.push(data); }
