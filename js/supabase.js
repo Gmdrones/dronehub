@@ -6,6 +6,9 @@ let supabaseClient = null;
 if (USE_SUPABASE && SUPABASE_URL.includes('supabase.co')) {
   try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
 }
+// Serviços de interface compartilhados, como o suporte, usam a mesma sessão
+// autenticada sem criar um segundo cliente no navegador.
+window.supabaseClient = supabaseClient;
 
 async function syncCurrentEntitlement() {
   if (!supabaseClient) return getCurrentUser();
