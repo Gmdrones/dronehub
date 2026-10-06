@@ -80,6 +80,39 @@
     .aircraft-add-action { display:none; margin-bottom:18px; padding:18px 20px; align-items:center; justify-content:space-between; gap:16px; }
     .aircraft-add-action__copy strong { display:block; color:var(--text); font-size:1rem; margin-bottom:4px; }
     .aircraft-add-action__copy span { color:var(--text3); font-size:.82rem; }
+
+    /* ===== DJI FlightRecord report ===== */
+    .flight-report { margin-top:14px; }
+    .flight-report__intro { display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:16px 18px;border:1px solid rgba(0,210,255,.16);background:linear-gradient(135deg,rgba(0,210,255,.07),rgba(0,102,255,.04));border-radius:14px;margin-bottom:14px; }
+    .flight-report__intro h4 { font-family:var(--title);font-size:1rem;margin:0 0 4px; }
+    .flight-report__intro p { color:var(--text3);font-size:.78rem;margin:0;line-height:1.5; }
+    .flight-report__badge { display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid rgba(52,211,153,.22);border-radius:999px;background:rgba(52,211,153,.08);color:var(--green);font-size:.7rem;font-weight:700;white-space:nowrap; }
+    .flight-report__section { margin-top:18px; }
+    .flight-report__section-head { display:flex;align-items:center;gap:9px;margin:0 0 9px;font-family:var(--title);font-size:.88rem;font-weight:700;color:var(--text); }
+    .flight-report__section-head svg { width:17px;height:17px;color:var(--cyan); }
+    .flight-report__grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px; }
+    .flight-report__card { min-height:94px;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.012));border:1px solid var(--border);border-radius:12px;padding:12px 13px;position:relative;overflow:hidden; }
+    .flight-report__card:before { content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(var(--cyan),rgba(0,210,255,.08)); }
+    .flight-report__card-label { color:var(--text3);font-size:.68rem;text-transform:uppercase;letter-spacing:.045em;font-weight:600;margin-bottom:7px; }
+    .flight-report__card-value { font-family:var(--title);font-size:1.08rem;font-weight:700;color:var(--text);line-height:1.2;word-break:break-word; }
+    .flight-report__card-help { color:var(--text3);font-size:.68rem;margin-top:6px;line-height:1.35; }
+    .flight-report__bar { height:5px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-top:9px; }
+    .flight-report__bar > span { display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--green)); }
+    .flight-report__map { height:390px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg);position:relative;z-index:1; }
+    .flight-report__map-help { color:var(--text3);font-size:.74rem;margin:0 0 9px;line-height:1.45; }
+    .flight-report__chips { display:flex;gap:7px;flex-wrap:wrap; }
+    .flight-report__chip { border:1px solid var(--border);background:var(--bg);border-radius:999px;padding:6px 9px;font-size:.7rem;color:var(--text2); }
+    .flight-report__timeline { border:1px solid var(--border);border-radius:12px;padding:14px;background:rgba(255,255,255,.015); }
+    .flight-report__timeline input[type=range] { accent-color:var(--cyan); }
+    .flight-report__alerts { display:grid;gap:8px; }
+    .flight-report__alert { display:flex;gap:9px;align-items:flex-start;padding:10px 12px;border:1px solid rgba(255,176,32,.16);background:rgba(255,176,32,.045);border-radius:10px;color:var(--text2);font-size:.77rem;line-height:1.45; }
+    .flight-report__empty { display:flex;align-items:center;gap:8px;padding:11px 12px;border:1px solid rgba(52,211,153,.16);background:rgba(52,211,153,.045);border-radius:10px;color:var(--green);font-size:.76rem;font-weight:600; }
+    .flight-report__technical { margin-top:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg);padding:10px 12px; }
+    .flight-report__technical summary { cursor:pointer;color:var(--text2);font-size:.78rem;font-weight:600; }
+    .flight-report__technical .flight-report__grid { margin-top:10px; }
+    .flight-report__technical .flight-report__card { min-height:75px; }
+    @media(max-width:768px){ .flight-report__grid{grid-template-columns:repeat(2,minmax(0,1fr));}.flight-report__card{min-height:88px;padding:10px}.flight-report__card-value{font-size:.94rem}.flight-report__map{height:320px} }
+
     @media (max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .grid-2 { grid-template-columns:1fr; } }
   </style>
   <link rel="stylesheet" href="css/saas.css">
@@ -158,8 +191,17 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Upload DJI Fly Log</h3></div>
-        <p style="font-size:0.85rem;color:var(--text3);margin-bottom:12px;">Importe o FlightRecord TXT original para analisar trajeto, velocidade, tempo e bateria no Pro. Limite: 10 MB. Campos não suportados são sinalizados, sem estimativas.</p>
+        <div class="card-header"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Relatório de voo DJI</h3></div>
+        <p style="font-size:0.85rem;color:var(--text2);margin-bottom:12px;line-height:1.55;">Envie o <strong>FlightRecord TXT original</strong> para transformar o log em um relatório visual do voo: mapa, bateria, GPS, sinal, velocidade, altitude, modos de voo, Home/RTH e alertas disponíveis. Limite: 10 MB.</p>
+        <details style="margin:0 0 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg);padding:10px 12px;">
+          <summary style="cursor:pointer;font-weight:600;color:var(--text);font-size:.8rem;">Onde encontro o FlightRecord?</summary>
+          <div style="margin-top:10px;color:var(--text2);font-size:0.78rem;line-height:1.65;">
+            <div><strong>Android — DJI Fly:</strong> Armazenamento interno &gt; Android &gt; data &gt; dji.go.v5 &gt; files &gt; FlightRecord</div>
+            <div><strong>Android — DJI Pilot 2:</strong> Armazenamento interno &gt; DJI &gt; com.dji.industry.pilot &gt; FlightRecord</div>
+            <div><strong>iPhone/iPad — DJI Fly:</strong> Arquivos &gt; No Meu iPhone/iPad &gt; DJI Fly &gt; FlightRecords</div>
+            <div style="margin-top:7px;color:var(--text3);">Escolha o arquivo cujo nome começa com <strong>FlightRecord_</strong>. Não é necessário converter o TXT.</div>
+          </div>
+        </details>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
           <input type="file" id="djiLog" accept=".txt,.csv,.json" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
           <button class="btn btn-secondary" id="importDjiLog" onclick="window.DroneHubDJIUpload()">Importar</button>
@@ -366,6 +408,6 @@
     window.addEventListener('dronehub:cloud-ready', function(){ var syncedUser=getCurrentUser();if(syncedUser&&syncedUser.id&&syncedUser.id!==uid){uid=syncedUser.id;window.dronehubFleetUserId=uid;}backfillKnownWindLimits();render();window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated')); });
     if (typeof lucide !== 'undefined') { lucide.createIcons(); }
   </script>
-<script src="js/dji-telemetry-upload.js?v=20261006-safe-v2"></script>
+<script src="js/dji-telemetry-upload.js?v=20261006-report-v3"></script>
 <script src="js/account-nav.js?v=20260903" defer></script></body>
 </html>
