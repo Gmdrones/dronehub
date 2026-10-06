@@ -1,0 +1,12 @@
+name = "dronehub-telemetry"
+main = "worker.mjs"
+compatibility_date = "2026-10-06"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGIN = "https://dronehub.app.br"
+SUPABASE_URL = "https://oibcspkfbrlsleupqijl.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_IFGuGtD7X2sR7FPdaQHzdQ_o7cgUaO1"
+
+# Configure secrets: DJI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY.
+# Do not enable request body logging: logs contain private flight information.

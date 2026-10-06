@@ -1,0 +1,1 @@
+{"name":"dronehub-telemetry","private":true,"type":"module","scripts":{"test":"node --test test/*.test.mjs"},"dependencies":{"dji-log-parser-js":"0.5.7"}}
