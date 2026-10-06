@@ -16,7 +16,8 @@
       const token = session.data?.session?.access_token;
       if (!token) throw Error('Sua sessão expirou. Faça login novamente.');
       const response = await fetch(endpoint, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/octet-stream' }, body: file, signal: AbortSignal.timeout(60000) });
-      const data = await response.json();
+      let data;
+      try { data = await response.json(); } catch { throw Error('O serviço de leitura não respondeu corretamente. Tente novamente.'); }
       if (!response.ok) throw Error(data.error || 'Não foi possível importar.');
       result.replaceChildren();
       element('h4', 'Telemetria DJI decodificada', result);
@@ -31,9 +32,20 @@
         element('h4', 'Trajeto registrado (sem mapa-base)', result);
         const xs = coords.map(p => p[0]), ys = coords.map(p => p[1]);
         const minX = xs.reduce((a,b)=>Math.min(a,b)), minY = ys.reduce((a,b)=>Math.min(a,b)), dx = xs.reduce((a,b)=>Math.max(a,b)) - minX || 0.00001, dy = ys.reduce((a,b)=>Math.max(a,b)) - minY || 0.00001;
+        const longitudeScale=Math.max(0.01,Math.cos(minY*Math.PI/180)), scale=Math.min(560/(dx*longitudeScale),260/dy);
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 600 300'); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Trajeto GPS do voo'); svg.style.cssText = 'width:100%;max-height:320px;background:var(--bg);border:1px solid var(--border);border-radius:12px';
-        const line = document.createElementNS(svg.namespaceURI, 'polyline'); line.setAttribute('points', coords.map(p => (20 + (p[0] - minX) / dx * 560) + ',' + (280 - (p[1] - minY) / dy * 260)).join(' ')); line.setAttribute('fill','none'); line.setAttribute('stroke','#18c9f3'); line.setAttribute('stroke-width','2'); svg.appendChild(line); result.appendChild(svg);
+        const line = document.createElementNS(svg.namespaceURI, 'polyline'); line.setAttribute('points', coords.map(p => (20 + (p[0] - minX) * longitudeScale * scale) + ',' + (280 - (p[1] - minY) * scale)).join(' ')); line.setAttribute('fill','none'); line.setAttribute('stroke','#18c9f3'); line.setAttribute('stroke-width','2'); svg.appendChild(line); result.appendChild(svg);
       } else element('p', 'O log não contém posições GPS válidas suficientes para um trajeto.', result);
+      if (data.samples.length) {
+        const heading=element('h4','Linha do tempo de telemetria',result); heading.style.marginTop='16px';
+        const label=element('label','Selecione uma amostra do voo',result); label.htmlFor='flightSampleRange';
+        const range=element('input',undefined,result); range.type='range';range.id='flightSampleRange';range.min='0';range.max=String(data.samples.length-1);range.value='0';range.style.cssText='width:100%;margin:12px 0';
+        const samplePanel=element('div',undefined,result);samplePanel.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px';samplePanel.setAttribute('aria-live','polite');
+        function displaySample(){ const s=data.samples[Number(range.value)];samplePanel.replaceChildren();
+          for(const [label,value] of [['Tempo',format(s.timeS,' s')],['Velocidade',format(s.speedMS===null?null:s.speedMS*3.6,' km/h')],['Altura',format(s.heightM,' m')],['Bateria',format(s.batteryPercent,' %')],['Tensão',format(s.voltageV,' V')],['Temperatura',format(s.temperatureC,' °C')],['Células',s.cellVoltagesV?s.cellVoltagesV.map(v=>format(v,' V')).join(' / '):'Indisponível'],['Satélites GPS',format(s.gpsSatellites,'')],['Sinal de retorno',format(s.downlinkPercent,' %')]]) {const block=element('div',undefined,samplePanel);element('small',label,block);element('p',value,block);}
+        }
+        range.oninput=displaySample;displaySample();
+      }
       element('h4', 'Avisos registrados', result);
       const warnings = data.events.filter(e => e.type === 'warning');
       if (!warnings.length) element('p', 'Nenhum aviso encontrado nos registros decodificados. Isso não comprova ausência de falhas.', result);
@@ -43,7 +55,7 @@
       const counter = data.batteryCounter;
       if (counter) {
         const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
-        const battery = user && typeof getBatteries === 'function' ? getBatteries(user.id).find(b=>b.serial===counter.serial) : null;
+        const battery = user && typeof getBatteries === 'function' && window.DroneHubBatteryIdentity ? window.DroneHubBatteryIdentity.findUnique(getBatteries(user.id),counter.serial) : null;
         if (battery && typeof saveBattery === 'function') {
           const previous=Math.max(Number(battery.cycles)||0,Number(battery.ciclos)||0);
           // Idempotent monotonic update: an old or duplicate log cannot increment or reset cycles.
@@ -63,4 +75,7 @@
   const original = window.uploadLog;
   window.uploadLog = function () { if (/\.txt$/i.test(input.files[0]?.name || '')) return importNative(); return original?.(); };
   window.uploadNativeDjiLog = window.uploadLog;
+  window.DroneHubDJIUpload = window.uploadLog;
+  const result=document.getElementById('logResult');
+  if(result && !result.textContent.trim())element('p','Leitor seguro no servidor pronto. O upload não cria baterias.',result);
 })();

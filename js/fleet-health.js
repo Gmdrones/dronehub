@@ -16,7 +16,11 @@
     if(Array.isArray(window.dronehubAircraftSnapshot))return window.dronehubAircraftSnapshot;
     return typeof getAircraft==='function'?getAircraft(owner()):[];
   }
-  function batteries(){return typeof getBatteries==='function'?getBatteries(owner()):[];}
+  function batteries(){return typeof getBatteries==='function'?getBatteries(owner()).filter(function(b){return !b.duplicateOf;}):[];}
+  function repairLogDuplicates(){
+    if(typeof getBatteries!=='function'||!window.DroneHubBatteryIdentity)return;
+    window.DroneHubBatteryIdentity.repairImportedDuplicates(getBatteries(owner())).forEach(function(b){saveBattery(owner(),b);});
+  }
   function migrateLegacyBatteries(){
     var ownerId=owner(),a=aircraft(),all=JSON.parse(localStorage.getItem('dronehub_baterias')||'[]'),changed=false;
     all.forEach(function(b){
@@ -49,11 +53,11 @@
     if(!window.isPro)return;var target=document.querySelector('.main > .card');if(!target)return;
     var section=document.createElement('section');section.id='fleetHealth';section.className='fleet-health';
     section.innerHTML='<div class="fleet-health__top"><div><div class="fleet-health__eyebrow">Saúde da frota</div><h3>Prontidão de aeronaves e baterias</h3><p>Cadastre cada bateria separadamente e acompanhe os ciclos de uso em todos os dispositivos.</p></div><div class="fleet-health__score"><strong id="fleetScoreValue">—</strong><small id="fleetStatus">Carregando</small></div></div><div class="fleet-health__grid"><div class="fleet-health__metric"><span>Aeronaves</span><b id="fleetAircraft">0</b></div><div class="fleet-health__metric"><span>Baterias registradas</span><b id="fleetBatteries">0</b></div><div class="fleet-health__metric"><span>Maior ciclo</span><b id="fleetCycles">—</b></div></div><p id="fleetEmpty" class="fleet-health__notice">Cadastre uma aeronave acima para liberar o registro de baterias.</p><form class="fleet-health__form" id="fleetForm"><select id="fleetAircraftSelect" aria-label="Aeronave"></select><input id="fleetBatteryName" required type="text" placeholder="Identificação (ex.: Bateria 1)"><input id="fleetCyclesInput" required min="0" type="number" placeholder="Ciclos atuais"><input id="fleetFirmware" type="text" placeholder="Firmware / observação"><button class="btn btn-primary" type="submit">Adicionar bateria</button></form><div id="fleetBatteryList"></div>';
-    target.insertAdjacentElement('afterend',section);migrateLegacyBatteries();render();
+    target.insertAdjacentElement('afterend',section);migrateLegacyBatteries();repairLogDuplicates();render();
     section.querySelector('#fleetForm').addEventListener('submit',function(e){e.preventDefault();var aircraftId=section.querySelector('#fleetAircraftSelect').value;if(!aircraftId){alert('Cadastre uma aeronave antes de adicionar baterias.');return;}var saved=saveBattery(owner(),{id:Date.now().toString(),aircraftId:aircraftId,name:section.querySelector('#fleetBatteryName').value.trim(),cycles:Math.max(0,Number(section.querySelector('#fleetCyclesInput').value)||0),firmware:section.querySelector('#fleetFirmware').value.trim(),registeredAt:new Date().toISOString()});e.target.reset();render();window.dispatchEvent(new CustomEvent('dronehub:battery-updated',{detail:saved}));});
     window.addEventListener('dronehub:aircraft-updated',render);
     window.addEventListener('dronehub:battery-updated',render);
-    window.addEventListener('dronehub:cloud-ready',function(){migrateLegacyBatteries();render();});
+    window.addEventListener('dronehub:cloud-ready',function(){migrateLegacyBatteries();repairLogDuplicates();render();});
     window.addEventListener('storage',function(e){if(e.key==='dronehub_aircraft'||e.key==='dronehub_baterias')render();});
     if(location.hash==='#fleetHealth')setTimeout(function(){section.scrollIntoView({behavior:'smooth',block:'start'});},50);
   });
