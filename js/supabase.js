@@ -312,7 +312,11 @@ async function syncCloudData(userId) {
       const current = (grouped[collection] || []).reduce(function (records, row) {
         records[String(row.record_id)] = Object.assign({}, row.payload || {}, { id: row.record_id, userId: userId }); return records;
       }, {});
-      pending.filter(function (item) { return item.collection === collection; }).forEach(function (item) {
+      const freeAircraftId = collection === 'aircraft' && !hasLocalProAircraftAccess(userId) && grouped.aircraft && grouped.aircraft.length
+        ? grouped.aircraft.map(row => String(row.record_id)).sort()[0] : null;
+      pending.filter(function (item) {
+        return item.collection === collection && (!freeAircraftId || String(item.recordId) === freeAircraftId);
+      }).forEach(function (item) {
         if (item.operation === 'delete') delete current[String(item.recordId)];
         else current[String(item.recordId)] = Object.assign({}, item.data || {}, { id: item.recordId, userId: userId });
       });
@@ -381,10 +385,23 @@ function saveProfile(userId, data) {
 function getProfile(userId) { return JSON.parse(localStorage.getItem('dronehub_profiles') || '{}')[userId] || {}; }
 
 // ===== AIRCRAFT =====
+function hasLocalProAircraftAccess(userId) {
+  const account = getCurrentUser() || {};
+  if (account.id !== userId) return false;
+  const expiresAt = account.planExpiresAt || account.courtesyExpiresAt;
+  return account.role === 'admin' || (account.plan === 'pro' &&
+    (!expiresAt || new Date(expiresAt).getTime() > Date.now()));
+}
+function accessibleAircraft(userId, records) {
+  const owned = records.filter(a => a.userId === userId);
+  if (hasLocalProAircraftAccess(userId)) return owned;
+  // IDs antigos são timestamps. A mesma ordenação imutável é usada no banco.
+  return owned.sort((a, b) => String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0).slice(0, 1);
+}
 function saveAircraft(userId, data) {
-  const currentUser = getCurrentUser() || {};
   const existing = getAircraft(userId);
-  if (currentUser.plan !== 'pro' && !data.id && existing.length >= 1) {
+  const isExisting = data.id && existing.some(a => String(a.id) === String(data.id));
+  if (!hasLocalProAircraftAccess(userId) && existing.length >= 1 && !isExisting) {
     throw new Error('O plano Free permite cadastrar apenas 1 aeronave. Faça upgrade para adicionar mais.');
   }
   if (!data.id) data.id = Date.now().toString();
@@ -397,8 +414,11 @@ function saveAircraft(userId, data) {
   persistCloudRecord('aircraft', userId, data);
   return data;
 }
-function getAircraft(userId) { return JSON.parse(localStorage.getItem('dronehub_aircraft') || '[]').filter(a => a.userId === userId); }
+function getAircraft(userId) { return accessibleAircraft(userId, JSON.parse(localStorage.getItem('dronehub_aircraft') || '[]')); }
 function deleteAircraft(userId, id) {
+  if (!getAircraft(userId).some(a => String(a.id) === String(id))) {
+    throw new Error('Esta aeronave não está disponível no seu plano atual.');
+  }
   const a = JSON.parse(localStorage.getItem('dronehub_aircraft') || '[]').filter(x => !(x.userId === userId && x.id === id));
   localStorage.setItem('dronehub_aircraft', JSON.stringify(a));
   removeCloudRecord('aircraft', userId, id);
@@ -618,3 +638,14 @@ if (supabaseClient) {
   });
 }
 window.addEventListener('online', retryCloudQueue);
+// Uma aba aberta também perde o acesso assim que a assinatura vence.
+window.setInterval(function () {
+  const account = getCurrentUser() || {};
+  const expiresAt = account.planExpiresAt || account.courtesyExpiresAt;
+  if (account.plan === 'pro' && account.role !== 'admin' && expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
+    refreshCurrentEntitlement();
+  }
+}, 30000);
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') refreshCurrentEntitlement();
+});

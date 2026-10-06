@@ -1,6 +1,6 @@
 (function(){
   function ready(fn){document.readyState==='loading'?document.addEventListener('DOMContentLoaded',fn):fn();}
-  function count(key){try{return JSON.parse(localStorage.getItem(key)||'[]').filter(function(x){return x.userId===(window.uid||'');}).length;}catch(e){return 0;}}
+  function count(key){try{if(key==='dronehub_aircraft')return getAircraft(window.uid||'').length;return JSON.parse(localStorage.getItem(key)||'[]').filter(function(x){return x.userId===(window.uid||'');}).length;}catch(e){return 0;}}
   ready(async function(){
     var hero=document.querySelector('.hero');if(!hero||document.getElementById('dashboardCommand'))return;
     // Aguarda o plano oficial antes de montar o painel. Evita mostrar o convite

@@ -6,7 +6,7 @@
     window.setTimeout(function(){
       var deck=document.getElementById('dashboardCommand');
       if(!deck)return;
-      var aircraft=userCount('dronehub_aircraft');
+      var aircraft=getAircraft(window.uid||'').length;
       var missions=userCount('dronehub_missoes');
       var readiness=aircraft?72:28;
       deck.className='dashboard-command dashboard-command--flightdeck';

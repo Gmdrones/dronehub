@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="js/supabase.js?v=20260930-support-session"></script>
+  <script src="js/supabase.js?v=20261006-free-aircraft"></script>
   <script src="js/dji-flight-log.js?v=20260726-native-txt"></script>
   <link rel="stylesheet" href="css/plan-access.css?v=20260824-free-menu-fix">
   <script src="js/plan-access.js?v=20260903-account"></script>
@@ -133,6 +133,7 @@
       <p class="page-sub" id="subtitle">Gerencie suas aeronaves</p>
       <div class="limit-bar"><div class="limit-fill" id="limitFill" style="width:0%;"></div></div>
       <div class="limit-text" id="limitText"></div>
+      <p id="freeAircraftNotice" style="display:none;color:var(--text3);font-size:.85rem;margin-bottom:16px;">O Free dá acesso à primeira aeronave cadastrada. As demais ficam preservadas e voltam a ficar disponíveis quando você renovar o Pro. <a href="precos.html" style="color:var(--cyan);">Renovar Pro</a></p>
 
       <div class="card aircraft-add-action" id="addAircraftAction">
         <div class="aircraft-add-action__copy"><strong>Adicionar outra aeronave</strong><span>Abra o catálogo somente quando quiser ampliar sua frota.</span></div>
@@ -229,7 +230,7 @@
     var aircraftFormRequested=false;
     function refreshAccess(){
       var current=typeof getCurrentUser==='function'?(getCurrentUser()||user):user;
-      if(current){user=current;isPro=current.plan==='pro'||current.role==='admin'||window.isPro===true;MAX=isPro?20:1;}
+      if(current){user=current;isPro=hasLocalProAircraftAccess(uid);MAX=isPro?20:1;}
     }
     function openAircraftForm(){
       refreshAccess();
@@ -255,6 +256,7 @@
         document.getElementById('limitFill').style.width = pct + '%';
         document.getElementById('limitText').textContent = list.length + ' de ' + MAX + ' aeronaves cadastradas';
         document.getElementById('subtitle').textContent = isPro ? 'Gerencie até 20 aeronaves' : 'Gerencie sua aeronave (máx 1 no Free)';
+        document.getElementById('freeAircraftNotice').style.display = isPro ? 'none' : 'block';
         updateAircraftFormVisibility(list);
         var c = document.getElementById('aircraftList');
         if (list.length === 0) { c.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;">Nenhuma aeronave cadastrada.</p>'; syncFleetHealth(list); return; }
