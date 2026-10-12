@@ -76,3 +76,4 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION public.apply_payment_entitlement(uuid,text,integer,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.apply_payment_entitlement(uuid,text,integer,text) TO service_role;
