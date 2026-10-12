@@ -24,6 +24,19 @@ const haversine = (aLat,aLon,bLat,bLon) => {
   return 2*R*Math.asin(Math.min(1,Math.sqrt(s)));
 };
 
+const validCoordinate = (latitude, longitude) =>
+  finite(latitude) !== null && finite(longitude) !== null &&
+  Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180 &&
+  !(latitude === 0 && longitude === 0);
+
+// A posição informada pelo OSD só é confiável com fix real e satélites
+// suficientes. Nível GPS é usado como alternativa em modelos sem gpsNum.
+const validGpsFix = (osd, latitude, longitude) => (
+  osd.isGpdUsed === true && validCoordinate(latitude, longitude) &&
+  (finite(osd.gpsNum) !== null ? osd.gpsNum >= 6 :
+    (finite(osd.gpsLevel) !== null && osd.gpsLevel >= 3))
+);
+
 export function normalizeFlight(version, details, frames) {
   const samples = [], events = [], coordinates = [];
   let previousWarning = '', previousTip = '';
@@ -31,6 +44,11 @@ export function normalizeFlight(version, details, frames) {
   const safetyFlags = new Set();
   let home = null;
   let maxDistanceFromHomeM = null;
+  let previousGps = null;
+  let gpsDistanceM = 0;
+  let measuredSteps = 0;
+  let validGpsFrames = 0;
+  let rejectedPositionJumps = 0;
   let photosTriggered = 0;
   let videoFrames = 0;
   let sdCardProblemFrames = 0;
@@ -44,10 +62,10 @@ export function normalizeFlight(version, details, frames) {
     const g = f.gimbal || {}, c = f.camera || {}, h = f.home || {};
     const time = finite(o.flyTime);
     const lat = finite(o.latitude), lon = finite(o.longitude);
-    const gps = o.isGpdUsed === true && lat !== null && lon !== null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0);
+    let gps = validGpsFix(o, lat, lon);
     const cells = b.isCellVoltageEstimated === false ? (b.cellVoltages || []).filter(v => positive(v) !== null) : [];
 
-    if (!home && h.isHomeRecord === true && finite(h.latitude) !== null && finite(h.longitude) !== null && !(h.latitude===0 && h.longitude===0)) {
+    if (!home && h.isHomeRecord === true && validCoordinate(h.latitude, h.longitude)) {
       home = {
         latitude: h.latitude,
         longitude: h.longitude,
@@ -58,10 +76,8 @@ export function normalizeFlight(version, details, frames) {
       };
     }
 
-    if (gps && home) {
-      const d = haversine(home.latitude, home.longitude, lat, lon);
-      maxDistanceFromHomeM = maxDistanceFromHomeM === null ? d : Math.max(maxDistanceFromHomeM, d);
-    }
+    // A distância ao Home é computada somente após validar que o Home Point
+    // não está absurdamente longe do trajeto real.
 
     const mode = enumText(o.flycState);
     const action = enumText(o.flightAction);
@@ -123,8 +139,38 @@ export function normalizeFlight(version, details, frames) {
       gimbalYawDeg: finite(g.yaw)
     };
 
+    if (gps) {
+      // Descarta saltos de GPS que exigiriam velocidade fisicamente incompatível
+      // com o voo. Não os repassa ao mapa, à missão ou às métricas.
+      if (previousGps) {
+        const stepM = haversine(previousGps.latitude, previousGps.longitude, lat, lon);
+        const deltaS = time !== null && previousGps.time !== null ? time - previousGps.time : null;
+        const indicatedSpeedMS = finite(sample.speedMS) ?? 0;
+        const plausibleSpeedMS = Math.max(45, Math.min(120, indicatedSpeedMS * 3 + 10));
+        if (deltaS !== null && deltaS > 0 && stepM / deltaS > plausibleSpeedMS) {
+          gps = false;
+          rejectedPositionJumps++;
+        } else if (deltaS !== null && deltaS > 0 && deltaS <= 15) {
+          gpsDistanceM += stepM;
+          measuredSteps++;
+        }
+      }
+      if (gps) {
+        validGpsFrames++;
+        coordinates.push([lon, lat]);
+        previousGps = { latitude: lat, longitude: lon, time };
+      }
+    }
+    // Não conecta segmentos separados por perda do fix: nunca soma distâncias
+    // desconhecidas enquanto o GPS esteve indisponível.
+    if (!gps) {
+      sample.latitude = null;
+      sample.longitude = null;
+      // Em caso de salto isolado, compara o próximo ponto com o último fix
+      // confiável, não com o ponto espúrio.
+      if (!validGpsFix(o, lat, lon)) previousGps = null;
+    }
     samples.push(sample);
-    if (gps) coordinates.push([lon, lat]);
 
     if (a.warn && a.warn !== previousWarning) events.push({ timeS: time, type: 'warning', message: String(a.warn) });
     if (a.tip && a.tip !== previousTip) events.push({ timeS: time, type: 'information', message: String(a.tip) });
@@ -138,8 +184,60 @@ export function normalizeFlight(version, details, frames) {
   const endVoltage = lastFinite(samples,'voltageV');
   const batteryUsed = startBattery !== null && endBattery !== null ? Math.max(0,startBattery-endBattery) : null;
 
-  const routeStart = coordinates.length ? { longitude:coordinates[0][0], latitude:coordinates[0][1] } : null;
-  const routeEnd = coordinates.length ? { longitude:coordinates[coordinates.length-1][0], latitude:coordinates[coordinates.length-1][1] } : null;
+  const gpsPositionReliable = validGpsFrames >= Math.min(5, frames.length) &&
+    validGpsFrames >= frames.length * 0.25 &&
+    rejectedPositionJumps <= Math.max(2, validGpsFrames * 0.05);
+  const maxSpeed = maxOf(samples, 'speedMS') ?? 0;
+  const durationS = finite(details.totalTime) ?? lastFinite(samples, 'timeS') ?? 0;
+
+  // Um Home Point a milhares de quilômetros durante um voo curto não
+  // pode contaminar a distância do Home nem servir de ponto de partida.
+  if (home && coordinates.length) {
+    const first = coordinates[0];
+    const startDistanceM = haversine(home.latitude, home.longitude, first[1], first[0]);
+    const possibleRangeM = Math.max(200, Math.min(200000, (maxSpeed + 2) * Math.max(0, durationS) + 200));
+    if (startDistanceM > possibleRangeM) {
+      home = null;
+      safetyFlags.add('Home Point inconsistente com duração e velocidade do voo: distância ocultada.');
+    }
+  }
+
+  if (!gpsPositionReliable) {
+    safetyFlags.add('GPS insuficiente ou inconsistente: posição e distância do voo indisponíveis.');
+  }
+  if (rejectedPositionJumps) {
+    safetyFlags.add(rejectedPositionJumps + ' salto(s) GPS incompatíveis com a velocidade do voo foram descartados.');
+  }
+
+  if (home && gpsPositionReliable) {
+    for (const [lon, lat] of coordinates) {
+      const d = haversine(home.latitude, home.longitude, lat, lon);
+      maxDistanceFromHomeM = maxDistanceFromHomeM === null ? d : Math.max(maxDistanceFromHomeM, d);
+    }
+  }
+  const distanceM = gpsPositionReliable && measuredSteps > 0 ? gpsDistanceM : null;
+  // totalDistance da DJI pode vir em quilômetros. Não usamos um fator
+  // arbitrário: a trajetória filtrada determina a distância em metros.
+  const rawDistance = finite(details.totalDistance);
+  if (distanceM !== null && rawDistance !== null &&
+      Math.min(Math.abs(rawDistance - distanceM), Math.abs(rawDistance * 1000 - distanceM)) >
+        Math.max(50, distanceM * 0.20)) {
+    safetyFlags.add('Distância do cabeçalho diverge do GPS: foi utilizada a distância geográfica validada.');
+  }
+
+  const rawAltitude = finite(details.takeOffAltitude);
+  // Valores fora da faixa operacional segura não são convertidos nem
+  // exibidos como altitudes comprovadas.
+  const takeOffAltitudeM = rawAltitude !== null && rawAltitude >= -500 && rawAltitude <= 6500 ?
+    rawAltitude : null;
+  if (rawAltitude !== null && takeOffAltitudeM === null) {
+    safetyFlags.add('Altitude absoluta de decolagem fora da faixa confiável: valor ocultado.');
+  }
+
+  const routeStart = gpsPositionReliable && coordinates.length ?
+    { longitude:coordinates[0][0], latitude:coordinates[0][1] } : null;
+  const routeEnd = gpsPositionReliable && coordinates.length ?
+    { longitude:coordinates[coordinates.length-1][0], latitude:coordinates[coordinates.length-1][1] } : null;
 
   return {
     schemaVersion: 2,
@@ -148,14 +246,14 @@ export function normalizeFlight(version, details, frames) {
     frameCount: frames.length,
     summary: {
       durationS: finite(details.totalTime),
-      distanceM: finite(details.totalDistance),
+      distanceM,
       maxHeightM: maxOf(samples,'heightM') ?? finite(details.maxHeight),
       maxSpeedMS: maxOf(samples,'speedMS') ?? finite(details.maxHorizontalSpeed),
       maxVerticalSpeedMS: maxOf(samples,'verticalSpeedMS') ?? finite(details.maxVerticalSpeed),
       minVerticalSpeedMS: minOf(samples,'verticalSpeedMS'),
       maxBatteryTemperatureC: maxOf(samples,'temperatureC'),
       minBatteryTemperatureC: minOf(samples,'temperatureC'),
-      takeOffAltitudeM: finite(details.takeOffAltitude),
+      takeOffAltitudeM,
       photoCount: finite(details.captureNum) ?? finite(details.photoNum) ?? photosTriggered,
       videoTimeS: finite(details.videoTime),
       maxDistanceFromHomeM
@@ -173,7 +271,7 @@ export function normalizeFlight(version, details, frames) {
     route: {
       start: routeStart,
       end: routeEnd,
-      home,
+      home: gpsPositionReliable ? home : null,
       minAltitudeM: minOf(samples,'altitudeM'),
       maxAltitudeM: maxOf(samples,'altitudeM'),
       maxHeightM: maxOf(samples,'heightM'),
@@ -185,8 +283,11 @@ export function normalizeFlight(version, details, frames) {
       averageSatellites: avgOf(samples,'gpsSatellites'),
       minGpsLevel: minOf(samples,'gpsLevel'),
       maxGpsLevel: maxOf(samples,'gpsLevel'),
-      unavailableFrames: gpsUnavailableFrames,
-      weakFrames: weakGpsFrames
+      unavailableFrames: gpsUnavailableFrames + rejectedPositionJumps,
+      weakFrames: weakGpsFrames,
+      validFrames: validGpsFrames,
+      rejectedJumps: rejectedPositionJumps,
+      positionReliable: gpsPositionReliable
     },
     battery: {
       startPercent: startBattery,
@@ -240,7 +341,7 @@ export function normalizeFlight(version, details, frames) {
     track: {
       type: 'Feature',
       properties: {},
-      geometry: coordinates.length >= 2 ? { type: 'LineString', coordinates } : null
+      geometry: gpsPositionReliable && coordinates.length >= 2 ? { type: 'LineString', coordinates } : null
     },
     limitations: [
       'Dados ausentes são apresentados como indisponíveis.',
