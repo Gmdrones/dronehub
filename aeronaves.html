@@ -408,6 +408,7 @@
     window.addEventListener('dronehub:cloud-ready', function(){ var syncedUser=getCurrentUser();if(syncedUser&&syncedUser.id&&syncedUser.id!==uid){uid=syncedUser.id;window.dronehubFleetUserId=uid;}backfillKnownWindLimits();render();window.dispatchEvent(new CustomEvent('dronehub:aircraft-updated')); });
     if (typeof lucide !== 'undefined') { lucide.createIcons(); }
   </script>
-<script src="js/dji-telemetry-upload.js?v=20261006-report-v3"></script>
+<script src="js/flightrecord-mission.js?v=20261011"></script>
+<script src="js/dji-telemetry-upload.js?v=20261011-mission"></script>
 <script src="js/account-nav.js?v=20260903" defer></script></body>
 </html>

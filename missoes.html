@@ -12,6 +12,7 @@
   <script src="js/plan-access.js?v=20260903-account"></script>
   <link rel="stylesheet" href="css/mission-operations.css">
   <script src="js/mission-operations.js" defer></script>
+  <script src="js/flightrecord-mission.js?v=20261011"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -167,7 +168,7 @@
           <div><label>Status</label><select id="mStatus"><option value="agendada">Agendada</option><option value="em_andamento">Em Andamento</option><option value="concluida">Concluida</option></select></div>
           <div style="grid-column:1/-1;"><label>Descricao / Objetivo</label><textarea id="mDesc" rows="2" placeholder="Descreva o objetivo da missao..."></textarea></div>
         </div>
-        <button class="btn btn-primary" onclick="criarMissao()" style="margin-top:16px;">Criar Missao</button>
+        <button class="btn btn-primary" id="createMissionButton" onclick="criarMissao()" style="margin-top:16px;">Criar Missao</button>
       </div>
 
       <div class="tabs">
@@ -214,6 +215,7 @@
     function getMissoes(){return JSON.parse(localStorage.getItem('dronehub_missoes')||'[]').filter(function(m){return m.userId===uid;});}
     var missionCloudSyncTimer=null;
     var pendingMissionDeletes={};
+    var importedFlightDraft=null;
     function saveMissoes(list){
       var all=JSON.parse(localStorage.getItem('dronehub_missoes')||'[]');
       var previous=all.filter(function(m){return m.userId===uid;});
@@ -249,9 +251,26 @@
       var titulo=document.getElementById('mTitulo').value.trim();
       if(!titulo)return alert('Digite o titulo da missao');
       var list=getMissoes();
-      list.push({id:Date.now().toString(),userId:uid,createdAt:new Date().toISOString(),titulo:titulo,cliente:document.getElementById('mCliente').value.trim(),data:document.getElementById('mData').value,horario:document.getElementById('mHorario').value,local:document.getElementById('mLocal').value.trim(),status:document.getElementById('mStatus').value,descricao:document.getElementById('mDesc').value.trim()});
+      if(importedFlightDraft && window.DroneHubFlightMission.isDuplicate(list,importedFlightDraft)){
+        return alert('Este FlightRecord já possui uma missão registrada. Nenhuma duplicata foi criada.');
+      }
+      var nova={id:Date.now().toString(),userId:uid,createdAt:new Date().toISOString(),titulo:titulo,cliente:document.getElementById('mCliente').value.trim(),data:document.getElementById('mData').value,horario:document.getElementById('mHorario').value,local:document.getElementById('mLocal').value.trim(),status:document.getElementById('mStatus').value,descricao:document.getElementById('mDesc').value.trim()};
+      if(importedFlightDraft){
+        nova.source='dji-flightrecord';
+        nova.flightRecordHash=importedFlightDraft.flightRecordHash;
+        nova.latitude=importedFlightDraft.latitude;
+        nova.longitude=importedFlightDraft.longitude;
+      }
+      list.push(nova);
       saveMissoes(list);
       concluirMissoesVencidas();
+      if(importedFlightDraft){
+        sessionStorage.removeItem(window.DroneHubFlightMission.STORAGE_KEY);
+        importedFlightDraft=null;
+        document.getElementById('flightMissionNotice')?.remove();
+        var submit=document.getElementById('createMissionButton');
+        if(submit)submit.textContent='Criar Missao';
+      }
       document.getElementById('mTitulo').value='';document.getElementById('mCliente').value='';document.getElementById('mData').value='';document.getElementById('mHorario').value='';document.getElementById('mLocal').value='';document.getElementById('mDesc').value='';
       render();
     }
@@ -287,7 +306,31 @@
       if(!confirm('Excluir missao "'+(m.titulo||'')+'"?'))return;
       saveMissoes(list.filter(function(x){return x.id!==id;}));render();
     }
-    concluirMissoesVencidas();render();
+    function carregarMissaoDoFlightRecord(){
+      if(new URLSearchParams(location.search).get('flightrecord')!=='1')return;
+      var api=window.DroneHubFlightMission;
+      if(!api)return;
+      var draft=api.takeDraft(sessionStorage,uid);
+      var card=document.querySelector('.main .card');
+      if(!card)return;
+      var notice=document.createElement('p');
+      notice.id='flightMissionNotice';
+      notice.setAttribute('role','status');
+      notice.style.cssText='padding:14px;margin-bottom:20px;border:1px solid #00d2ff;border-radius:9px;line-height:1.5';
+      if(!draft){notice.textContent='Rascunho expirado. Importe o FlightRecord novamente.';card.prepend(notice);return;}
+      if(api.isDuplicate(getMissoes(),draft)){
+        sessionStorage.removeItem(api.STORAGE_KEY);
+        notice.textContent='Este FlightRecord já possui uma missão. Nenhuma duplicata foi criada.';
+        card.prepend(notice);return;
+      }
+      importedFlightDraft=draft;
+      var fields={mTitulo:draft.titulo,mCliente:draft.cliente,mData:draft.data,mHorario:draft.horario,mLocal:draft.local,mStatus:'concluida',mDesc:draft.descricao};
+      Object.keys(fields).forEach(function(id){document.getElementById(id).value=fields[id]||'';});
+      notice.textContent='Missão preenchida com os dados do FlightRecord. Revise os campos e confirme para salvar. Dados ausentes no log permanecem em branco.';
+      card.prepend(notice);
+      document.getElementById('createMissionButton').textContent='Salvar missão do voo';
+    }
+    concluirMissoesVencidas();render();carregarMissaoDoFlightRecord();
     setInterval(function(){if(concluirMissoesVencidas())render();},15*60*1000);
     window.addEventListener('dronehub:missions-updated', function(){ concluirMissoesVencidas();render(); });
     if(typeof lucide!=='undefined'){lucide.createIcons();}

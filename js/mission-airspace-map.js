@@ -61,7 +61,14 @@
     operationsMap=L.map(target,{zoomControl:false,attributionControl:true}).setView([-22.9068,-43.1729],11);
     L.control.zoom({position:'topright'}).addTo(operationsMap);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(operationsMap);
-    var jobs=list.map(function(m){var query=m.local;/Brasil|Brazil|\bBR\b/i.test(query)||(query+=', Brasil');return geo(query).then(function(point){return {mission:m,point:point};});});
+    var jobs=list.map(function(m){
+      var lat=Number(m.latitude),lon=Number(m.longitude);
+      if(m.latitude!==null&&m.latitude!==undefined&&m.longitude!==null&&m.longitude!==undefined&&Number.isFinite(lat)&&Number.isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180){
+        return Promise.resolve({mission:m,point:{lat:lat,lon:lon,label:m.local}});
+      }
+      var query=m.local;/Brasil|Brazil|\bBR\b/i.test(query)||(query+=', Brasil');
+      return geo(query).then(function(point){return {mission:m,point:point};});
+    });
     Promise.all(jobs).then(function(items){
       var bounds=[];
       items.forEach(function(item){
