@@ -248,6 +248,14 @@
     ));
     add(intro, $el('div', 'flight-report__badge', '✓ Leitura concluída'));
 
+    const qualityNotices = (Array.isArray(data.limitations) ? data.limitations : [])
+      .filter(message => /distância|home point|gps|altitude absoluta|modelo dji/i.test(String(message)));
+    if (qualityNotices.length) {
+      const qualitySection = iconHead(root, 'shield-alert', 'Qualidade e correções da telemetria',
+        'Valores incompatíveis são recalculados com evidência ou exibidos como indisponíveis. Revise antes de criar uma missão.');
+      for (const message of qualityNotices) add(qualitySection, $el('p', 'flight-report__empty', String(message)));
+    }
+
     gridSection(root, 'gauge', 'Resumo do voo', 'Os principais números para entender rapidamente a operação.', [
       ['Duração', duration(data.summary?.durationS), 'Tempo total registrado'],
       ['Distância', fmt(data.summary?.distanceM, ' m'), 'Percurso total informado/calculado'],
