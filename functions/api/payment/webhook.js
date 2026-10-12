@@ -4,6 +4,7 @@ import {
   logIntegration,
   sendEmail
 } from '../../_lib/server.js';
+import { verifyMercadoPagoSignature, validatePaymentPurchase } from './payment-security.js';
 
 function normalizedState(status) {
   if (status === 'approved') {
@@ -222,6 +223,8 @@ export async function onRequestPost({
     paymentId =
       String(paymentId).trim();
 
+    await verifyMercadoPagoSignature(request, env, paymentId);
+
     console.log(
       'MERCADO_PAGO_WEBHOOK_RECEIVED',
       {
@@ -317,6 +320,8 @@ export async function onRequestPost({
         `UUID de usuário inválido: ${userId}`
       );
     }
+
+    validatePaymentPurchase(payment, paymentData);
 
     const state =
       normalizedState(
