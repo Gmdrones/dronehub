@@ -310,6 +310,38 @@
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
 
+  async function offerMissionDraft(data, file, result) {
+    const api = window.DroneHubFlightMission;
+    const account = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+    if (!api || !account?.id || !window.crypto?.subtle) return;
+    // Identifica o arquivo pelos bytes reais. Mesmo voo reenviado não cria outra missão.
+    const buffer = await file.arrayBuffer();
+    const digest = await crypto.subtle.digest('SHA-256', buffer);
+    const hash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+    const draft = api.buildDraft(data, hash, account.id);
+    if (!draft) return;
+
+    const box = add(result, $el('div', 'flight-report__section'));
+    box.style.cssText = 'margin-top:20px;padding:18px;border:1px solid rgba(0,210,255,.3);border-radius:12px;background:rgba(0,210,255,.05)';
+    add(box, $el('h4', '', 'Criar missão a partir deste FlightRecord'));
+    const info = add(box, $el('p', '', 'Data, horário e localização serão preenchidos com os dados disponíveis no log. Você poderá revisar antes de salvar a missão concluída.'));
+    info.style.cssText = 'margin:8px 0 15px;color:var(--text2);font-size:.8rem;line-height:1.5';
+    if (!draft.local || !draft.data) {
+      const missing = add(box, $el('p', '', 'Atenção: o log não informou todos os dados de GPS ou horário; confira os campos ausentes.'));
+      missing.style.cssText = 'color:var(--amber);font-size:.8rem;margin-bottom:12px';
+    }
+    const button = add(box, $el('button', 'btn btn-primary', 'Preparar missão'));
+    button.type = 'button';
+    button.addEventListener('click', () => {
+      try {
+        sessionStorage.setItem(api.STORAGE_KEY, JSON.stringify(draft));
+        window.location.assign('missoes.html?flightrecord=1');
+      } catch {
+        info.textContent = 'Não foi possível guardar o rascunho neste navegador. Libere o armazenamento da sessão e tente novamente.';
+      }
+    });
+  }
+
   async function importNative() {
     const file = document.getElementById('djiLog')?.files[0];
     const result = document.getElementById('logResult');
@@ -344,6 +376,8 @@
 
       result.replaceChildren();
       await renderReport(data, result);
+      try { await offerMissionDraft(data, file, result); }
+      catch (error) { console.warn('Não foi possível preparar a missão deste voo:', error); }
 
       const counter = data.batteryCounter;
       if (counter) {
