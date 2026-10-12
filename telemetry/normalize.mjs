@@ -226,12 +226,14 @@ export function normalizeFlight(version, details, frames) {
   }
 
   const rawAltitude = finite(details.takeOffAltitude);
-  // Valores fora da faixa operacional segura não são convertidos nem
-  // exibidos como altitudes comprovadas.
-  const takeOffAltitudeM = rawAltitude !== null && rawAltitude >= -500 && rawAltitude <= 6500 ?
-    rawAltitude : null;
+  const firstOsdAltitude = firstFinite(samples, 'altitudeM');
+  // O metadata de altitude de modelos recentes pode usar uma referência
+  // diferente do OSD. Não apresente valor absoluto sem consistência.
+  const takeOffAltitudeM = rawAltitude !== null && rawAltitude >= -500 &&
+    rawAltitude <= 6500 && firstOsdAltitude !== null &&
+    Math.abs(rawAltitude - firstOsdAltitude) <= 100 ? rawAltitude : null;
   if (rawAltitude !== null && takeOffAltitudeM === null) {
-    safetyFlags.add('Altitude absoluta de decolagem fora da faixa confiável: valor ocultado.');
+    safetyFlags.add('Altitude absoluta de decolagem não confiável ou incompatível com o OSD: valor ocultado.');
   }
 
   const routeStart = gpsPositionReliable && coordinates.length ?
