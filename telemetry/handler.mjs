@@ -51,7 +51,9 @@ export function createHandler(DJILog, fetcher = fetch) {
         output.firmware = [...new Map(records.filter(r=>r.type==='Firmware').map(r=>[r.content.senderType + ':' + r.content.version,{component:r.content.senderType,version:r.content.version}])).values()];
         // New aircraft layouts may report distance in a different unit. Do not silently
         // assume meters or scale by 1000 when the aircraft type is unsupported.
-        if (typeof details.productType === 'object') { output.summary.distanceM = null; output.limitations.push('Distância total indisponível: modelo não reconhecido pelo decodificador.'); }
+        if (typeof details.productType === 'object' && output.summary.distanceM === null) {
+          output.limitations.push('Distância GPS indisponível para este voo/modelo; não foi estimada.');
+        }
         return reply(output, 200);
       } catch { return reply({ error: 'Não foi possível decodificar o log. Verifique o arquivo original e a ativação da chave DJI.' }, 422); }
       finally { parser?.free(); }

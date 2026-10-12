@@ -23,7 +23,7 @@ test('original DJI v14 metadata and keychain structure', () => {
   finally { parser.free(); }
 });
 test('route, units, warnings and no estimated cell voltages', () => {
-  const frame = (lon) => ({ osd: { flyTime: 1, latitude: -22, longitude: lon, isGpdUsed: true, xSpeed: 3, ySpeed: 4, height: 5 }, battery: { voltage: 8, chargeLevel: 90, temperature: 25, isCellVoltageEstimated: true, cellVoltages: [4,4] }, app: { warn: '<script>warning</script>' } });
+  const frame = (lon) => ({ osd: { flyTime: 1, latitude: -22, longitude: lon, isGpdUsed: true, gpsNum: 15, xSpeed: 3, ySpeed: 4, height: 5 }, battery: { voltage: 8, chargeLevel: 90, temperature: 25, isCellVoltageEstimated: true, cellVoltages: [4,4] }, app: { warn: '<script>warning</script>' } });
   const result = normalizeFlight(14, {totalTime: 2,totalDistance: 4}, [frame(-43),frame(-43.01)]);
   assert.equal(result.summary.maxSpeedMS, 5); assert.equal(result.track.geometry.type, 'LineString'); assert.equal(result.events.length, 1); assert.equal(result.samples[0].cellVoltagesV, null);
 });
@@ -51,4 +51,65 @@ test('invalid log errors do not leak credentials', async () => {
   class Parser {constructor(){throw Error('secret');}}
   const response=await createHandler(Parser,fakeFetch({plan:'pro',status:'active'}))(req(),env);
   assert.equal(response.status,422);assert.ok(!(await response.text()).includes('secret'));
+});
+
+const healthyFrame = (lon, time, satellites = 20, homeLatitude = -22) => ({
+  osd: { flyTime: time, latitude: -22, longitude: lon, isGpdUsed: true,
+    gpsNum: satellites, xSpeed: 12, ySpeed: 0, height: 3 },
+  home: { isHomeRecord: true, latitude: homeLatitude, longitude: -43, altitude: 150 }
+});
+
+test('computes meters from trusted GPS rather than treating DJI km as meters', () => {
+  const frames = [
+    healthyFrame(-43, 0),
+    healthyFrame(-43.0005, 5),
+    healthyFrame(-43.001, 10)
+  ];
+  const result = normalizeFlight(14, {totalTime: 10, totalDistance: 0.103}, frames);
+  assert.ok(result.summary.distanceM > 99 && result.summary.distanceM < 105);
+  assert.equal(result.gps.positionReliable, true);
+  assert.equal(result.route.start.longitude, -43);
+  assert.ok(result.summary.maxDistanceFromHomeM > 99);
+});
+
+test('rejects faraway Home Point and implausible absolute altitude', () => {
+  const frames = [
+    healthyFrame(-43, 0, 20, -9),
+    healthyFrame(-43.0002, 3, 20, -9),
+    healthyFrame(-43.0004, 6, 20, -9)
+  ];
+  const result = normalizeFlight(14, {
+    totalTime: 6, takeOffAltitude: 8261.6
+  }, frames);
+  assert.equal(result.route.home, null);
+  assert.equal(result.summary.maxDistanceFromHomeM, null);
+  assert.equal(result.summary.takeOffAltitudeM, null);
+  assert.ok(result.safety.flags.some(s => s.includes('Home Point inconsistente')));
+  assert.ok(result.safety.flags.some(s => s.includes('Altitude absoluta')));
+});
+
+test('weak or missing satellite fix never generates a mission location or distance', () => {
+  const frames = Array.from({length: 20}, (_, i) =>
+    healthyFrame(-43 - i * 0.0001, i, 1));
+  const result = normalizeFlight(14, {totalTime: 20, totalDistance: 2.17}, frames);
+  assert.equal(result.gps.positionReliable, false);
+  assert.equal(result.summary.distanceM, null);
+  assert.equal(result.route.start, null);
+  assert.equal(result.track.geometry, null);
+});
+
+test('GPS teleport is filtered and not added to the track or distance', () => {
+  const frames = [
+    healthyFrame(-43, 0),
+    healthyFrame(-43.0001, 1),
+    { ...healthyFrame(-30, 2), osd: { ...healthyFrame(-30, 2).osd, latitude: -10 } },
+    healthyFrame(-43.0002, 3),
+    healthyFrame(-43.0003, 4),
+    healthyFrame(-43.0004, 5)
+  ];
+  const result = normalizeFlight(14, {totalTime: 5}, frames);
+  assert.equal(result.gps.rejectedJumps, 1);
+  assert.equal(result.gps.positionReliable, true);
+  assert.equal(result.track.geometry.coordinates.length, 5);
+  assert.ok(result.summary.distanceM > 30 && result.summary.distanceM < 55);
 });

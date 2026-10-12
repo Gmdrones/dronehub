@@ -61,3 +61,12 @@ test('arquivo 404 esta na raiz, usa caminhos absolutos e nao e indexavel', () =>
   assert.match(html,/href="\//);
   assert.doesNotMatch(html,/href="(?:\.\/|css\/|js\/)/);
 });
+
+test('nao importa localizacao de FlightRecord com GPS de baixa confianca', () => {
+  const risky = { ...sample, gps: {positionReliable: false} };
+  const draft = m.buildDraft(risky, hash, 'pilot-1');
+  assert.equal(draft.local, '');
+  assert.equal(draft.latitude, null);
+  assert.equal(draft.longitude, null);
+  assert.equal(draft.data.length, 10);
+});

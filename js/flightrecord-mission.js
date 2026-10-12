@@ -14,6 +14,8 @@
   }
 
   function positionFrom(data) {
+    // Bloqueia o preenchimento automático de missões com localização duvidosa.
+    if (data?.gps?.positionReliable === false) return {};
     const coords = data?.track?.geometry?.coordinates;
     if (Array.isArray(coords)) {
       const point = coords.find(p => Array.isArray(p) && validPosition(p[1], p[0]));
