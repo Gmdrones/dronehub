@@ -18,7 +18,7 @@ CREATE OR REPLACE FUNCTION public.apply_payment_entitlement(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
-  applied boolean;
+  affected_rows integer;
   next_expiry timestamptz;
 BEGIN
   IF target_user IS NULL OR payment_reference IS NULL OR length(trim(payment_reference)) < 1 THEN
@@ -37,15 +37,15 @@ BEGIN
   INSERT INTO public.payment_entitlement_events(payment_reference,payment_status,user_id)
   VALUES(payment_reference,payment_status,target_user)
   ON CONFLICT DO NOTHING;
-  GET DIAGNOSTICS applied = ROW_COUNT;
-  IF NOT applied THEN RETURN; END IF;
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+  IF affected_rows = 0 THEN RETURN; END IF;
 
   IF payment_status = 'approved' THEN
     -- Do not reactivate a payment already reversed.
     IF EXISTS (
-      SELECT 1 FROM public.payment_entitlement_events
-      WHERE payment_reference = apply_payment_entitlement.payment_reference
-        AND payment_status IN ('refunded','charged_back','cancelled')
+      SELECT 1 FROM public.payment_entitlement_events e
+      WHERE e.payment_reference = $4
+        AND e.payment_status IN ('refunded','charged_back','cancelled')
     ) THEN RETURN; END IF;
     SELECT greatest(now(),coalesce(courtesy_expires_at,now()))
            + make_interval(months => access_months)
