@@ -23,8 +23,8 @@ test('original DJI v14 metadata and keychain structure', () => {
   finally { parser.free(); }
 });
 test('route, units, warnings and no estimated cell voltages', () => {
-  const frame = (lon) => ({ osd: { flyTime: 1, latitude: -22, longitude: lon, isGpdUsed: true, xSpeed: 3, ySpeed: 4, height: 5 }, battery: { voltage: 8, chargeLevel: 90, temperature: 25, isCellVoltageEstimated: true, cellVoltages: [4,4] }, app: { warn: '<script>warning</script>' } });
-  const result = normalizeFlight(14, {totalTime: 2,totalDistance: 4}, [frame(-43),frame(-43.01)]);
+  const frame = (lon, time) => ({ osd: { flyTime: time, latitude: -22, longitude: lon, isGpdUsed: true, xSpeed: 3, ySpeed: 4, height: 5 }, battery: { voltage: 8, chargeLevel: 90, temperature: 25, isCellVoltageEstimated: true, cellVoltages: [4,4] }, app: { warn: '<script>warning</script>' } });
+  const result = normalizeFlight(14, {totalTime: 2,totalDistance: 4}, [frame(-43,1),frame(-43.0001,2)]);
   assert.equal(result.summary.maxSpeedMS, 5); assert.equal(result.track.geometry.type, 'LineString'); assert.equal(result.events.length, 1); assert.equal(result.samples[0].cellVoltagesV, null);
 });
 const env = { SUPABASE_URL: 'https://project.supabase.co', SUPABASE_ANON_KEY:'public', DJI_API_KEY:'secret' };
