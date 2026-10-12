@@ -33,3 +33,22 @@ test('accepts valid Mercado Pago HMAC and rejects changed request ID',async()=>{
  await assert.rejects(()=>verifyMercadoPagoSignature(makeRequest('wrong'),{MERCADO_PAGO_WEBHOOK_SECRET:secret},id));
  await assert.rejects(()=>verifyMercadoPagoSignature(makeRequest(requestId),{},id));
 });
+
+test('annual plan must match BRL 358.80 and 12 months',async()=>{
+ const {validatePaymentPurchase}=await security;
+ const annual={...plan,planKey:'annual',months:12};
+ const approved={...payment,transaction_amount:358.80};
+ assert.doesNotThrow(()=>validatePaymentPurchase(approved,annual));
+ assert.throws(()=>validatePaymentPurchase({...approved,transaction_amount:45},annual));
+ assert.throws(()=>validatePaymentPurchase({...approved,currency_id:'USD'},annual));
+});
+
+test('rejects unsigned and malformed notifications',async()=>{
+ const {verifyMercadoPagoSignature}=await security;
+ const base={MERCADO_PAGO_WEBHOOK_SECRET:'test-secret'};
+ for(const headers of [
+   {'x-request-id':'a'},
+   {'x-request-id':'a','x-signature':'ts=123,v1=invalid'},
+   {'x-signature':'ts=123,v1='+'0'.repeat(64)},
+ ]) await assert.rejects(()=>verifyMercadoPagoSignature({headers:new Headers(headers)},base,'123'));
+});
