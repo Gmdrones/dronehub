@@ -297,9 +297,9 @@ export async function onRequestPost({
       );
     }
 
-    if (!payment?.id) {
+    if (!payment?.id || String(payment.id) !== String(paymentId)) {
       throw new Error(
-        'O Mercado Pago não retornou um pagamento válido.'
+        'ID do pagamento não corresponde à notificação recebida.'
       );
     }
 
@@ -697,7 +697,7 @@ export async function onRequestPost({
         error:
           errorMessage
       },
-      500
+      error?.status || 500
     );
   }
 }
