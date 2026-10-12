@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.payment_entitlement_events (
   applied_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (payment_reference, payment_status)
 );
+ALTER TABLE public.payment_entitlement_events ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.payment_entitlement_events FROM PUBLIC, anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.apply_payment_entitlement(
@@ -68,7 +69,7 @@ BEGIN
     -- A refund must not undo a newer, unrelated subscription.\n    -- Verify the event belongs to the same user before any update.
     UPDATE public.account_entitlements
     SET plan=CASE WHEN role='admin' THEN plan ELSE 'free' END,
-        status=CASE WHEN role='admin' THEN status ELSE 'inactive' END,
+        status=CASE WHEN role='admin' THEN status ELSE 'cancelled' END,
         courtesy_expires_at=CASE WHEN role='admin' THEN courtesy_expires_at ELSE now() END,
         source='mercado_pago:'||payment_reference,updated_at=now()
     WHERE user_id=target_user AND source='mercado_pago:'||payment_reference;
