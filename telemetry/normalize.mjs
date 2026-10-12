@@ -24,13 +24,56 @@ const haversine = (aLat,aLon,bLat,bLon) => {
   return 2*R*Math.asin(Math.min(1,Math.sqrt(s)));
 };
 
+// DJI versions differ in the unit used for totalDistance. Prefer an independent
+// speed/time cross-check before applying any conversion.
+const distanceFromSpeed = (samples) => {
+  let distanceM = 0, coveredS = 0;
+  const start = samples[0]?.timeS, end = samples[samples.length - 1]?.timeS;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  for (let i = 1; i < samples.length; i++) {
+    const a = samples[i - 1], b = samples[i];
+    const dt = b.timeS - a.timeS;
+    if (!Number.isFinite(dt) || dt <= 0 || dt > 2 ||
+      !Number.isFinite(a.speedMS) || !Number.isFinite(b.speedMS) ||
+      a.speedMS < 0 || b.speedMS < 0 || a.speedMS > 65 || b.speedMS > 65) continue;
+    distanceM += (a.speedMS + b.speedMS) * dt / 2;
+    coveredS += dt;
+  }
+  return coveredS >= Math.max(1, (end - start) * 0.6) ? distanceM : null;
+};
+const validPosition = (lat, lon) =>
+  Number.isFinite(lat) && Number.isFinite(lon) &&
+  Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0);
+const checkedDistance = (reported, estimatedM, limitations) => {
+  if (estimatedM === null) return reported !== null && reported >= 0 ? reported : null;
+  if (reported === null || reported <= 0) {
+    if (estimatedM > 2) limitations.push('Distância estimada pela velocidade e duração: o total DJI estava ausente ou zerado.');
+    return estimatedM;
+  }
+  const candidates = [reported, reported * 1000];
+  const best = Math.abs(candidates[0] - estimatedM) <= Math.abs(candidates[1] - estimatedM) ? 0 : 1;
+  if (Math.abs(candidates[best] - estimatedM) <= Math.max(2, estimatedM * 0.25)) {
+    if (best === 1) limitations.push('Distância DJI convertida de quilômetros para metros após validação pela telemetria de velocidade.');
+    return candidates[best];
+  }
+  limitations.push('Distância informada pela DJI diverge da telemetria; usando integração de velocidade e tempo.');
+  return estimatedM;
+};
+
 export function normalizeFlight(version, details, frames) {
   const samples = [], events = [], coordinates = [];
   let previousWarning = '', previousTip = '';
   const flightModes = [], flightActions = [], goHomeStates = [];
   const safetyFlags = new Set();
   let home = null;
+  let previousGps = null;
+  let gpsOutlierFrames = 0;
   let maxDistanceFromHomeM = null;
+  const limitations = [
+    'Dados ausentes são apresentados como indisponíveis.',
+    'Tensões estimadas de células não são incluídas.',
+    'Avisos registrados não equivalem a diagnóstico técnico da bateria.'
+  ];
   let photosTriggered = 0;
   let videoFrames = 0;
   let sdCardProblemFrames = 0;
@@ -44,10 +87,20 @@ export function normalizeFlight(version, details, frames) {
     const g = f.gimbal || {}, c = f.camera || {}, h = f.home || {};
     const time = finite(o.flyTime);
     const lat = finite(o.latitude), lon = finite(o.longitude);
-    const gps = o.isGpdUsed === true && lat !== null && lon !== null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0);
+    let gps = o.isGpdUsed === true && validPosition(lat, lon);
+    if (gps && previousGps) {
+      const dt = time !== null && previousGps.timeS !== null ? time - previousGps.timeS : null;
+      const jumpM = haversine(previousGps.latitude, previousGps.longitude, lat, lon);
+      // Remove impossible short-interval GPS jumps before they affect maps or missions.
+      if (jumpM > Math.max(75, dt !== null && dt > 0 ? dt * 80 : 75)) {
+        gps = false;
+        gpsOutlierFrames++;
+      }
+    }
+    if (gps) previousGps = { latitude: lat, longitude: lon, timeS: time };
     const cells = b.isCellVoltageEstimated === false ? (b.cellVoltages || []).filter(v => positive(v) !== null) : [];
 
-    if (!home && h.isHomeRecord === true && finite(h.latitude) !== null && finite(h.longitude) !== null && !(h.latitude===0 && h.longitude===0)) {
+    if (!home && h.isHomeRecord === true && validPosition(h.latitude, h.longitude)) {
       home = {
         latitude: h.latitude,
         longitude: h.longitude,
@@ -56,11 +109,6 @@ export function normalizeFlight(version, details, frames) {
         maxAllowedHeightM: finite(h.maxAllowedHeight ?? h.heightLimit),
         dynamicHomePoint: h.isDynamicHomePointEnabled === true
       };
-    }
-
-    if (gps && home) {
-      const d = haversine(home.latitude, home.longitude, lat, lon);
-      maxDistanceFromHomeM = maxDistanceFromHomeM === null ? d : Math.max(maxDistanceFromHomeM, d);
     }
 
     const mode = enumText(o.flycState);
@@ -141,6 +189,38 @@ export function normalizeFlight(version, details, frames) {
   const routeStart = coordinates.length ? { longitude:coordinates[0][0], latitude:coordinates[0][1] } : null;
   const routeEnd = coordinates.length ? { longitude:coordinates[coordinates.length-1][0], latitude:coordinates[coordinates.length-1][1] } : null;
 
+  if (gpsOutlierFrames) limitations.push(gpsOutlierFrames + ' amostra(s) GPS com salto impossível foram desconsideradas.');
+  // A malformed Home Point previously produced distances of over 1,500 km on a
+  // short DJI Mini flight. Discard it instead of displaying an impossible radius.
+  if (home && routeStart && haversine(home.latitude, home.longitude, routeStart.latitude, routeStart.longitude) > 50000) {
+    home = null;
+    limitations.push('Home Point incompatível com o início do voo; distância do Home indisponível.');
+  }
+  if (home) {
+    for (const sample of samples) {
+      if (!validPosition(sample.latitude, sample.longitude)) continue;
+      const d = haversine(home.latitude, home.longitude, sample.latitude, sample.longitude);
+      maxDistanceFromHomeM = maxDistanceFromHomeM === null ? d : Math.max(maxDistanceFromHomeM, d);
+    }
+  }
+
+  const inferredDistanceM = distanceFromSpeed(samples);
+  const unknownAircraft = details.productType !== null && typeof details.productType === 'object';
+  if (unknownAircraft) limitations.push('Modelo DJI ainda não identificado pelo decodificador: distância só é usada quando confirmada por velocidade/tempo.');
+  const sourceDistance = unknownAircraft ? null : finite(details.totalDistance);
+  const distanceM = checkedDistance(sourceDistance, inferredDistanceM, limitations);
+
+  // Absolute takeoff altitude is often reported in an incompatible reference
+  // frame by newer DJI products. Do not show it unless the OSD agrees.
+  let takeOffAltitudeM = finite(details.takeOffAltitude);
+  const osdAltitudeM = firstFinite(samples, 'altitudeM');
+  if (takeOffAltitudeM !== null &&
+      (takeOffAltitudeM < -500 || takeOffAltitudeM > 9000 ||
+      osdAltitudeM === null || Math.abs(takeOffAltitudeM - osdAltitudeM) > 100)) {
+    takeOffAltitudeM = null;
+    limitations.push('Altitude absoluta de decolagem indisponível: referências de altitude DJI inconsistentes.');
+  }
+
   return {
     schemaVersion: 2,
     version,
@@ -148,14 +228,14 @@ export function normalizeFlight(version, details, frames) {
     frameCount: frames.length,
     summary: {
       durationS: finite(details.totalTime),
-      distanceM: finite(details.totalDistance),
+      distanceM,
       maxHeightM: maxOf(samples,'heightM') ?? finite(details.maxHeight),
       maxSpeedMS: maxOf(samples,'speedMS') ?? finite(details.maxHorizontalSpeed),
       maxVerticalSpeedMS: maxOf(samples,'verticalSpeedMS') ?? finite(details.maxVerticalSpeed),
       minVerticalSpeedMS: minOf(samples,'verticalSpeedMS'),
       maxBatteryTemperatureC: maxOf(samples,'temperatureC'),
       minBatteryTemperatureC: minOf(samples,'temperatureC'),
-      takeOffAltitudeM: finite(details.takeOffAltitude),
+      takeOffAltitudeM,
       photoCount: finite(details.captureNum) ?? finite(details.photoNum) ?? photosTriggered,
       videoTimeS: finite(details.videoTime),
       maxDistanceFromHomeM
@@ -186,7 +266,8 @@ export function normalizeFlight(version, details, frames) {
       minGpsLevel: minOf(samples,'gpsLevel'),
       maxGpsLevel: maxOf(samples,'gpsLevel'),
       unavailableFrames: gpsUnavailableFrames,
-      weakFrames: weakGpsFrames
+      weakFrames: weakGpsFrames,
+      outlierFrames: gpsOutlierFrames
     },
     battery: {
       startPercent: startBattery,
@@ -242,10 +323,6 @@ export function normalizeFlight(version, details, frames) {
       properties: {},
       geometry: coordinates.length >= 2 ? { type: 'LineString', coordinates } : null
     },
-    limitations: [
-      'Dados ausentes são apresentados como indisponíveis.',
-      'Tensões estimadas de células não são incluídas.',
-      'Avisos registrados não equivalem a diagnóstico técnico da bateria.'
-    ]
+    limitations
   };
 }
