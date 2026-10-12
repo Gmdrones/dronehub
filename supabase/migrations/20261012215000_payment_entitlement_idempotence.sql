@@ -31,11 +31,18 @@ BEGIN
   IF payment_status = 'approved' AND (access_months NOT IN (1,12)) THEN
     RAISE EXCEPTION 'Invalid subscription duration';
   END IF;
-  IF EXISTS (SELECT 1 FROM public.payment_entitlement_events e\n             WHERE e.payment_reference = $4 AND e.user_id <> target_user) THEN\n    RAISE EXCEPTION 'Payment reference belongs to another user';\n  END IF;\n  IF payment_status = 'pending' THEN
+  IF EXISTS (SELECT 1 FROM public.payment_entitlement_events e
+             WHERE e.payment_reference = $4 AND e.user_id <> target_user) THEN
+    RAISE EXCEPTION 'Payment reference belongs to another user';
+  END IF;
+  IF payment_status = 'pending' THEN
     RETURN;
   END IF;
 
-  -- Serialize all entitlement updates for one user, including different payments.\n  PERFORM pg_advisory_xact_lock(hashtextextended(target_user::text, 0));\n\n  INSERT INTO public.payment_entitlement_events(payment_reference,payment_status,user_id)
+  -- Serialize all entitlement updates for one user, including different payments.
+  PERFORM pg_advisory_xact_lock(hashtextextended(target_user::text, 0));
+
+  INSERT INTO public.payment_entitlement_events(payment_reference,payment_status,user_id)
   VALUES(payment_reference,payment_status,target_user)
   ON CONFLICT DO NOTHING;
   GET DIAGNOSTICS affected_rows = ROW_COUNT;
@@ -66,7 +73,8 @@ BEGIN
       source='mercado_pago:'||payment_reference,
       updated_at=now();
   ELSE
-    -- A refund must not undo a newer, unrelated subscription.\n    -- Verify the event belongs to the same user before any update.
+    -- A refund must not undo a newer, unrelated subscription.
+    -- Verify the event belongs to the same user before any update.
     UPDATE public.account_entitlements
     SET plan=CASE WHEN role='admin' THEN plan ELSE 'free' END,
         status=CASE WHEN role='admin' THEN status ELSE 'cancelled' END,
