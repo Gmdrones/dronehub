@@ -113,3 +113,17 @@ test('GPS teleport is filtered and not added to the track or distance', () => {
   assert.equal(result.track.geometry.coordinates.length, 5);
   assert.ok(result.summary.distanceM > 30 && result.summary.distanceM < 55);
 });
+
+
+test('rejects takeoff altitude that disagrees with the first DJI OSD sample', () => {
+  const frames = [0, 1, 2].map(i => ({
+    ...healthyFrame(-43 - i * 0.00002, i),
+    osd: { ...healthyFrame(-43 - i * 0.00002, i).osd, altitude: 0 }
+  }));
+  const bad = normalizeFlight(14, { totalTime: 2, takeOffAltitude: -175.4 }, frames);
+  assert.equal(bad.summary.takeOffAltitudeM, null);
+  assert.ok(bad.safety.flags.some(s => s.includes('OSD')));
+  const validFrames = frames.map(f => ({ ...f, osd: { ...f.osd, altitude: 12 } }));
+  const good = normalizeFlight(14, { totalTime: 2, takeOffAltitude: 12 }, validFrames);
+  assert.equal(good.summary.takeOffAltitudeM, 12);
+});

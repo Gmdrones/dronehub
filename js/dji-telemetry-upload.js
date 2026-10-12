@@ -248,6 +248,13 @@
     ));
     add(intro, $el('div', 'flight-report__badge', '✓ Leitura concluída'));
 
+    const qualityWarnings = Array.isArray(data.safety?.flags)
+      ? data.safety.flags.filter(message => /gps|home point|distância|altitude absoluta/i.test(String(message)))
+      : [];
+    if (qualityWarnings.length) {
+      chipsSection(root, 'shield-alert', 'Qualidade da telemetria', qualityWarnings);
+    }
+
     gridSection(root, 'gauge', 'Resumo do voo', 'Os principais números para entender rapidamente a operação.', [
       ['Duração', duration(data.summary?.durationS), 'Tempo total registrado'],
       ['Distância', fmt(data.summary?.distanceM, ' m'), 'Percurso total informado/calculado'],
