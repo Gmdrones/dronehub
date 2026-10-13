@@ -137,10 +137,10 @@ async function createMercadoPagoPreference(
 
     auto_return: 'approved',
 
-    // Limite, não número de parcelas obrigatório: comprador escolhe entre 1 e 12.
-    // Preço total permanece o mesmo anunciado na página /precos.
+    // Mensal: pagamento único à vista. Anual: até 12x sem juros.
+    // O total cobrado permanece R$ 45,00 ou R$ 358,80, conforme anunciado.
     payment_methods: {
-      installments: 12
+      installments: planKey === 'monthly' ? 1 : 12
     },
 
     statement_descriptor: 'DRONE HUB'
