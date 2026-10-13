@@ -4,7 +4,7 @@ const PLANS = Object.freeze({
   monthly: { title: 'Drone Hub PRO — 30 dias', amount: 45.00, months: 1 }
 });
 const REVISION = 'worker_safe_v2';
-const MAX_INSTALLMENTS = 12; // Buyer chooses between 1 and 12 at Mercado Pago Checkout Pro.
+const ANNUAL_MAX_INSTALLMENTS = 12; // Monthly is always one upfront payment.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function json(payload, status = 200) {
@@ -61,7 +61,7 @@ export default {
         pending: SITE_ORIGIN + '/precos?status=pending'
       },
       auto_return: 'approved',
-      payment_methods: {installments: MAX_INSTALLMENTS},
+      payment_methods: {installments: input.plan === 'monthly' ? 1 : ANNUAL_MAX_INSTALLMENTS},
       statement_descriptor: 'DRONE HUB'
     };
     try {
