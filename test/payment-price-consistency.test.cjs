@@ -24,7 +24,10 @@ test('pricing advertisement matches both checkout implementations and 12x maximu
      const numeric=Number(block.match(/amount:\s*(\d+(?:\.\d+)?)/)?.[1]);
      assert.equal(numeric,price,label+' '+plan+' amount differs from advertisement');
    }
-   assert.match(source,/payment_methods:\s*\{\s*installments:\s*(?:12|MAX_INSTALLMENTS)\s*\}/,
-     label+' must allow buyer to choose up to 12 installments');
  }
+ const directInstallments=/payment_methods:\\s*\\{\\s*installments:\\s*planKey\\s*===\\s*'monthly'\\s*\\?\\s*1\\s*:\\s*12/;
+ const workerInstallments=/payment_methods:\\s*\\{\\s*installments:\\s*input\\.plan\\s*===\\s*'monthly'\\s*\\?\\s*1\\s*:\\s*ANNUAL_MAX_INSTALLMENTS/;
+ assert.match(direct,directInstallments,'Pages checkout: monthly 1x, annual <=12x');
+ assert.match(fallback,workerInstallments,'Worker checkout: monthly 1x, annual <=12x');
+ assert.match(offers.annual.headline,/12x de R\\$ 29,90/);
 });
