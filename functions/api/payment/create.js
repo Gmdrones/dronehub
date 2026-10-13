@@ -205,6 +205,9 @@ export async function onRequestPost({
         !data.id ||
         !data.init_point
       ) {
+        if (env.PAYMENT_WORKER_FALLBACK_ENABLED !== 'true') {
+          throw new Error('Checkout indisponível. Tente novamente em instantes.');
+        }
         route = 'worker_fallback';
 
         await logIntegration(
@@ -232,6 +235,9 @@ export async function onRequestPost({
           );
       }
     } else {
+      if (env.PAYMENT_WORKER_FALLBACK_ENABLED !== 'true') {
+        throw new Error('O checkout não está configurado neste ambiente.');
+      }
       route = 'worker_fallback';
 
       data =
