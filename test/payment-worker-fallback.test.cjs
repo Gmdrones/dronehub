@@ -25,7 +25,7 @@ test('worker rejects unauthenticated requests before contacting Mercado Pago',as
  }finally{globalThis.fetch=previous;}
 });
 
-test('worker preserves monthly BRL 45.00 and offers buyer up to 12 installments',async()=>{
+test('worker preserves monthly BRL 45.00 with one upfront installment',async()=>{
  const {default:worker}=await workerModule;
  const previous=globalThis.fetch;
  let captured;
@@ -42,7 +42,7 @@ test('worker preserves monthly BRL 45.00 and offers buyer up to 12 installments'
   assert.deepEqual({plan:captured.metadata.plan,months:captured.metadata.months},{plan:'monthly',months:1});
   assert.equal(captured.notification_url,'https://dronehub.app.br/api/payment/webhook');
   assert.equal(captured.back_urls.success,'https://dronehub.app.br/precos?status=success');
-  assert.equal(captured.payment_methods.installments,12);
+  assert.equal(captured.payment_methods.installments,1);
   assert.equal(captured.items[0].unit_price,45);
  }finally{globalThis.fetch=previous;}
 });
