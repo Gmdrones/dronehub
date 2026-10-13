@@ -31,10 +31,16 @@ async function createWithPaymentWorker(env, user, planKey) {
 
   const plan = PLANS[planKey];
 
+  const sharedSecret = String(env.PAYMENT_WORKER_SHARED_SECRET || '');
+  if (sharedSecret.length < 32) {
+    throw new Error('O Worker alternativo não possui autenticação configurada.');
+  }
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'X-DroneHub-Worker-Key': sharedSecret
     },
     body: JSON.stringify({
       plan: planKey,
@@ -65,7 +71,8 @@ async function createWithPaymentWorker(env, user, planKey) {
   if (
     !response.ok ||
     !data.id ||
-    !data.init_point
+    !data.init_point ||
+    data.flow_revision !== 'worker_safe_v2'
   ) {
     throw new Error(
       data.message ||
@@ -130,9 +137,10 @@ async function createMercadoPagoPreference(
 
     auto_return: 'approved',
 
+    // Mensal: pagamento único à vista. Anual: até 12x sem juros.
+    // O total cobrado permanece R$ 45,00 ou R$ 358,80, conforme anunciado.
     payment_methods: {
-      installments:
-        planKey === 'annual' ? 12 : 1
+      installments: planKey === 'monthly' ? 1 : 12
     },
 
     statement_descriptor: 'DRONE HUB'
@@ -176,10 +184,13 @@ export async function onRequestPost({
       .json()
       .catch(() => ({}));
 
-    const planKey =
-      input.plan === 'monthly'
-        ? 'monthly'
-        : 'annual';
+    // Nunca trocar silenciosamente um plano inválido pelo anual.
+    if (!['monthly', 'annual'].includes(input.plan)) {
+      const badPlan = new Error('Selecione um plano válido para continuar.');
+      badPlan.status = 400;
+      throw badPlan;
+    }
+    const planKey = input.plan;
 
     const site = (
       env.SITE_URL ||
@@ -205,9 +216,8 @@ export async function onRequestPost({
         !data.id ||
         !data.init_point
       ) {
-        // O Worker legado aceita parcelas do mensal; nunca usá-lo para o plano à vista.
-        if (planKey === 'monthly') {
-          throw new Error('Pagamento mensal à vista temporariamente indisponível. Tente novamente.');
+        if (env.PAYMENT_WORKER_FALLBACK_ENABLED !== 'true') {
+          throw new Error('Checkout indisponível. Tente novamente em instantes.');
         }
         route = 'worker_fallback';
 
@@ -236,9 +246,8 @@ export async function onRequestPost({
           );
       }
     } else {
-      // Sem checkout seguro, não encaminhar o mensal ao Worker legado parcelável.
-      if (planKey === 'monthly') {
-        throw new Error('Pagamento mensal à vista temporariamente indisponível. Tente novamente.');
+      if (env.PAYMENT_WORKER_FALLBACK_ENABLED !== 'true') {
+        throw new Error('O checkout não está configurado neste ambiente.');
       }
       route = 'worker_fallback';
 

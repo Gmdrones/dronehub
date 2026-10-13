@@ -17,3 +17,27 @@ jobs:
         with:
           node-version: 22
       - run: npm test
+
+  payment-migration:
+    name: Payment migration (PostgreSQL 17)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate real SQL migration and payment scenarios
+        env:
+          PGPASSWORD: test
+        run: |
+          command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f test/sql/payment-entitlement-migration.sql

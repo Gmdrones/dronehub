@@ -4,6 +4,7 @@ import {
   logIntegration,
   sendEmail
 } from '../../_lib/server.js';
+import { verifyMercadoPagoSignature, validatePaymentPurchase } from './payment-security.js';
 
 function normalizedState(status) {
   if (status === 'approved') {
@@ -222,6 +223,8 @@ export async function onRequestPost({
     paymentId =
       String(paymentId).trim();
 
+    await verifyMercadoPagoSignature(request, env, paymentId);
+
     console.log(
       'MERCADO_PAGO_WEBHOOK_RECEIVED',
       {
@@ -294,9 +297,9 @@ export async function onRequestPost({
       );
     }
 
-    if (!payment?.id) {
+    if (!payment?.id || String(payment.id) !== String(paymentId)) {
       throw new Error(
-        'O Mercado Pago não retornou um pagamento válido.'
+        'ID do pagamento não corresponde à notificação recebida.'
       );
     }
 
@@ -317,6 +320,8 @@ export async function onRequestPost({
         `UUID de usuário inválido: ${userId}`
       );
     }
+
+    validatePaymentPurchase(payment, paymentData);
 
     const state =
       normalizedState(
@@ -692,7 +697,7 @@ export async function onRequestPost({
         error:
           errorMessage
       },
-      500
+      error?.status || 500
     );
   }
 }
