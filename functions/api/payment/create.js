@@ -31,10 +31,16 @@ async function createWithPaymentWorker(env, user, planKey) {
 
   const plan = PLANS[planKey];
 
+  const sharedSecret = String(env.PAYMENT_WORKER_SHARED_SECRET || '');
+  if (sharedSecret.length < 32) {
+    throw new Error('O Worker alternativo não possui autenticação configurada.');
+  }
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'X-DroneHub-Worker-Key': sharedSecret
     },
     body: JSON.stringify({
       plan: planKey,
@@ -65,7 +71,8 @@ async function createWithPaymentWorker(env, user, planKey) {
   if (
     !response.ok ||
     !data.id ||
-    !data.init_point
+    !data.init_point ||
+    data.flow_revision !== 'worker_safe_v2'
   ) {
     throw new Error(
       data.message ||
