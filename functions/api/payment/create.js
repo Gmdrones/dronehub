@@ -184,10 +184,13 @@ export async function onRequestPost({
       .json()
       .catch(() => ({}));
 
-    const planKey =
-      input.plan === 'monthly'
-        ? 'monthly'
-        : 'annual';
+    // Nunca trocar silenciosamente um plano inválido pelo anual.
+    if (!['monthly', 'annual'].includes(input.plan)) {
+      const badPlan = new Error('Selecione um plano válido para continuar.');
+      badPlan.status = 400;
+      throw badPlan;
+    }
+    const planKey = input.plan;
 
     const site = (
       env.SITE_URL ||
