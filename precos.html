@@ -122,7 +122,7 @@
       <div class="pricing-name">Pro</div>
       <div class="plan-selector" id="planSelector">
         <button class="plan-option active" data-plan="annual" onclick="selectPlan('annual')">Anual<span class="small">12 meses · R$ 29,90/mês</span></button>
-        <button class="plan-option" data-plan="monthly" onclick="selectPlan('monthly')">Mensal<span class="small">30 dias · R$ 45,00</span></button>
+        <button class="plan-option" data-plan="monthly" onclick="selectPlan('monthly')">Mensal<span class="small">30 dias · R$ 45,00 à vista</span></button>
       </div>
       <div class="pd">
         <div class="pd-val" id="priceVal">12x de R$ 29,90</div>
@@ -131,7 +131,7 @@
       </div>
       <div class="mp-msg" id="mpMsg"></div>
       <div class="pay-opts" id="payOpts">
-        <div class="pay-opt selected" data-pay="all" onclick="selectPay('all')"><div class="po-icon">💳</div><div class="po-name">Cartão</div><div class="po-desc">Até 12x</div></div>
+        <div class="pay-opt selected" data-pay="all" onclick="selectPay('all')"><div class="po-icon">💳</div><div class="po-name">Cartão</div><div class="po-desc">Até 12x sem juros</div></div>
         <div class="pay-opt" data-pay="pix" onclick="selectPay('pix')"><div class="po-icon">📱</div><div class="po-name">PIX</div><div class="po-desc">Instantâneo</div></div>
         <div class="pay-opt" data-pay="boleto" onclick="selectPay('boleto')"><div class="po-icon">📄</div><div class="po-name">Boleto</div><div class="po-desc">3 dias úteis</div></div>
       </div>
@@ -158,7 +158,7 @@
   <script>
     var currentPlan = 'annual';
     var currentPay = 'all';
-    var PLANOS = { annual: { total: 358.80, headline: '12x de R$ 29,90', button: '12x de R$ 29,90', save: 'Economize R$ 181,20 em relação ao plano mensal', sub: 'no cartão · ou R$ 358,80 à vista para 12 meses de acesso' }, monthly: { total: 45.00, headline: 'R$ 45,00', button: 'R$ 45,00', save: '', sub: 'Renovação mensal de R$ 45,00' } };
+    var PLANOS = { annual: { total: 358.80, headline: '12x de R$ 29,90', button: '12x de R$ 29,90', save: 'Economize R$ 181,20 em relação ao plano mensal', sub: 'no cartão · ou R$ 358,80 à vista para 12 meses de acesso' }, monthly: { total: 45.00, headline: 'R$ 45,00 à vista', button: 'R$ 45,00 à vista', save: '', sub: 'Pagamento único, sem parcelamento · 30 dias de acesso' } };
 
     function selectPlan(plan) {
       currentPlan = plan;
@@ -168,6 +168,8 @@
       document.getElementById('priceVal').textContent = p.headline;
       document.getElementById('priceSub').textContent = p.sub;
       document.getElementById('btnPrice').textContent = p.button;
+      var cardInfo = document.querySelector('.pay-opt[data-pay="all"] .po-desc');
+      if (cardInfo) cardInfo.textContent = plan === 'monthly' ? 'Somente à vista (1x)' : 'Até 12x sem juros';
       if(p.save){document.getElementById('priceSave').textContent=p.save;document.getElementById('priceSave').style.display='inline-block';}
       else{document.getElementById('priceSave').style.display='none';}
     }

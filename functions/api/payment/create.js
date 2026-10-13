@@ -205,6 +205,10 @@ export async function onRequestPost({
         !data.id ||
         !data.init_point
       ) {
+        // O Worker legado aceita parcelas do mensal; nunca usá-lo para o plano à vista.
+        if (planKey === 'monthly') {
+          throw new Error('Pagamento mensal à vista temporariamente indisponível. Tente novamente.');
+        }
         route = 'worker_fallback';
 
         await logIntegration(
@@ -232,6 +236,10 @@ export async function onRequestPost({
           );
       }
     } else {
+      // Sem checkout seguro, não encaminhar o mensal ao Worker legado parcelável.
+      if (planKey === 'monthly') {
+        throw new Error('Pagamento mensal à vista temporariamente indisponível. Tente novamente.');
+      }
       route = 'worker_fallback';
 
       data =
