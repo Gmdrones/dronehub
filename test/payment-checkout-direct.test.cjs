@@ -44,7 +44,7 @@ async function withFakeMercadoPago(plan,verify){
  }finally{globalThis.fetch=previous}
 }
 
-test('direct monthly checkout advertises BRL 45.00 and allows buyer to select up to 12 installments',async()=>{
+test('direct monthly checkout charges BRL 45.00 in a single upfront installment',async()=>{
  await withFakeMercadoPago('monthly',p=>{
   assert.equal(p.items[0].unit_price,45);
   assert.equal(p.items[0].currency_id,'BRL');
@@ -52,7 +52,7 @@ test('direct monthly checkout advertises BRL 45.00 and allows buyer to select up
   assert.equal(p.metadata.months,1);
   assert.equal(p.external_reference,uuid);
   assert.equal(p.notification_url,'https://dronehub.app.br/api/payment/webhook');
-  assert.equal(p.payment_methods.installments,12);
+  assert.equal(p.payment_methods.installments,1);
  });
 });
 test('direct annual checkout advertises BRL 358.80 and allows up to 12 installments',async()=>{
