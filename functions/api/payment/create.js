@@ -137,9 +137,10 @@ async function createMercadoPagoPreference(
 
     auto_return: 'approved',
 
+    // Limite, não número de parcelas obrigatório: comprador escolhe entre 1 e 12.
+    // Preço total permanece o mesmo anunciado na página /precos.
     payment_methods: {
-      installments:
-        planKey === 'annual' ? 12 : 1
+      installments: 12
     },
 
     statement_descriptor: 'DRONE HUB'
