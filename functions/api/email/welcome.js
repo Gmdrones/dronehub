@@ -11,10 +11,11 @@ export async function onRequestPost({ request, env }) {
       text: `Olá! Sua conta DroneHub está pronta. Acesse ${site}/dashboard.html para organizar sua operação.`,
       html: `<h2>Bem-vindo ao DroneHub</h2><p>Olá, ${String(user.user_metadata?.full_name || 'piloto').replace(/[<>&]/g, '')}.</p><p>Sua conta está pronta para organizar aeronaves, documentos e operações.</p><p><a href="${site}/dashboard.html">Acessar o DroneHub</a></p>`
     });
-    await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, {
+    const metadataResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, {
       method: 'PUT', headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_metadata: { ...user.user_metadata, welcome_email_sent_at: new Date().toISOString() } })
     });
+    if (!metadataResponse.ok) throw new Error('Boas-vindas enviadas, mas falhou o registro do envio.');
     return json({ ok: true });
   } catch (error) { return json({ error: error.message || 'Não foi possível enviar boas-vindas.' }, error.status || 500); }
 }
