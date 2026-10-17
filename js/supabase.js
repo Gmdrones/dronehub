@@ -334,6 +334,7 @@ function applyCloudRecordChange(payload, userId) {
   // Uma confirmação em tempo real nunca pode substituir uma edição que ainda
   // está aguardando envio deste navegador.
   if (hasQueuedCloudMutation(row.collection, userId, row.record_id)) return;
+  if (row.collection === 'aircraft' || row.collection === 'batteries') { syncCloudData(userId); return; }
   const key = CLOUD_COLLECTIONS[row.collection];
   if (row.collection === 'profile') {
     const profiles = JSON.parse(localStorage.getItem(key) || '{}');
@@ -399,9 +400,9 @@ function accessibleAircraft(userId, records) {
   return owned.sort((a, b) => String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0).slice(0, 1);
 }
 function saveAircraft(userId, data) {
-  const existing = getAircraft(userId);
+  const existing = JSON.parse(localStorage.getItem('dronehub_aircraft') || '[]').filter(a => a.userId === userId);
   const isExisting = data.id && existing.some(a => String(a.id) === String(data.id));
-  if (!hasLocalProAircraftAccess(userId) && existing.length >= 1 && !isExisting) {
+  if (existing.length >= (hasLocalProAircraftAccess(userId) ? 20 : 1) && !isExisting) {
     throw new Error('O plano Free permite cadastrar apenas 1 aeronave. Faça upgrade para adicionar mais.');
   }
   if (!data.id) data.id = Date.now().toString();
@@ -584,7 +585,8 @@ function deleteClient(userId, id) {
 
 // ===== BATTERIES =====
 function saveBattery(userId, data) {
-  requireProCapability('A gestão de baterias');
+  const all = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]').filter(b => b.userId === userId);
+  if (!all.some(b => String(b.id) === String(data.id)) && all.length >= (hasLocalProAircraftAccess(userId) ? 60 : 3)) throw new Error('Limite de baterias do plano atingido.');
   if (!data.id) data.id = Date.now().toString(); data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString(); data.updatedAt = new Date().toISOString();
   const b = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]');
   const idx = b.findIndex(x => x.id === data.id && x.userId === userId);
@@ -593,7 +595,7 @@ function saveBattery(userId, data) {
   persistCloudRecord('batteries', userId, data);
   return data;
 }
-function getBatteries(userId) { return JSON.parse(localStorage.getItem('dronehub_baterias') || '[]').filter(b => b.userId === userId); }
+function getBatteries(userId) { const all = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]').filter(b => b.userId === userId); return hasLocalProAircraftAccess(userId) ? all.slice(0, 60) : all.sort((a,b) => String(a.createdAt||a.id).localeCompare(String(b.createdAt||b.id))).slice(0, 3); }
 function deleteBattery(userId, id) {
   const b = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]').filter(x => !(x.userId === userId && x.id === id));
   localStorage.setItem('dronehub_baterias', JSON.stringify(b));
@@ -638,14 +640,3 @@ if (supabaseClient) {
   });
 }
 window.addEventListener('online', retryCloudQueue);
-// Uma aba aberta também perde o acesso assim que a assinatura vence.
-window.setInterval(function () {
-  const account = getCurrentUser() || {};
-  const expiresAt = account.planExpiresAt || account.courtesyExpiresAt;
-  if (account.plan === 'pro' && account.role !== 'admin' && expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
-    refreshCurrentEntitlement();
-  }
-}, 30000);
-document.addEventListener('visibilitychange', function () {
-  if (document.visibilityState === 'visible') refreshCurrentEntitlement();
-});
