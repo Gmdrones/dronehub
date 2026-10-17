@@ -39,7 +39,7 @@ test('downgrade hides extra aircraft and renewal restores the preserved fleet', 
 test('expired Pro limits access without waiting for login or the expiry job', () => {
   const ctx = browser('pro', '2020-01-01T00:00:00Z');
   assert.equal(ctx.getAircraft('pilot').length, 1);
-  assert.throws(() => ctx.saveAircraft('pilot', { id: '200', modelo: 'Bloqueado' }), /apenas 1/);
+  assert.throws(() => ctx.saveAircraft('pilot', { id: '200', modelo: 'Bloqueado' }), /não está disponível/);
   assert.throws(() => ctx.deleteAircraft('pilot', '200'), /não está disponível/);
 });
 
@@ -73,4 +73,21 @@ test('cloud sync does not restore locked queued aircraft after downgrade', async
   assert.equal(ctx.getAircraft('pilot')[0].id, '100');
   assert.equal(ctx.getAircraft('pilot')[0].modelo, 'Edição pendente');
   assert.equal(JSON.parse(ctx.localStorage.getItem('dronehub_sync_queue')).length, 2);
+});
+
+test('Free cannot modify or delete batteries hidden after downgrade', () => {
+  const ctx = browser('free');
+  ctx.localStorage.setItem('dronehub_baterias', JSON.stringify([
+    { userId:'pilot', id:'100', createdAt:'2024-01-01' },
+    { userId:'pilot', id:'200', createdAt:'2024-01-02' },
+    { userId:'pilot', id:'300', createdAt:'2024-01-03' },
+    { userId:'pilot', id:'400', createdAt:'2024-01-04' }
+  ]));
+  assert.equal(ctx.getBatteries('pilot').length,3);
+  assert.throws(() => ctx.saveBattery('pilot',{id:'400',name:'forbidden'}), /não está disponível/);
+  assert.throws(() => ctx.deleteBattery('pilot','400'), /não está disponível/);
+  assert.throws(() => ctx.saveBattery('pilot',{id:'500'}), /Limite/);
+  assert.equal(JSON.parse(ctx.localStorage.getItem('dronehub_baterias')).length,4);
+  ctx.localStorage.setItem('dronehub_user', JSON.stringify({id:'pilot',plan:'pro'}));
+  assert.equal(ctx.getBatteries('pilot').length,4);
 });

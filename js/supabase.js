@@ -395,13 +395,16 @@ function hasLocalProAircraftAccess(userId) {
 }
 function accessibleAircraft(userId, records) {
   const owned = records.filter(a => a.userId === userId);
-  if (hasLocalProAircraftAccess(userId)) return owned;
+  if (hasLocalProAircraftAccess(userId)) return owned.sort((a,b) => String(a.createdAt||a.id).localeCompare(String(b.createdAt||b.id))).slice(0,20);
   // IDs antigos são timestamps. A mesma ordenação imutável é usada no banco.
   return owned.sort((a, b) => String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0).slice(0, 1);
 }
 function saveAircraft(userId, data) {
   const existing = JSON.parse(localStorage.getItem('dronehub_aircraft') || '[]').filter(a => a.userId === userId);
   const isExisting = data.id && existing.some(a => String(a.id) === String(data.id));
+  if (isExisting && !getAircraft(userId).some(a => String(a.id) === String(data.id))) {
+    throw new Error('Esta aeronave não está disponível no seu plano atual.');
+  }
   if (existing.length >= (hasLocalProAircraftAccess(userId) ? 20 : 1) && !isExisting) {
     throw new Error('O plano Free permite cadastrar apenas 1 aeronave. Faça upgrade para adicionar mais.');
   }
@@ -586,6 +589,7 @@ function deleteClient(userId, id) {
 // ===== BATTERIES =====
 function saveBattery(userId, data) {
   const all = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]').filter(b => b.userId === userId);
+  if (data.id && all.some(b => String(b.id) === String(data.id)) && !getBatteries(userId).some(b => String(b.id) === String(data.id))) throw new Error('Esta bateria não está disponível no seu plano atual.');
   if (!all.some(b => String(b.id) === String(data.id)) && all.length >= (hasLocalProAircraftAccess(userId) ? 60 : 3)) throw new Error('Limite de baterias do plano atingido.');
   if (!data.id) data.id = Date.now().toString(); data.userId = userId; data.createdAt = data.createdAt || new Date().toISOString(); data.updatedAt = new Date().toISOString();
   const b = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]');
@@ -595,8 +599,9 @@ function saveBattery(userId, data) {
   persistCloudRecord('batteries', userId, data);
   return data;
 }
-function getBatteries(userId) { const all = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]').filter(b => b.userId === userId); return hasLocalProAircraftAccess(userId) ? all.slice(0, 60) : all.sort((a,b) => String(a.createdAt||a.id).localeCompare(String(b.createdAt||b.id))).slice(0, 3); }
+function getBatteries(userId) { const all = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]').filter(b => b.userId === userId); return all.sort((a,b) => String(a.createdAt||a.id).localeCompare(String(b.createdAt||b.id))).slice(0, hasLocalProAircraftAccess(userId) ? 60 : 3); }
 function deleteBattery(userId, id) {
+  if (!getBatteries(userId).some(b => String(b.id) === String(id))) throw new Error('Esta bateria não está disponível no seu plano atual.');
   const b = JSON.parse(localStorage.getItem('dronehub_baterias') || '[]').filter(x => !(x.userId === userId && x.id === id));
   localStorage.setItem('dronehub_baterias', JSON.stringify(b));
   removeCloudRecord('batteries', userId, id);
