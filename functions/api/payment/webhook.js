@@ -430,9 +430,11 @@ export async function onRequestPost({
       }
     );
 
-    await supabaseAdmin(
+    // Atomic database-side claim ensures repeated Mercado Pago notifications cannot extend access twice.
+    // The RPC returns true only for the first approved processing of a payment ID.
+    const claimResult = await supabaseAdmin(
       env,
-      'rpc/apply_payment_entitlement',
+      'rpc/apply_payment_entitlement_once',
       {
         method:
           'POST',
@@ -454,6 +456,8 @@ export async function onRequestPost({
       }
     );
 
+    const entitlementApplied = claimResult === true || (Array.isArray(claimResult) && claimResult[0] === true);
+
     console.log(
       'PAYMENT_ENTITLEMENT_APPLIED',
       {
@@ -465,7 +469,8 @@ export async function onRequestPost({
         status:
           state,
 
-        months
+        months,
+        entitlementApplied
       }
     );
 
@@ -506,6 +511,7 @@ export async function onRequestPost({
 
     if (
       state === 'approved' &&
+      entitlementApplied &&
       payerEmail
     ) {
       try {
@@ -631,7 +637,7 @@ export async function onRequestPost({
         state,
 
       entitlement_processed:
-        true
+        entitlementApplied
     });
   } catch (error) {
     const errorMessage =
